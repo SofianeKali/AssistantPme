@@ -124,7 +124,7 @@ export default function Settings() {
             <CardHeader>
               <CardTitle className="text-xl">Ajouter un compte email</CardTitle>
               <CardDescription>
-                Configurez Gmail ou Outlook via IMAP/SMTP
+                Configurez Gmail, Outlook ou Yahoo via IMAP/SMTP
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -134,9 +134,16 @@ export default function Settings() {
                   <Select
                     value={newAccount.provider}
                     onValueChange={(value) => {
-                      const config = value === "gmail"
-                        ? { imapHost: "imap.gmail.com", imapPort: "993", smtpHost: "smtp.gmail.com", smtpPort: "587" }
-                        : { imapHost: "outlook.office365.com", imapPort: "993", smtpHost: "smtp.office365.com", smtpPort: "587" };
+                      let config;
+                      if (value === "gmail") {
+                        config = { imapHost: "imap.gmail.com", imapPort: "993", smtpHost: "smtp.gmail.com", smtpPort: "587" };
+                      } else if (value === "outlook") {
+                        config = { imapHost: "outlook.office365.com", imapPort: "993", smtpHost: "smtp.office365.com", smtpPort: "587" };
+                      } else if (value === "yahoo") {
+                        config = { imapHost: "imap.mail.yahoo.com", imapPort: "993", smtpHost: "smtp.mail.yahoo.com", smtpPort: "465" };
+                      } else {
+                        config = { imapHost: "", imapPort: "993", smtpHost: "", smtpPort: "587" };
+                      }
                       setNewAccount({ ...newAccount, provider: value, ...config });
                     }}
                   >
@@ -146,6 +153,7 @@ export default function Settings() {
                     <SelectContent>
                       <SelectItem value="gmail">Gmail</SelectItem>
                       <SelectItem value="outlook">Outlook</SelectItem>
+                      <SelectItem value="yahoo">Yahoo</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -180,7 +188,11 @@ export default function Settings() {
                 </div>
               </div>
               <Button
-                onClick={() => addAccountMutation.mutate(newAccount)}
+                onClick={() => addAccountMutation.mutate({
+                  ...newAccount,
+                  imapPort: parseInt(newAccount.imapPort),
+                  smtpPort: parseInt(newAccount.smtpPort),
+                })}
                 disabled={addAccountMutation.isPending || !newAccount.email}
                 data-testid="button-add-account"
               >
