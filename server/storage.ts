@@ -80,6 +80,9 @@ export interface IStorage {
   
   // Email responses
   createEmailResponse(response: InsertEmailResponse): Promise<EmailResponse>;
+  getEmailResponses(emailId: string): Promise<EmailResponse[]>;
+  getEmailResponseById(id: string): Promise<EmailResponse | undefined>;
+  updateEmailResponse(id: string, data: Partial<EmailResponse>): Promise<EmailResponse>;
   
   // Dashboard stats
   getDashboardStats(): Promise<any>;
@@ -333,6 +336,24 @@ export class DatabaseStorage implements IStorage {
   async createEmailResponse(response: InsertEmailResponse): Promise<EmailResponse> {
     const [result] = await db.insert(emailResponses).values(response).returning();
     return result;
+  }
+
+  async getEmailResponses(emailId: string): Promise<EmailResponse[]> {
+    return await db.select().from(emailResponses).where(eq(emailResponses.emailId, emailId));
+  }
+
+  async getEmailResponseById(id: string): Promise<EmailResponse | undefined> {
+    const [response] = await db.select().from(emailResponses).where(eq(emailResponses.id, id));
+    return response;
+  }
+
+  async updateEmailResponse(id: string, data: Partial<EmailResponse>): Promise<EmailResponse> {
+    const [updated] = await db
+      .update(emailResponses)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(emailResponses.id, id))
+      .returning();
+    return updated;
   }
 
   // Dashboard stats

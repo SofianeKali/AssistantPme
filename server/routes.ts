@@ -116,31 +116,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/emails/:id/generate-response', isAuthenticated, async (req, res) => {
+  app.post('/api/emails/:id/generate-response', isAuthenticated, async (req: any, res) => {
     try {
       const email = await storage.getEmailById(req.params.id);
       if (!email) {
         return res.status(404).json({ message: "Email not found" });
       }
       
-      const response = await generateEmailResponse({
+      const responseBody = await generateEmailResponse({
         subject: email.subject || "",
         body: email.body || "",
         from: email.from,
+        context: req.body.context,
       });
       
-      await storage.createEmailResponse({
+      const emailResponse = await storage.createEmailResponse({
         emailId: email.id,
         generatedBy: "ai",
-        body: response,
+        subject: `Re: ${email.subject}`,
+        body: responseBody,
         isApproved: false,
         isSent: false,
       });
       
-      res.json({ response });
+      res.json(emailResponse);
     } catch (error) {
       console.error("Error generating response:", error);
       res.status(500).json({ message: "Failed to generate response" });
+    }
+  });
+
+  app.get('/api/emails/:id/responses', isAuthenticated, async (req, res) => {
+    try {
+      const responses = await storage.getEmailResponses(req.params.id);
+      res.json(responses);
+    } catch (error) {
+      console.error("Error fetching email responses:", error);
+      res.status(500).json({ message: "Failed to fetch email responses" });
+    }
+  });
+
+  app.patch('/api/email-responses/:id/approve', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const response = await storage.updateEmailResponse(req.params.id, {
+        isApproved: true,
+        approvedById: userId,
+      });
+      res.json(response);
+    } catch (error) {
+      console.error("Error approving response:", error);
+      res.status(500).json({ message: "Failed to approve response" });
+    }
+  });
+
+  app.post('/api/email-responses/:id/send', isAuthenticated, async (req, res) => {
+    try {
+      const response = await storage.getEmailResponseById(req.params.id);
+      if (!response) {
+        return res.status(404).json({ message: "Email response not found" });
+      }
+      
+      if (!response.isApproved) {
+        return res.status(400).json({ message: "Response must be approved before sending" });
+      }
+      
+      // TODO: Implement actual email sending via SMTP
+      // For now, just mark as sent
+      const updatedResponse = await storage.updateEmailResponse(req.params.id, {
+        isSent: true,
+        sentAt: new Date(),
+      });
+      
+      res.json(updatedResponse);
+    } catch (error) {
+      console.error("Error sending response:", error);
+      res.status(500).json({ message: "Failed to send response" });
     }
   });
 
