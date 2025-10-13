@@ -2,7 +2,8 @@ import imaps from 'imap-simple';
 import { simpleParser, ParsedMail } from 'mailparser';
 import { analyzeEmail } from './openai';
 import type { IStorage } from './storage';
-import type { EmailAccount, InsertEmail } from '../shared/schema';
+import type { EmailAccount, InsertEmail, InsertDocument } from '../shared/schema';
+import { uploadFileToDrive, getOrCreateFolder } from './googleDrive';
 
 interface ScanResult {
   scanned: number;
@@ -103,10 +104,62 @@ export class EmailScanner {
 
           console.log(`[IMAP] Created email: ${createdEmail.id} - ${mail.subject}`);
 
-          // Store attachments info for later processing (task 2)
+          // Process attachments
           if (mail.attachments && mail.attachments.length > 0) {
-            console.log(`[IMAP] Email has ${mail.attachments.length} attachments (will be processed separately)`);
-            // We'll handle attachments in task 2
+            console.log(`[IMAP] Processing ${mail.attachments.length} attachments...`);
+            
+            try {
+              // Get or create a Google Drive folder for documents
+              const folderId = await getOrCreateFolder('PME-Assistant-Documents');
+              
+              for (const attachment of mail.attachments) {
+                try {
+                  const filename = attachment.filename || `attachment-${Date.now()}`;
+                  const mimeType = attachment.contentType || 'application/octet-stream';
+                  const buffer = attachment.content;
+
+                  console.log(`[IMAP] Uploading attachment: ${filename}`);
+                  
+                  // Upload to Google Drive
+                  const uploadResult = await uploadFileToDrive(
+                    filename,
+                    mimeType,
+                    buffer,
+                    folderId
+                  );
+
+                  // Detect document type based on mime type and AI analysis
+                  let documentType: 'facture' | 'devis' | 'contrat' | 'autre' = 'autre';
+                  if (analysis.emailType === 'facture') {
+                    documentType = 'facture';
+                  } else if (analysis.emailType === 'devis') {
+                    documentType = 'devis';
+                  } else if (mimeType.includes('pdf') && filename.toLowerCase().includes('contrat')) {
+                    documentType = 'contrat';
+                  }
+
+                  // Create document record
+                  const documentData: InsertDocument = {
+                    emailId: createdEmail.id,
+                    filename: filename,
+                    fileType: mimeType,
+                    fileSize: buffer.length,
+                    driveFileId: uploadResult.fileId,
+                    driveUrl: uploadResult.webViewLink,
+                    documentType: documentType,
+                    uploadedBy: account.userId,
+                  };
+
+                  await this.storage.createDocument(documentData);
+                  console.log(`[IMAP] Created document record for: ${filename}`);
+
+                } catch (attachError) {
+                  console.error(`[IMAP] Error processing attachment:`, attachError);
+                }
+              }
+            } catch (driveError) {
+              console.error(`[IMAP] Error with Google Drive:`, driveError);
+            }
           }
 
         } catch (error) {
