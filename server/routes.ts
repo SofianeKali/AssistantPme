@@ -4,10 +4,14 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { analyzeEmail, generateEmailResponse, generateAppointmentSuggestions } from "./openai";
 import { insertEmailAccountSchema, insertTagSchema, insertEmailSchema, insertAlertSchema } from "@shared/schema";
+import { EmailScanner } from "./emailScanner";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
+  
+  // Initialize email scanner
+  const emailScanner = new EmailScanner(storage);
 
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
@@ -293,6 +297,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating setting:", error);
       res.status(500).json({ message: "Failed to update setting" });
+    }
+  });
+
+  // Email scanning endpoints
+  app.post('/api/email-scan', isAuthenticated, async (req, res) => {
+    try {
+      console.log('[API] Starting email scan for all accounts...');
+      const results = await emailScanner.scanAllAccounts();
+      res.json({
+        success: true,
+        results,
+        summary: {
+          totalScanned: Object.values(results).reduce((sum, r) => sum + r.scanned, 0),
+          totalCreated: Object.values(results).reduce((sum, r) => sum + r.created, 0),
+          totalErrors: Object.values(results).reduce((sum, r) => sum + r.errors, 0),
+        }
+      });
+    } catch (error) {
+      console.error("Error scanning emails:", error);
+      res.status(500).json({ message: "Failed to scan emails", error: String(error) });
+    }
+  });
+
+  app.post('/api/email-scan/:accountId', isAuthenticated, async (req, res) => {
+    try {
+      const { accountId } = req.params;
+      const accounts = await storage.getAllEmailAccounts();
+      const account = accounts.find(a => a.id === accountId);
+      
+      if (!account) {
+        return res.status(404).json({ message: "Email account not found" });
+      }
+
+      console.log(`[API] Starting email scan for account: ${account.email}`);
+      const result = await emailScanner.scanAccount(account);
+      res.json({ success: true, result });
+    } catch (error) {
+      console.error("Error scanning email account:", error);
+      res.status(500).json({ message: "Failed to scan email account", error: String(error) });
     }
   });
 

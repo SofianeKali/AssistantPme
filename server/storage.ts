@@ -41,13 +41,15 @@ export interface IStorage {
   
   // Email accounts
   createEmailAccount(account: InsertEmailAccount): Promise<EmailAccount>;
-  getEmailAccounts(userId: string): Promise<EmailAccount[]>;
+  getEmailAccounts(userId?: string): Promise<EmailAccount[]>;
+  getAllEmailAccounts(): Promise<EmailAccount[]>;
   deleteEmailAccount(id: string): Promise<void>;
   
   // Emails
   createEmail(email: InsertEmail): Promise<Email>;
   getEmails(filters?: { type?: string; search?: string; limit?: number }): Promise<Email[]>;
   getEmailById(id: string): Promise<Email | undefined>;
+  getEmailByMessageId(messageId: string): Promise<Email | undefined>;
   updateEmail(id: string, data: Partial<Email>): Promise<Email>;
   
   // Documents
@@ -115,8 +117,15 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async getEmailAccounts(userId: string): Promise<EmailAccount[]> {
-    return await db.select().from(emailAccounts).where(eq(emailAccounts.userId, userId));
+  async getEmailAccounts(userId?: string): Promise<EmailAccount[]> {
+    if (userId) {
+      return await db.select().from(emailAccounts).where(eq(emailAccounts.userId, userId));
+    }
+    return await db.select().from(emailAccounts);
+  }
+
+  async getAllEmailAccounts(): Promise<EmailAccount[]> {
+    return await db.select().from(emailAccounts);
   }
 
   async deleteEmailAccount(id: string): Promise<void> {
@@ -161,6 +170,11 @@ export class DatabaseStorage implements IStorage {
 
   async getEmailById(id: string): Promise<Email | undefined> {
     const [email] = await db.select().from(emails).where(eq(emails.id, id));
+    return email;
+  }
+
+  async getEmailByMessageId(messageId: string): Promise<Email | undefined> {
+    const [email] = await db.select().from(emails).where(eq(emails.messageId, messageId));
     return email;
   }
 

@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Mail, Save, Trash2 } from "lucide-react";
+import { Mail, Save, Trash2, RefreshCw } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Settings() {
@@ -77,6 +77,26 @@ export default function Settings() {
     onSuccess: () => {
       toast({ title: "Compte supprimé" });
       queryClient.invalidateQueries({ queryKey: ["/api/email-accounts"] });
+    },
+  });
+
+  const scanEmailsMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest("POST", "/api/email-scan", {});
+    },
+    onSuccess: (data: any) => {
+      toast({ 
+        title: "Scan terminé", 
+        description: `${data.summary.totalCreated} nouveaux emails importés` 
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/emails"] });
+    },
+    onError: () => {
+      toast({
+        title: "Erreur",
+        description: "Impossible de scanner les emails",
+        variant: "destructive",
+      });
     },
   });
 
@@ -172,8 +192,27 @@ export default function Settings() {
 
           {/* Existing Accounts */}
           <Card>
-            <CardHeader>
-              <CardTitle className="text-xl">Comptes configurés</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between gap-4">
+              <div className="flex-1">
+                <CardTitle className="text-xl">Comptes configurés</CardTitle>
+              </div>
+              <Button
+                onClick={() => scanEmailsMutation.mutate()}
+                disabled={scanEmailsMutation.isPending || !emailAccounts || emailAccounts.length === 0}
+                data-testid="button-scan-emails"
+              >
+                {scanEmailsMutation.isPending ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Scan en cours...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Scanner les emails
+                  </>
+                )}
+              </Button>
             </CardHeader>
             <CardContent>
               {emailAccountsLoading ? (
