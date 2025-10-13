@@ -267,6 +267,30 @@ export const insertEmailResponseSchema = createInsertSchema(emailResponses).omit
 export type InsertEmailResponse = z.infer<typeof insertEmailResponseSchema>;
 export type EmailResponse = typeof emailResponses.$inferSelect;
 
+// Reminders (relances automatiques)
+export const reminders = pgTable("reminders", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  emailId: varchar("email_id").notNull().references(() => emails.id, { onDelete: "cascade" }),
+  reminderType: varchar("reminder_type").notNull(), // devis_sans_reponse, facture_impayee
+  reminderNumber: integer("reminder_number").notNull().default(1), // 1st, 2nd, 3rd reminder
+  subject: text("subject").notNull(),
+  body: text("body").notNull(),
+  isSent: boolean("is_sent").notNull().default(false),
+  sentAt: timestamp("sent_at"),
+  sentToEmail: text("sent_to_email").notNull(),
+  responseReceived: boolean("response_received").notNull().default(false),
+  responseReceivedAt: timestamp("response_received_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertReminderSchema = createInsertSchema(reminders).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertReminder = z.infer<typeof insertReminderSchema>;
+export type Reminder = typeof reminders.$inferSelect;
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   emailAccounts: many(emailAccounts),
@@ -296,6 +320,7 @@ export const emailsRelations = relations(emails, ({ one, many }) => ({
   documents: many(documents),
   appointments: many(appointments),
   responses: many(emailResponses),
+  reminders: many(reminders),
 }));
 
 export const emailTagsRelations = relations(emailTags, ({ one }) => ({
@@ -372,5 +397,12 @@ export const emailResponsesRelations = relations(emailResponses, ({ one }) => ({
   approvedBy: one(users, {
     fields: [emailResponses.approvedById],
     references: [users.id],
+  }),
+}));
+
+export const remindersRelations = relations(reminders, ({ one }) => ({
+  email: one(emails, {
+    fields: [reminders.emailId],
+    references: [emails.id],
   }),
 }));

@@ -156,3 +156,79 @@ Suggest preparation tasks, required documents, and important notes.`
     };
   }
 }
+
+export async function generateReminderEmail(reminderInfo: {
+  emailSubject: string;
+  emailBody: string;
+  recipientEmail: string;
+  reminderType: 'devis_sans_reponse' | 'facture_impayee';
+  reminderNumber: number;
+}): Promise<{
+  subject: string;
+  body: string;
+}> {
+  try {
+    const reminderContext = reminderInfo.reminderType === 'devis_sans_reponse'
+      ? `Il s'agit d'une relance pour un devis qui n'a pas reçu de réponse. C'est la ${reminderInfo.reminderNumber}ème relance.`
+      : `Il s'agit d'une relance pour une facture impayée. C'est la ${reminderInfo.reminderNumber}ème relance.`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-5",
+      messages: [
+        {
+          role: "system",
+          content: `You are a professional email assistant for a French SME. Generate polite but firm reminder emails in French.
+
+Rules:
+- Be professional and courteous but increasingly firm with each reminder number
+- Use formal French ("vous" form)
+- For 1st reminder: gentle and friendly
+- For 2nd reminder: more direct, mention the importance
+- For 3rd reminder: firm, mention potential consequences or next steps
+- Include the original subject reference
+- End with appropriate salutations
+
+Respond with JSON:
+{
+  "subject": "string - Email subject line",
+  "body": "string - Email body content"
+}`
+        },
+        {
+          role: "user",
+          content: `Generate a ${reminderInfo.reminderNumber === 1 ? 'première' : reminderInfo.reminderNumber === 2 ? 'deuxième' : 'troisième'} relance professionnelle.
+
+Context: ${reminderContext}
+
+Email original:
+Objet: ${reminderInfo.emailSubject}
+Destinataire: ${reminderInfo.recipientEmail}
+
+Corps:
+${reminderInfo.emailBody.substring(0, 500)}...
+
+Générez un email de relance approprié.`
+        }
+      ],
+      response_format: { type: "json_object" },
+    });
+
+    return JSON.parse(response.choices[0].message.content || "{}");
+  } catch (error) {
+    console.error("Error generating reminder email:", error);
+    
+    // Fallback reminder
+    const fallbackSubject = reminderInfo.reminderType === 'devis_sans_reponse'
+      ? `Relance ${reminderInfo.reminderNumber}: ${reminderInfo.emailSubject}`
+      : `Relance facture ${reminderInfo.reminderNumber}: ${reminderInfo.emailSubject}`;
+    
+    const fallbackBody = reminderInfo.reminderType === 'devis_sans_reponse'
+      ? `Bonjour,\n\nNous souhaitons relancer notre demande de devis concernant: ${reminderInfo.emailSubject}\n\nNous attendons votre retour.\n\nCordialement`
+      : `Bonjour,\n\nNous souhaitons vous rappeler que la facture concernant: ${reminderInfo.emailSubject} reste impayée.\n\nMerci de régulariser votre situation.\n\nCordialement`;
+    
+    return {
+      subject: fallbackSubject,
+      body: fallbackBody,
+    };
+  }
+}

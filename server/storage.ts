@@ -8,6 +8,7 @@ import {
   tags,
   settings,
   emailResponses,
+  reminders,
   emailTags,
   documentTags,
   appointmentTags,
@@ -29,6 +30,8 @@ import {
   type InsertSetting,
   type EmailResponse,
   type InsertEmailResponse,
+  type Reminder,
+  type InsertReminder,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, gte, lte, like, or, isNull, sql } from "drizzle-orm";
@@ -83,6 +86,12 @@ export interface IStorage {
   getEmailResponses(emailId: string): Promise<EmailResponse[]>;
   getEmailResponseById(id: string): Promise<EmailResponse | undefined>;
   updateEmailResponse(id: string, data: Partial<EmailResponse>): Promise<EmailResponse>;
+  
+  // Reminders (relances)
+  createReminder(reminder: InsertReminder): Promise<Reminder>;
+  getReminders(emailId?: string): Promise<Reminder[]>;
+  getReminderById(id: string): Promise<Reminder | undefined>;
+  updateReminder(id: string, data: Partial<Reminder>): Promise<Reminder>;
   
   // Dashboard stats
   getDashboardStats(): Promise<any>;
@@ -354,6 +363,37 @@ export class DatabaseStorage implements IStorage {
       .where(eq(emailResponses.id, id))
       .returning();
     return updated;
+  }
+
+  // Reminders (relances)
+  async createReminder(reminder: InsertReminder): Promise<Reminder> {
+    const [result] = await db.insert(reminders).values(reminder).returning();
+    return result;
+  }
+
+  async getReminders(emailId?: string): Promise<Reminder[]> {
+    if (emailId) {
+      return await db
+        .select()
+        .from(reminders)
+        .where(eq(reminders.emailId, emailId))
+        .orderBy(desc(reminders.createdAt));
+    }
+    return await db.select().from(reminders).orderBy(desc(reminders.createdAt));
+  }
+
+  async getReminderById(id: string): Promise<Reminder | undefined> {
+    const [result] = await db.select().from(reminders).where(eq(reminders.id, id));
+    return result;
+  }
+
+  async updateReminder(id: string, data: Partial<Reminder>): Promise<Reminder> {
+    const [result] = await db
+      .update(reminders)
+      .set(data)
+      .where(eq(reminders.id, id))
+      .returning();
+    return result;
   }
 
   // Dashboard stats

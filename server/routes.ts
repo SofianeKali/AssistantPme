@@ -195,6 +195,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Reminders (relances)
+  app.get('/api/reminders', isAuthenticated, async (req, res) => {
+    try {
+      const { emailId } = req.query;
+      const reminders = await storage.getReminders(emailId as string);
+      res.json(reminders);
+    } catch (error) {
+      console.error("Error fetching reminders:", error);
+      res.status(500).json({ message: "Failed to fetch reminders" });
+    }
+  });
+
+  app.get('/api/emails/:id/reminders', isAuthenticated, async (req, res) => {
+    try {
+      const reminders = await storage.getReminders(req.params.id);
+      res.json(reminders);
+    } catch (error) {
+      console.error("Error fetching email reminders:", error);
+      res.status(500).json({ message: "Failed to fetch email reminders" });
+    }
+  });
+
+  app.patch('/api/reminders/:id/send', isAuthenticated, async (req, res) => {
+    try {
+      const reminder = await storage.getReminderById(req.params.id);
+      if (!reminder) {
+        return res.status(404).json({ message: "Reminder not found" });
+      }
+
+      // TODO: Implement actual email sending via SMTP
+      // For now, just mark as sent
+      const updatedReminder = await storage.updateReminder(req.params.id, {
+        isSent: true,
+        sentAt: new Date(),
+      });
+
+      res.json(updatedReminder);
+    } catch (error) {
+      console.error("Error sending reminder:", error);
+      res.status(500).json({ message: "Failed to send reminder" });
+    }
+  });
+
+  app.patch('/api/reminders/:id/mark-response-received', isAuthenticated, async (req, res) => {
+    try {
+      const updatedReminder = await storage.updateReminder(req.params.id, {
+        responseReceived: true,
+        responseReceivedAt: new Date(),
+      });
+      res.json(updatedReminder);
+    } catch (error) {
+      console.error("Error marking reminder response:", error);
+      res.status(500).json({ message: "Failed to mark reminder response" });
+    }
+  });
+
   // Documents
   app.get('/api/documents', isAuthenticated, async (req, res) => {
     try {
