@@ -14,6 +14,11 @@ export async function analyzeEmail(emailContent: {
   summary: string;
   extractedData: any;
   suggestedTags: string[];
+  riskLevel?: string;
+  riskFactors?: string[];
+  urgencyType?: string;
+  conflictIndicators?: string[];
+  actionRecommendations?: Array<{ action: string; priority: string; reason: string }>;
 }> {
   try {
     const response = await openai.chat.completions.create({
@@ -21,15 +26,42 @@ export async function analyzeEmail(emailContent: {
       messages: [
         {
           role: "system",
-          content: `You are an AI assistant specialized in analyzing business emails for a French SME management system.
+          content: `You are an AI assistant specialized in analyzing business emails for a French SME management system with advanced risk detection.
           
 Analyze the email and extract:
+
+BASIC CLASSIFICATION:
 1. emailType: one of "devis" (quote request), "facture" (invoice), "rdv" (appointment), or "general"
 2. priority: one of "urgent", "high", "normal", "low"
 3. sentiment: one of "positive", "neutral", "negative"
 4. summary: brief summary in French (max 150 chars)
 5. extractedData: any relevant data (amounts, dates, contacts)
 6. suggestedTags: array of relevant tag suggestions
+
+ADVANCED SENTIMENT ANALYSIS:
+7. riskLevel: one of "none", "low", "medium", "high", "critical"
+   - "critical": Client threatens legal action, contract termination, public complaints
+   - "high": Strong dissatisfaction, mentions competitors, delays causing damages
+   - "medium": Complaints, frustrations, unmet expectations
+   - "low": Minor concerns, questions about details
+   - "none": No risk detected
+
+8. riskFactors: array of specific risk indicators detected (in French)
+   Examples: ["Client mécontent du délai", "Menace de résilier le contrat", "Demande un geste commercial"]
+
+9. urgencyType: classification of urgency
+   - "real": Actual deadline, legal requirement, critical business impact
+   - "perceived": Client feels it's urgent but no concrete deadline
+   - "none": No urgency expressed
+
+10. conflictIndicators: array of conflict signals (in French)
+    Examples: ["Ton agressif", "Remet en question la qualité", "Compare avec concurrent", "Demande un responsable"]
+
+11. actionRecommendations: array of recommended actions with priority
+    Format: [{"action": "Action description in French", "priority": "immediate|high|normal", "reason": "Why this action"}]
+    Examples:
+    - {"action": "Appeler le client dans l'heure", "priority": "immediate", "reason": "Risque de perte du client"}
+    - {"action": "Préparer un geste commercial", "priority": "high", "reason": "Client insatisfait mais récupérable"}
 
 Respond with JSON in this format:
 {
@@ -43,7 +75,14 @@ Respond with JSON in this format:
     "appointmentDate": "ISO date or null",
     "contact": "string or null"
   },
-  "suggestedTags": ["tag1", "tag2"]
+  "suggestedTags": ["tag1", "tag2"],
+  "riskLevel": "string",
+  "riskFactors": ["factor1", "factor2"],
+  "urgencyType": "string",
+  "conflictIndicators": ["indicator1", "indicator2"],
+  "actionRecommendations": [
+    {"action": "string", "priority": "string", "reason": "string"}
+  ]
 }`
         },
         {
@@ -64,6 +103,11 @@ Respond with JSON in this format:
       summary: "Analyse non disponible",
       extractedData: {},
       suggestedTags: [],
+      riskLevel: "none",
+      riskFactors: [],
+      urgencyType: "none",
+      conflictIndicators: [],
+      actionRecommendations: [],
     };
   }
 }

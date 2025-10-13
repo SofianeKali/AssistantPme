@@ -66,7 +66,7 @@ export class EmailScanner {
             }
           }
 
-          // Analyze email with GPT
+          // Analyze email with GPT (with advanced sentiment analysis)
           const analysis = await analyzeEmail({
             subject: mail.subject || 'Sans objet',
             body: mail.text || mail.html || '',
@@ -91,6 +91,12 @@ export class EmailScanner {
               summary: analysis.summary,
               extractedData: analysis.extractedData,
               suggestedTags: analysis.suggestedTags,
+              // Advanced sentiment analysis fields
+              riskLevel: analysis.riskLevel || 'none',
+              riskFactors: analysis.riskFactors || [],
+              urgencyType: analysis.urgencyType || 'none',
+              conflictIndicators: analysis.conflictIndicators || [],
+              actionRecommendations: analysis.actionRecommendations || [],
             },
             hasAttachments: (mail.attachments?.length || 0) > 0,
             requiresResponse: analysis.emailType === 'devis' || analysis.priority === 'urgent',

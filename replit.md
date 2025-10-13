@@ -190,9 +190,18 @@ Application web intelligente pour automatiser la gestion administrative des PME 
 - Retour fileId et webViewLink
 
 ### OpenAI Service (server/openai.ts)
-- analyzeEmail(): Classification GPT-5 complète
+- analyzeEmail(): Classification GPT-5 complète avec analyse avancée de sentiment
 - generateEmailResponse(): Réponses professionnelles
 - generateAppointmentSuggestions(): Prep IA pour RDV
+- generateReminderEmail(): Relances automatiques escaladées
+
+### ReminderService (server/reminderService.ts)
+- Génération automatique relances pour devis et factures
+- Logique temporelle stricte: 48h post-deadline (devis), 15j (factures), puis 48h/7j entre relances
+- Prévention duplicatas: vérifie relances envoyées ET en attente
+- Limite max 3 relances par email
+- Ton escaladé GPT (1: gentil, 2: direct, 3: ferme)
+- Prêt pour intégration SMTP (isSent/sentAt)
 
 ### ✅ Tâche 6: Statistiques Dashboard complètes
 - **Métriques critiques**: Devis sans réponse, factures impayées, RDV aujourd'hui, emails non traités, alertes actives
@@ -207,24 +216,59 @@ Application web intelligente pour automatiser la gestion administrative des PME 
   - Requêtes SQL avec date ranges précises (month/week/day)
 - **Correction bugs**: Utilisation correcte du champ `status` (nouveau/en_cours/traite/archive) au lieu de isProcessed
 
+### ✅ Tâche 8: Système de relances automatiques
+- **Table reminders**: emailId, reminderType, reminderNumber, subject, body, sentToEmail, isSent, sentAt
+- **ReminderService**: Génération automatique de relances pour devis et factures
+- **Timing intelligent**:
+  - Devis: Première relance 48h après responseDeadline, puis 48h entre relances
+  - Factures: Première relance 15j après receivedAt, puis 7j entre relances
+- **Prévention duplicatas**: Vérifie relances envoyées ET en attente avant création
+- **Limite max**: Maximum 3 relances par email
+- **Ton escaladé GPT**: 1ère gentille → 2ème directe → 3ème ferme
+- **API routes**:
+  - GET /api/reminders?emailId=xxx
+  - POST /api/reminders/:id/send (prêt pour SMTP)
+- **Scheduler**: Vérifie toutes les 120 minutes
+- **État**: Backend complet, prêt pour intégration SMTP
+
+### ✅ Tâche 9: Analyse de sentiment avancée
+- **Détection des risques** (5 niveaux): none/low/medium/high/critical
+  - Critical: Menace légale, résiliation contrat, plainte publique
+  - High: Forte insatisfaction, mention concurrent, dommages
+  - Medium: Plaintes, frustrations, attentes non comblées
+  - Low: Préoccupations mineures
+- **Facteurs de risque**: Liste spécifique en français (ex: "Client mécontent du délai")
+- **Type d'urgence**: real/perceived/none
+  - Real: Deadline concrète, obligation légale, impact business
+  - Perceived: Client pressé sans deadline
+- **Indicateurs de conflit**: Ton agressif, remise en question qualité, comparaison concurrent
+- **Recommandations d'actions**: 
+  - Format: {action, priority (immediate/high/normal), reason}
+  - Ex: "Appeler le client dans l'heure" (immediate)
+- **API routes nouvelles**:
+  - GET /api/emails/high-risk (emails critiques/high risk triés)
+  - GET /api/emails/action-recommendations (toutes recommandations triées par priorité)
+- **Stockage**: Champs ajoutés dans aiAnalysis JSONB existant
+- **État**: Analyse GPT enrichie, APIs exposées, prêt pour UI
+
 ## État actuel
-✅ **Phase 1: Backend Core - COMPLÉTÉE** (Tâches 1-6)
+✅ **Phase 1+2: Backend Core - COMPLÉTÉE** (Tâches 1-9)
 - Scanner IMAP automatique avec GPT-5
 - Extraction pièces jointes + Google Drive
 - Système alertes automatiques optimisé
 - Création automatique RDV
 - Génération réponses GPT avec validation
 - Dashboard statistiques complètes
+- Système relances automatiques (devis/factures)
+- Analyse sentiment avancée avec détection risques
 
-⏳ **Phase 2: Fonctionnalités avancées** - À venir (Tâches 7-11)
-- Intégration OneDrive
-- Système relances automatiques
-- Analyse sentiment avancée
-- KPI et statistiques business
+⏳ **Phase 3: Fonctionnalités avancées** - À venir (Tâches 10-11)
+- Tableau de bord KPI avancé
 - OCR pour documents scannés
 
 ## Prochaines étapes immédiates
 1. ✅ Dashboard stats avec vraies données
-2. Tests end-to-end du workflow complet
-3. SMTP réel pour envoi réponses emails
-4. Interface frontend complète
+2. ✅ Analyse sentiment avancée avec recommandations
+3. Tests end-to-end du workflow complet
+4. SMTP réel pour envoi réponses emails et relances
+5. Interface frontend complète (emails à risque, recommandations)

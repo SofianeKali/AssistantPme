@@ -89,7 +89,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const emailData = req.body;
       
-      // Analyze email with GPT
+      // Analyze email with GPT (with advanced sentiment analysis)
       const analysis = await analyzeEmail({
         subject: emailData.subject,
         body: emailData.body,
@@ -105,6 +105,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           summary: analysis.summary,
           extractedData: analysis.extractedData,
           suggestedTags: analysis.suggestedTags,
+          // Advanced sentiment analysis fields
+          riskLevel: analysis.riskLevel || 'none',
+          riskFactors: analysis.riskFactors || [],
+          urgencyType: analysis.urgencyType || 'none',
+          conflictIndicators: analysis.conflictIndicators || [],
+          actionRecommendations: analysis.actionRecommendations || [],
         },
       });
       
@@ -192,6 +198,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error sending response:", error);
       res.status(500).json({ message: "Failed to send response" });
+    }
+  });
+
+  // Advanced sentiment analysis routes
+  app.get('/api/emails/high-risk', isAuthenticated, async (req, res) => {
+    try {
+      const allEmails = await storage.getEmails({});
+      
+      // Filter emails with high or critical risk levels
+      const highRiskEmails = allEmails.filter(email => {
+        const aiAnalysis = email.aiAnalysis as any;
+        return aiAnalysis?.riskLevel === 'high' || aiAnalysis?.riskLevel === 'critical';
+      });
+      
+      // Sort by risk level (critical first) and receivedAt (most recent first)
+      highRiskEmails.sort((a, b) => {
+        const aAnalysis = a.aiAnalysis as any;
+        const bAnalysis = b.aiAnalysis as any;
+        const aRisk = aAnalysis?.riskLevel || 'none';
+        const bRisk = bAnalysis?.riskLevel || 'none';
+        
+        // Critical > High
+        if (aRisk === 'critical' && bRisk !== 'critical') return -1;
+        if (bRisk === 'critical' && aRisk !== 'critical') return 1;
+        
+        // Sort by date if same risk level
+        return b.receivedAt.getTime() - a.receivedAt.getTime();
+      });
+      
+      res.json(highRiskEmails);
+    } catch (error) {
+      console.error("Error fetching high-risk emails:", error);
+      res.status(500).json({ message: "Failed to fetch high-risk emails" });
+    }
+  });
+
+  app.get('/api/emails/action-recommendations', isAuthenticated, async (req, res) => {
+    try {
+      const allEmails = await storage.getEmails({});
+      
+      // Extract all action recommendations from emails
+      const recommendations = allEmails
+        .filter(email => {
+          const aiAnalysis = email.aiAnalysis as any;
+          return aiAnalysis?.actionRecommendations && aiAnalysis.actionRecommendations.length > 0;
+        })
+        .map(email => {
+          const aiAnalysis = email.aiAnalysis as any;
+          return {
+            emailId: email.id,
+            emailSubject: email.subject,
+            emailFrom: email.from,
+            receivedAt: email.receivedAt,
+            riskLevel: aiAnalysis.riskLevel,
+            recommendations: aiAnalysis.actionRecommendations,
+          };
+        });
+      
+      // Priority ranking map: immediate > high > normal
+      const priorityRank = {
+        immediate: 3,
+        high: 2,
+        normal: 1,
+      };
+      
+      // Sort by priority (immediate > high > normal) and date
+      recommendations.sort((a, b) => {
+        // Get highest priority from each email's recommendations
+        const aMaxPriority = Math.max(
+          ...a.recommendations.map((r: any) => priorityRank[r.priority as keyof typeof priorityRank] || 0)
+        );
+        const bMaxPriority = Math.max(
+          ...b.recommendations.map((r: any) => priorityRank[r.priority as keyof typeof priorityRank] || 0)
+        );
+        
+        // Sort by priority first
+        if (aMaxPriority !== bMaxPriority) {
+          return bMaxPriority - aMaxPriority; // Higher priority first
+        }
+        
+        // If same priority, sort by date (most recent first)
+        return b.receivedAt.getTime() - a.receivedAt.getTime();
+      });
+      
+      res.json(recommendations);
+    } catch (error) {
+      console.error("Error fetching action recommendations:", error);
+      res.status(500).json({ message: "Failed to fetch action recommendations" });
     }
   });
 
