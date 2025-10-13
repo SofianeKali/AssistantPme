@@ -40,3 +40,12 @@ The application uses a modern web stack:
 - **pdf-parse**: For extracting text from PDF documents.
 - **imap-simple**: For IMAP email scanning.
 - **mailparser**: For parsing email content.
+
+## Recent Updates
+### ✅ Yahoo Email Support (October 2025)
+- Added Yahoo as a third email provider option alongside Gmail and Outlook
+- Automatic IMAP/SMTP configuration for Yahoo accounts:
+  - IMAP: imap.mail.yahoo.com:993
+  - SMTP: smtp.mail.yahoo.com:465
+- Fixed port conversion bug (string to integer) for all providers
+- Updated Settings UI to support all three providers seamlessly
