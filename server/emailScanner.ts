@@ -1,8 +1,8 @@
 import imaps from 'imap-simple';
 import { simpleParser, ParsedMail } from 'mailparser';
-import { analyzeEmail } from './openai';
+import { analyzeEmail, generateAppointmentSuggestions } from './openai';
 import type { IStorage } from './storage';
-import type { EmailAccount, InsertEmail, InsertDocument } from '../shared/schema';
+import type { EmailAccount, InsertEmail, InsertDocument, InsertAppointment } from '../shared/schema';
 import { uploadFileToDrive, getOrCreateFolder } from './googleDrive';
 
 interface ScanResult {
@@ -159,6 +159,49 @@ export class EmailScanner {
               }
             } catch (driveError) {
               console.error(`[IMAP] Error with Google Drive:`, driveError);
+            }
+          }
+
+          // Auto-create appointment if email type is 'rdv' and appointmentDate is available
+          if (analysis.emailType === 'rdv' && analysis.extractedData?.appointmentDate) {
+            try {
+              console.log(`[IMAP] Creating appointment from email: ${createdEmail.id}`);
+              
+              const appointmentDate = new Date(analysis.extractedData.appointmentDate);
+              const endTime = new Date(appointmentDate.getTime() + 60 * 60 * 1000); // Default 1 hour duration
+
+              // Extract attendees from email
+              const attendees: string[] = [];
+              if (mail.from?.value) {
+                attendees.push(...mail.from.value.map(a => a.address || '').filter(Boolean));
+              }
+              if (mail.to?.value) {
+                attendees.push(...mail.to.value.map(a => a.address || '').filter(Boolean));
+              }
+
+              // Generate AI suggestions for the appointment
+              const aiSuggestions = await generateAppointmentSuggestions({
+                title: mail.subject || 'Rendez-vous',
+                description: analysis.summary,
+                attendees,
+              });
+
+              const appointmentData: InsertAppointment = {
+                emailId: createdEmail.id,
+                title: mail.subject || 'Rendez-vous',
+                description: analysis.summary,
+                startTime: appointmentDate,
+                endTime: endTime,
+                location: analysis.extractedData.location || null,
+                attendees: attendees.length > 0 ? attendees : null,
+                aiSuggestions: aiSuggestions,
+                createdById: account.userId,
+              };
+
+              await this.storage.createAppointment(appointmentData);
+              console.log(`[IMAP] Created appointment: ${appointmentData.title}`);
+            } catch (aptError) {
+              console.error(`[IMAP] Error creating appointment:`, aptError);
             }
           }
 
