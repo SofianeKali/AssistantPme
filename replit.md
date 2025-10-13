@@ -251,8 +251,35 @@ Application web intelligente pour automatiser la gestion administrative des PME 
 - **Stockage**: Champs ajoutés dans aiAnalysis JSONB existant
 - **État**: Analyse GPT enrichie, APIs exposées, prêt pour UI
 
+### ✅ Tâche 10: Tableau de bord KPI avancé
+- **Taux de réponse**: % d'emails nécessitant réponse qui en ont reçu une (avec COUNT DISTINCT pour éviter doublons)
+- **Temps moyen de traitement**: Délai en heures entre réception et traitement (filtre outliers >30j)
+- **CA prévu**: Somme des montants extraits des devis via aiAnalysis
+- **Évolution mensuelle**: Comparaison mois actuel vs mois précédent (emails, traités, RDV)
+- **API route**: GET /api/dashboard/kpis
+- **Métriques fiables**: Taux de réponse garanti ≤100%, calculs robustes
+
+### ✅ Tâche 11: Reconnaissance OCR pour documents scannés
+- **Bibliothèques**: Tesseract.js (OCR images) + pdf-parse (PDFs texte)
+- **Extraction automatique**:
+  - Images (jpg, png, etc.): ✅ OCR via Tesseract multi-langue (fra+eng)
+  - PDFs texte: ✅ Extraction texte direct via pdf-parse
+  - PDFs scannés: ⚠️ Détection automatique mais OCR non implémenté (nécessite conversion PDF→images)
+- **Stockage**:
+  - Champs ajoutés: ocrText (text), ocrProcessed (boolean), driveUrl (text)
+  - Recherche full-text: filtre sur filename OU ocrText
+- **API route**: POST /api/documents/:id/ocr
+  - Télécharge fichier depuis Google Drive
+  - Traite avec OCR/PDF parser approprié
+  - Stocke texte extrait dans DB
+  - Retourne: {text, method (pdf/ocr/scanned_pdf/none), charsExtracted, warning}
+  - Méthodes: 'pdf' (texte extrait), 'ocr' (Tesseract), 'scanned_pdf' (détecté mais non traité), 'none' (échec)
+- **Google Drive**: Fonction downloadFileFromDrive ajoutée
+- **Service OCR**: server/ocrService.ts avec processDocument()
+- **Limitations**: PDFs scannés détectés (texte <100 chars) mais non traités - nécessite pdf-to-image pour OCR complet
+
 ## État actuel
-✅ **Phase 1+2: Backend Core - COMPLÉTÉE** (Tâches 1-9)
+✅ **Phase 1-3: Backend Core - COMPLÉTÉE** (Tâches 1-11)
 - Scanner IMAP automatique avec GPT-5
 - Extraction pièces jointes + Google Drive
 - Système alertes automatiques optimisé
@@ -261,10 +288,8 @@ Application web intelligente pour automatiser la gestion administrative des PME 
 - Dashboard statistiques complètes
 - Système relances automatiques (devis/factures)
 - Analyse sentiment avancée avec détection risques
-
-⏳ **Phase 3: Fonctionnalités avancées** - À venir (Tâches 10-11)
-- Tableau de bord KPI avancé
-- OCR pour documents scannés
+- **KPIs avancés** (taux réponse, temps traitement, CA prévu, évolution)
+- **OCR documents** (Tesseract.js + pdf-parse, recherche full-text)
 
 ## Prochaines étapes immédiates
 1. ✅ Dashboard stats avec vraies données

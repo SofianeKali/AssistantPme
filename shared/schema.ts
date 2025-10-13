@@ -144,9 +144,13 @@ export const documents = pgTable("documents", {
   storageProvider: varchar("storage_provider").notNull(), // google_drive, local
   storagePath: text("storage_path").notNull(), // path or file ID
   driveFileId: varchar("drive_file_id"), // Google Drive file ID if applicable
+  driveUrl: text("drive_url"), // Google Drive web view link
   documentType: varchar("document_type"), // facture, devis, contrat, autre
   // Extracted data from document
   extractedData: jsonb("extracted_data"), // { amount, date, supplier, etc. }
+  // OCR extracted text
+  ocrText: text("ocr_text"), // Text extracted by OCR from images/PDFs
+  ocrProcessed: boolean("ocr_processed").notNull().default(false), // Whether OCR has been run
   createdAt: timestamp("created_at").defaultNow(),
 });
 

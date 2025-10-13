@@ -5,6 +5,8 @@ import { setupAuth, isAuthenticated } from "./replitAuth";
 import { analyzeEmail, generateEmailResponse, generateAppointmentSuggestions } from "./openai";
 import { insertEmailAccountSchema, insertTagSchema, insertEmailSchema, insertAlertSchema } from "@shared/schema";
 import { EmailScanner } from "./emailScanner";
+import { processDocument } from "./ocrService";
+import { downloadFileFromDrive } from "./googleDrive";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -368,6 +370,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching documents:", error);
       res.status(500).json({ message: "Failed to fetch documents" });
+    }
+  });
+
+  // OCR processing for documents
+  app.post('/api/documents/:id/ocr', isAuthenticated, async (req, res) => {
+    try {
+      const document = await storage.getDocumentById(req.params.id);
+      if (!document) {
+        return res.status(404).json({ message: "Document not found" });
+      }
+
+      // Check if already processed
+      if (document.ocrProcessed) {
+        return res.json({ 
+          message: "Document already processed", 
+          text: document.ocrText 
+        });
+      }
+
+      // Download file from Google Drive
+      if (!document.driveFileId) {
+        return res.status(400).json({ message: "Document not in Google Drive" });
+      }
+
+      console.log(`[OCR] Processing document: ${document.filename}`);
+      const fileBuffer = await downloadFileFromDrive(document.driveFileId);
+      
+      // Process with OCR
+      const result = await processDocument(fileBuffer, document.mimeType);
+      
+      // Update document with OCR results
+      const updatedDocument = await storage.updateDocument(req.params.id, {
+        ocrText: result.text,
+        ocrProcessed: true,
+      });
+
+      console.log(`[OCR] Processed document ${document.id}: ${result.text.length} chars extracted via ${result.method}`);
+      
+      res.json({
+        text: result.text,
+        method: result.method,
+        charsExtracted: result.text.length,
+        warning: result.warning,
+        document: updatedDocument,
+      });
+    } catch (error) {
+      console.error("Error processing OCR:", error);
+      res.status(500).json({ message: "Failed to process OCR" });
     }
   });
 

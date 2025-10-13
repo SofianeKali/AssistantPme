@@ -118,3 +118,19 @@ export async function getOrCreateFolder(folderName: string): Promise<string> {
     throw error;
   }
 }
+
+export async function downloadFileFromDrive(fileId: string): Promise<Buffer> {
+  try {
+    const drive = await getUncachableGoogleDriveClient();
+    
+    const response = await drive.files.get(
+      { fileId, alt: 'media' },
+      { responseType: 'arraybuffer' }
+    );
+    
+    return Buffer.from(response.data as ArrayBuffer);
+  } catch (error) {
+    console.error('Error downloading from Google Drive:', error);
+    throw error;
+  }
+}

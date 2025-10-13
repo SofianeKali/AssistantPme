@@ -58,6 +58,8 @@ export interface IStorage {
   // Documents
   createDocument(doc: InsertDocument): Promise<Document>;
   getDocuments(filters?: { type?: string; search?: string }): Promise<Document[]>;
+  getDocumentById(id: string): Promise<Document | undefined>;
+  updateDocument(id: string, data: Partial<Document>): Promise<Document>;
   
   // Appointments
   createAppointment(apt: InsertAppointment): Promise<Appointment>;
@@ -214,7 +216,12 @@ export class DatabaseStorage implements IStorage {
       conditions.push(eq(documents.documentType, filters.type));
     }
     if (filters?.search) {
-      conditions.push(like(documents.filename, `%${filters.search}%`));
+      conditions.push(
+        or(
+          like(documents.filename, `%${filters.search}%`),
+          like(documents.ocrText, `%${filters.search}%`)
+        )
+      );
     }
     
     if (conditions.length > 0) {
@@ -224,6 +231,20 @@ export class DatabaseStorage implements IStorage {
     query = query.orderBy(desc(documents.createdAt)) as any;
     
     return await query;
+  }
+
+  async getDocumentById(id: string): Promise<Document | undefined> {
+    const [result] = await db.select().from(documents).where(eq(documents.id, id));
+    return result;
+  }
+
+  async updateDocument(id: string, data: Partial<Document>): Promise<Document> {
+    const [result] = await db
+      .update(documents)
+      .set(data)
+      .where(eq(documents.id, id))
+      .returning();
+    return result;
   }
 
   // Appointments
