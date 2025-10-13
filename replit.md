@@ -120,7 +120,87 @@ Application web intelligente pour automatiser la gestion administrative des PME 
 - KPI et statistiques avancées
 - OCR pour documents scannés
 
+## Implémentation Backend (Complétée)
+
+### ✅ Tâche 1: Scanner IMAP automatique
+- Service EmailScanner avec scan périodique (15 min)
+- Connexion sécurisée IMAP avec validation TLS
+- Analyse GPT-5 de chaque email (type, priorité, sentiment)
+- Prévention des duplicatas via messageId exact
+- Marquage des emails comme lus après traitement
+- Gestion robuste des erreurs et logs détaillés
+
+### ✅ Tâche 2: Extraction pièces jointes + Google Drive
+- Extraction automatique des attachments des emails
+- Upload vers dossier Google Drive dédié (PME-Assistant-Documents)
+- Classification intelligente (facture/devis/contrat/autre)
+- Stockage métadonnées: driveFileId, driveUrl, fileSize
+- Isolation des erreurs par attachment
+
+### ✅ Tâche 3: Système d'alertes automatiques
+- Vérification périodique (60 min) des conditions d'alerte
+- Devis sans réponse après 48h (severity: critical)
+- Factures impayées après 15 jours (severity: warning)
+- Emails urgents non traités après 24h (severity: warning)
+- Prévention des duplicatas via filtre isResolved=false
+- Liens vers emails source pour action rapide
+
+### ✅ Tâche 4: Création automatique rendez-vous
+- Détection GPT des emails type 'rdv' avec date
+- Extraction automatique des participants (from/to)
+- Durée par défaut: 1 heure
+- Génération suggestions IA (préparation, documents, notes)
+- Stockage complet avec aiSuggestions JSONB
+- Lien vers email source
+
+### ✅ Tâche 5: Génération réponses automatiques GPT
+- API POST /api/emails/:id/generate-response
+- Génération via GPT-5 avec contexte optionnel
+- Workflow approbation (isApproved=false par défaut)
+- API GET /api/emails/:id/responses (liste réponses)
+- API PATCH /api/email-responses/:id/approve (approuver)
+- API POST /api/email-responses/:id/send (envoyer si approuvé)
+- Audit complet: generatedBy, approvedById, sentAt
+
+## Services Backend
+
+### EmailScanner (server/emailScanner.ts)
+- Scan IMAP avec imap-simple et mailparser
+- Analyse GPT-5 complète de chaque email
+- Upload automatique pièces jointes vers Google Drive
+- Création automatique rendez-vous si type 'rdv'
+- Gestion erreurs isolée par email/attachment
+
+### AlertService (server/alertService.ts)
+- Génération alertes business critiques
+- Vérification devis/factures/emails non traités
+- Prévention duplicatas via isResolved
+- Logs détaillés de chaque vérification
+
+### EmailScheduler (server/scheduler.ts)
+- Scan emails: toutes les 15 minutes
+- Génération alertes: toutes les 60 minutes
+- Mutex locks pour éviter concurrence
+- Logs de performance et statistiques
+
+### Google Drive Service (server/googleDrive.ts)
+- Authentification via Replit Connectors
+- Gestion automatique refresh tokens
+- Upload avec création de dossiers
+- Retour fileId et webViewLink
+
+### OpenAI Service (server/openai.ts)
+- analyzeEmail(): Classification GPT-5 complète
+- generateEmailResponse(): Réponses professionnelles
+- generateAppointmentSuggestions(): Prep IA pour RDV
+
 ## État actuel
-✅ Phase 1: Schema & Frontend - En cours
-⏳ Phase 2: Backend - À venir
-⏳ Phase 3: Integration & Tests - À venir
+✅ Phase 1: Backend Core - **TERMINÉE** (Tâches 1-5)
+⏳ Phase 1.5: Dashboard Stats - À implémenter (Tâche 6)
+⏳ Phase 2: Fonctionnalités avancées - À venir (Tâches 7-11)
+
+## Prochaines étapes immédiates
+1. Implémenter vraies statistiques Dashboard (Tâche 6)
+2. Tests end-to-end du workflow complet
+3. Optimisations performance (cache alertes, etc.)
+4. SMTP réel pour envoi réponses emails
