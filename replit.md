@@ -194,13 +194,37 @@ Application web intelligente pour automatiser la gestion administrative des PME 
 - generateEmailResponse(): Réponses professionnelles
 - generateAppointmentSuggestions(): Prep IA pour RDV
 
+### ✅ Tâche 6: Statistiques Dashboard complètes
+- **Métriques critiques**: Devis sans réponse, factures impayées, RDV aujourd'hui, emails non traités, alertes actives
+- **Métriques mensuelles**: Emails reçus/traités, taux de traitement (%), RDV créés, documents uploadés
+- **Métriques hebdomadaires**: Volume emails derniers 7 jours
+- **Analyses par type**: Breakdown emails par type (devis/facture/rdv/général)
+- **Analyses par priorité**: Distribution priorités pour emails non traités
+- **Optimisations performance**: 
+  - Service alertes optimisé: 1 seule requête getAlerts() par cycle (vs N requêtes avant)
+  - Filtrage in-memory des alertes non résolues
+  - Calcul taux de traitement avec gestion division par zéro
+  - Requêtes SQL avec date ranges précises (month/week/day)
+- **Correction bugs**: Utilisation correcte du champ `status` (nouveau/en_cours/traite/archive) au lieu de isProcessed
+
 ## État actuel
-✅ Phase 1: Backend Core - **TERMINÉE** (Tâches 1-5)
-⏳ Phase 1.5: Dashboard Stats - À implémenter (Tâche 6)
-⏳ Phase 2: Fonctionnalités avancées - À venir (Tâches 7-11)
+✅ **Phase 1: Backend Core - COMPLÉTÉE** (Tâches 1-6)
+- Scanner IMAP automatique avec GPT-5
+- Extraction pièces jointes + Google Drive
+- Système alertes automatiques optimisé
+- Création automatique RDV
+- Génération réponses GPT avec validation
+- Dashboard statistiques complètes
+
+⏳ **Phase 2: Fonctionnalités avancées** - À venir (Tâches 7-11)
+- Intégration OneDrive
+- Système relances automatiques
+- Analyse sentiment avancée
+- KPI et statistiques business
+- OCR pour documents scannés
 
 ## Prochaines étapes immédiates
-1. Implémenter vraies statistiques Dashboard (Tâche 6)
+1. ✅ Dashboard stats avec vraies données
 2. Tests end-to-end du workflow complet
-3. Optimisations performance (cache alertes, etc.)
-4. SMTP réel pour envoi réponses emails
+3. SMTP réel pour envoi réponses emails
+4. Interface frontend complète
