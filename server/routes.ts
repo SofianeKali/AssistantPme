@@ -36,6 +36,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Advanced KPIs
+  app.get('/api/dashboard/kpis', isAuthenticated, async (req, res) => {
+    try {
+      const kpis = await storage.getAdvancedKPIs();
+      res.json(kpis);
+    } catch (error) {
+      console.error("Error fetching advanced KPIs:", error);
+      res.status(500).json({ message: "Failed to fetch advanced KPIs" });
+    }
+  });
+
   // Email accounts
   app.get('/api/email-accounts', isAuthenticated, async (req: any, res) => {
     try {

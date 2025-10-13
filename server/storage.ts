@@ -95,6 +95,7 @@ export interface IStorage {
   
   // Dashboard stats
   getDashboardStats(): Promise<any>;
+  getAdvancedKPIs(): Promise<any>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -540,6 +541,206 @@ export class DatabaseStorage implements IStorage {
         priority: item.priority || 'normal',
         count: Number(item.count),
       })),
+    };
+  }
+
+  // Advanced KPIs
+  async getAdvancedKPIs(): Promise<any> {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+    
+    // 1. RESPONSE RATE - Percentage of emails that received a response
+    const [totalEmailsRequiringResponse] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(emails)
+      .where(eq(emails.requiresResponse, true));
+    
+    const totalRequiringResponse = Number(totalEmailsRequiringResponse?.count || 0);
+    
+    // Count emails that REQUIRE response AND have at least one response (approved or sent)
+    // Use COUNT DISTINCT with subquery to ensure accurate count (no duplicates)
+    const [emailsWithResponses] = await db
+      .select({ 
+        count: sql<number>`count(DISTINCT ${emails.id})` 
+      })
+      .from(emails)
+      .innerJoin(emailResponses, eq(emails.id, emailResponses.emailId))
+      .where(
+        and(
+          eq(emails.requiresResponse, true),
+          or(
+            eq(emailResponses.isApproved, true),
+            eq(emailResponses.isSent, true)
+          )
+        )
+      );
+    
+    const emailsWithResponseCount = Number(emailsWithResponses?.count || 0);
+    const responseRate = totalRequiringResponse > 0 
+      ? Math.round((emailsWithResponseCount / totalRequiringResponse) * 100) 
+      : 0;
+    
+    // 2. AVERAGE PROCESSING TIME - Average time from received to processed (in hours)
+    const processedEmails = await db
+      .select({
+        receivedAt: emails.receivedAt,
+        updatedAt: emails.updatedAt,
+      })
+      .from(emails)
+      .where(
+        or(
+          eq(emails.status, 'traite'),
+          eq(emails.status, 'archive')
+        )
+      );
+    
+    let totalProcessingTime = 0;
+    let processedCount = 0;
+    
+    for (const email of processedEmails) {
+      const processingTime = (email.updatedAt.getTime() - email.receivedAt.getTime()) / (1000 * 60 * 60); // hours
+      if (processingTime >= 0 && processingTime < 720) { // Exclude outliers (30 days max)
+        totalProcessingTime += processingTime;
+        processedCount++;
+      }
+    }
+    
+    const avgProcessingTimeHours = processedCount > 0 
+      ? Math.round(totalProcessingTime / processedCount) 
+      : 0;
+    
+    // 3. EXPECTED REVENUE - Sum of amounts from quotes (devis)
+    const allQuotes = await db
+      .select({ aiAnalysis: emails.aiAnalysis })
+      .from(emails)
+      .where(eq(emails.emailType, 'devis'));
+    
+    let expectedRevenue = 0;
+    let quotesWithAmount = 0;
+    
+    for (const quote of allQuotes) {
+      const analysis = quote.aiAnalysis as any;
+      const amount = analysis?.extractedData?.amount;
+      if (amount && typeof amount === 'number' && amount > 0) {
+        expectedRevenue += amount;
+        quotesWithAmount++;
+      }
+    }
+    
+    // 4. MONTHLY EVOLUTION - Compare current month vs last month
+    
+    // Current month
+    const [currentMonthEmails] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(emails)
+      .where(gte(emails.receivedAt, startOfMonth));
+    
+    const [currentMonthProcessed] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(emails)
+      .where(
+        and(
+          gte(emails.receivedAt, startOfMonth),
+          or(
+            eq(emails.status, 'traite'),
+            eq(emails.status, 'archive')
+          )
+        )
+      );
+    
+    const [currentMonthAppointments] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(appointments)
+      .where(gte(appointments.createdAt, startOfMonth));
+    
+    // Last month
+    const [lastMonthEmails] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(emails)
+      .where(
+        and(
+          gte(emails.receivedAt, startOfLastMonth),
+          lte(emails.receivedAt, endOfLastMonth)
+        )
+      );
+    
+    const [lastMonthProcessed] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(emails)
+      .where(
+        and(
+          gte(emails.receivedAt, startOfLastMonth),
+          lte(emails.receivedAt, endOfLastMonth),
+          or(
+            eq(emails.status, 'traite'),
+            eq(emails.status, 'archive')
+          )
+        )
+      );
+    
+    const [lastMonthAppointments] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(appointments)
+      .where(
+        and(
+          gte(appointments.createdAt, startOfLastMonth),
+          lte(appointments.createdAt, endOfLastMonth)
+        )
+      );
+    
+    const currentEmails = Number(currentMonthEmails?.count || 0);
+    const lastEmails = Number(lastMonthEmails?.count || 0);
+    const emailEvolution = lastEmails > 0 
+      ? Math.round(((currentEmails - lastEmails) / lastEmails) * 100) 
+      : 0;
+    
+    const currentProcessed = Number(currentMonthProcessed?.count || 0);
+    const lastProcessed = Number(lastMonthProcessed?.count || 0);
+    const processedEvolution = lastProcessed > 0 
+      ? Math.round(((currentProcessed - lastProcessed) / lastProcessed) * 100) 
+      : 0;
+    
+    const currentApts = Number(currentMonthAppointments?.count || 0);
+    const lastApts = Number(lastMonthAppointments?.count || 0);
+    const appointmentEvolution = lastApts > 0 
+      ? Math.round(((currentApts - lastApts) / lastApts) * 100) 
+      : 0;
+    
+    return {
+      // Response metrics
+      responseRate: responseRate,
+      totalRequiringResponse: totalRequiringResponse,
+      emailsWithResponse: emailsWithResponseCount,
+      
+      // Processing time
+      avgProcessingTimeHours: avgProcessingTimeHours,
+      processedEmailsCount: processedCount,
+      
+      // Revenue
+      expectedRevenue: Math.round(expectedRevenue),
+      quotesWithAmount: quotesWithAmount,
+      totalQuotes: allQuotes.length,
+      
+      // Monthly evolution (% change from last month)
+      evolution: {
+        emails: emailEvolution,
+        processed: processedEvolution,
+        appointments: appointmentEvolution,
+      },
+      
+      // Month comparison data
+      currentMonth: {
+        emails: currentEmails,
+        processed: currentProcessed,
+        appointments: currentApts,
+      },
+      lastMonth: {
+        emails: lastEmails,
+        processed: lastProcessed,
+        appointments: lastApts,
+      },
     };
   }
 }
