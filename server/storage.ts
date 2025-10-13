@@ -361,8 +361,10 @@ export class DatabaseStorage implements IStorage {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
+    const startOfWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     
-    // Count quotes without response (emails with type 'devis' and no response)
+    // Count quotes without response (emails with type 'devis' and status 'nouveau')
     const [quotesNoResponse] = await db
       .select({ count: sql<number>`count(*)` })
       .from(emails)
@@ -373,7 +375,7 @@ export class DatabaseStorage implements IStorage {
         )
       );
     
-    // Count unpaid invoices
+    // Count unpaid invoices (emails with type 'facture' and status 'nouveau')
     const [unpaidInvoices] = await db
       .select({ count: sql<number>`count(*)` })
       .from(emails)
@@ -391,21 +393,40 @@ export class DatabaseStorage implements IStorage {
       .where(
         and(
           gte(appointments.startTime, startOfDay),
-          lte(appointments.startTime, new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000))
+          lte(appointments.startTime, endOfDay)
         )
       );
     
-    // Count unprocessed emails
+    // Count unprocessed emails (status 'nouveau')
     const [unprocessedEmails] = await db
       .select({ count: sql<number>`count(*)` })
       .from(emails)
       .where(eq(emails.status, 'nouveau'));
+    
+    // Count active alerts (not resolved)
+    const [activeAlerts] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(alerts)
+      .where(eq(alerts.isResolved, false));
     
     // Monthly stats
     const [monthlyEmails] = await db
       .select({ count: sql<number>`count(*)` })
       .from(emails)
       .where(gte(emails.receivedAt, startOfMonth));
+    
+    const [monthlyEmailsProcessed] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(emails)
+      .where(
+        and(
+          gte(emails.receivedAt, startOfMonth),
+          or(
+            eq(emails.status, 'traite'),
+            eq(emails.status, 'archive')
+          )
+        )
+      );
     
     const [monthlyAppointments] = await db
       .select({ count: sql<number>`count(*)` })
@@ -417,20 +438,68 @@ export class DatabaseStorage implements IStorage {
       .from(documents)
       .where(gte(documents.createdAt, startOfMonth));
     
-    const [activeAlerts] = await db
+    // Weekly stats
+    const [weeklyEmails] = await db
       .select({ count: sql<number>`count(*)` })
-      .from(alerts)
-      .where(eq(alerts.isResolved, false));
+      .from(emails)
+      .where(gte(emails.receivedAt, startOfWeek));
+    
+    // Email type breakdown (this month)
+    const emailTypeBreakdown = await db
+      .select({
+        type: emails.emailType,
+        count: sql<number>`count(*)`,
+      })
+      .from(emails)
+      .where(gte(emails.receivedAt, startOfMonth))
+      .groupBy(emails.emailType);
+    
+    // Priority breakdown (unprocessed emails)
+    const priorityBreakdown = await db
+      .select({
+        priority: emails.priority,
+        count: sql<number>`count(*)`,
+      })
+      .from(emails)
+      .where(eq(emails.status, 'nouveau'))
+      .groupBy(emails.priority);
+    
+    // Processing rate calculation
+    const totalMonthlyEmails = Number(monthlyEmails?.count || 0);
+    const processedMonthlyEmails = Number(monthlyEmailsProcessed?.count || 0);
+    const processingRate = totalMonthlyEmails > 0 
+      ? Math.round((processedMonthlyEmails / totalMonthlyEmails) * 100) 
+      : 0;
     
     return {
+      // Critical metrics
       quotesNoResponse: Number(quotesNoResponse?.count || 0),
       unpaidInvoices: Number(unpaidInvoices?.count || 0),
       appointmentsToday: Number(appointmentsToday?.count || 0),
       unprocessedEmails: Number(unprocessedEmails?.count || 0),
-      monthlyEmailsProcessed: Number(monthlyEmails?.count || 0),
+      activeAlerts: Number(activeAlerts?.count || 0),
+      
+      // Monthly metrics
+      monthlyEmailsReceived: totalMonthlyEmails,
+      monthlyEmailsProcessed: processedMonthlyEmails,
       monthlyAppointments: Number(monthlyAppointments?.count || 0),
       monthlyDocuments: Number(monthlyDocuments?.count || 0),
-      activeAlerts: Number(activeAlerts?.count || 0),
+      
+      // Weekly metrics
+      weeklyEmails: Number(weeklyEmails?.count || 0),
+      
+      // Performance metrics
+      processingRate: processingRate,
+      
+      // Breakdowns
+      emailTypeBreakdown: emailTypeBreakdown.map(item => ({
+        type: item.type || 'general',
+        count: Number(item.count),
+      })),
+      priorityBreakdown: priorityBreakdown.map(item => ({
+        priority: item.priority || 'normal',
+        count: Number(item.count),
+      })),
     };
   }
 }

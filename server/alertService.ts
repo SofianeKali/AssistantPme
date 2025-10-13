@@ -36,21 +36,23 @@ export class AlertService {
     try {
       const emails = await this.storage.getEmails({ type: 'devis' });
       const now = new Date();
+      
+      // Fetch all existing unresolved alerts once
+      const existingAlerts = await this.storage.getAlerts();
+      const unresolvedAlerts = existingAlerts.filter(a => !a.isResolved);
 
       for (const email of emails) {
-        // Skip if already processed
-        if (email.isProcessed) continue;
+        // Skip if already processed (status is 'traite' or 'archive')
+        if (email.status === 'traite' || email.status === 'archive') continue;
 
         // Check if 48 hours have passed since responseDeadline
         if (email.responseDeadline && email.responseDeadline < now) {
           // Check if unresolved alert already exists for this email
-          const existingAlerts = await this.storage.getAlerts();
-          const hasUnresolvedAlert = existingAlerts.some(
+          const hasUnresolvedAlert = unresolvedAlerts.some(
             alert => 
               alert.relatedEntityType === 'email' &&
               alert.relatedEntityId === email.id && 
-              alert.type === 'devis_sans_reponse' &&
-              !alert.isResolved
+              alert.type === 'devis_sans_reponse'
           );
 
           if (!hasUnresolvedAlert) {
@@ -80,21 +82,23 @@ export class AlertService {
       const emails = await this.storage.getEmails({ type: 'facture' });
       const now = new Date();
       const fifteenDaysAgo = new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000);
+      
+      // Fetch all existing unresolved alerts once
+      const existingAlerts = await this.storage.getAlerts();
+      const unresolvedAlerts = existingAlerts.filter(a => !a.isResolved);
 
       for (const email of emails) {
-        // Skip if already processed
-        if (email.isProcessed) continue;
+        // Skip if already processed (status is 'traite' or 'archive')
+        if (email.status === 'traite' || email.status === 'archive') continue;
 
         // Check if email is older than 15 days
         if (email.receivedAt < fifteenDaysAgo) {
           // Check if unresolved alert already exists for this email
-          const existingAlerts = await this.storage.getAlerts();
-          const hasUnresolvedAlert = existingAlerts.some(
+          const hasUnresolvedAlert = unresolvedAlerts.some(
             alert => 
               alert.relatedEntityType === 'email' &&
               alert.relatedEntityId === email.id && 
-              alert.type === 'facture_impayee' &&
-              !alert.isResolved
+              alert.type === 'facture_impayee'
           );
 
           if (!hasUnresolvedAlert) {
@@ -126,23 +130,26 @@ export class AlertService {
       const now = new Date();
       const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-      // Filter for unprocessed urgent emails older than 24h
+      // Filter for unprocessed urgent emails older than 24h (status is not 'traite' or 'archive')
       const urgentUnprocessedEmails = allEmails.filter(
         email => 
-          !email.isProcessed && 
+          email.status !== 'traite' && 
+          email.status !== 'archive' && 
           email.priority === 'urgent' &&
           email.receivedAt < twentyFourHoursAgo
       );
+      
+      // Fetch all existing unresolved alerts once
+      const existingAlerts = await this.storage.getAlerts();
+      const unresolvedAlerts = existingAlerts.filter(a => !a.isResolved);
 
       for (const email of urgentUnprocessedEmails) {
         // Check if unresolved alert already exists for this email
-        const existingAlerts = await this.storage.getAlerts();
-        const hasUnresolvedAlert = existingAlerts.some(
+        const hasUnresolvedAlert = unresolvedAlerts.some(
           alert => 
             alert.relatedEntityType === 'email' &&
             alert.relatedEntityId === email.id && 
-            alert.type === 'email_non_traite' &&
-            !alert.isResolved
+            alert.type === 'email_non_traite'
         );
 
         if (!hasUnresolvedAlert) {
