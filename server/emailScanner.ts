@@ -30,6 +30,9 @@ export class EmailScanner {
           port: account.imapPort,
           tls: true,
           authTimeout: 10000,
+          tlsOptions: {
+            rejectUnauthorized: false, // Accept self-signed certificates (needed for Replit environment)
+          },
         },
       };
 
