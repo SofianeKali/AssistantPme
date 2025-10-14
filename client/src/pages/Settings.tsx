@@ -9,8 +9,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Mail, Save, Trash2, RefreshCw } from "lucide-react";
+import { Mail, Save, Trash2, RefreshCw, Info } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function Settings() {
   const { toast } = useToast();
@@ -51,10 +52,25 @@ export default function Settings() {
         password: "",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
+      let errorMessage = "Impossible d'ajouter le compte email";
+      
+      // Provide helpful error messages based on error type
+      if (error?.message?.includes("Invalid credentials") || error?.message?.includes("AUTHENTICATIONFAILED")) {
+        if (newAccount.provider === "gmail") {
+          errorMessage = "Authentification échouée. Pour Gmail, utilisez un App Password (voir le guide ci-dessus)";
+        } else if (newAccount.provider === "yahoo") {
+          errorMessage = "Authentification échouée. Pour Yahoo, utilisez un App Password (voir le guide ci-dessus)";
+        } else {
+          errorMessage = "Identifiants incorrects. Vérifiez votre nom d'utilisateur et mot de passe";
+        }
+      } else if (error?.message?.includes("ENOTFOUND") || error?.message?.includes("ECONNREFUSED")) {
+        errorMessage = "Impossible de se connecter au serveur email. Vérifiez les paramètres IMAP/SMTP";
+      }
+      
       toast({
-        title: "Erreur",
-        description: "Impossible d'ajouter le compte email",
+        title: "Erreur d'ajout du compte",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -85,16 +101,30 @@ export default function Settings() {
       return await apiRequest("POST", "/api/email-scan", {});
     },
     onSuccess: (data: any) => {
-      toast({ 
-        title: "Scan terminé", 
-        description: `${data.summary.totalCreated} nouveaux emails importés` 
-      });
+      if (data.summary.totalErrors > 0) {
+        toast({ 
+          title: "Scan terminé avec des erreurs", 
+          description: `${data.summary.totalCreated} emails importés, ${data.summary.totalErrors} erreur(s). Vérifiez les identifiants de vos comptes.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({ 
+          title: "Scan terminé", 
+          description: `${data.summary.totalCreated} nouveaux emails importés` 
+        });
+      }
       queryClient.invalidateQueries({ queryKey: ["/api/emails"] });
     },
-    onError: () => {
+    onError: (error: any) => {
+      let errorMessage = "Impossible de scanner les emails";
+      
+      if (error?.message?.includes("Invalid credentials") || error?.message?.includes("AUTHENTICATIONFAILED")) {
+        errorMessage = "Erreur d'authentification. Vérifiez vos App Passwords Gmail/Yahoo";
+      }
+      
       toast({
-        title: "Erreur",
-        description: "Impossible de scanner les emails",
+        title: "Erreur de scan",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -128,6 +158,40 @@ export default function Settings() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {newAccount.provider === "gmail" && (
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertTitle>Gmail nécessite un App Password</AlertTitle>
+                  <AlertDescription className="space-y-2">
+                    <p className="text-sm">
+                      Pour vous connecter à Gmail, vous devez utiliser un <strong>mot de passe d'application</strong> au lieu de votre mot de passe habituel.
+                    </p>
+                    <ol className="text-sm list-decimal list-inside space-y-1 ml-2">
+                      <li>Activez la validation en deux étapes sur votre compte Google</li>
+                      <li>Allez sur <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener noreferrer" className="text-primary underline hover:no-underline">myaccount.google.com/apppasswords</a></li>
+                      <li>Créez un mot de passe pour "Mail"</li>
+                      <li>Copiez le mot de passe de 16 caractères et utilisez-le ci-dessous</li>
+                    </ol>
+                  </AlertDescription>
+                </Alert>
+              )}
+              {newAccount.provider === "yahoo" && (
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertTitle>Yahoo nécessite un App Password</AlertTitle>
+                  <AlertDescription className="space-y-2">
+                    <p className="text-sm">
+                      Pour vous connecter à Yahoo, vous devez générer un <strong>mot de passe d'application</strong>.
+                    </p>
+                    <ol className="text-sm list-decimal list-inside space-y-1 ml-2">
+                      <li>Allez sur <a href="https://login.yahoo.com/account/security" target="_blank" rel="noopener noreferrer" className="text-primary underline hover:no-underline">login.yahoo.com/account/security</a></li>
+                      <li>Cliquez sur "Générer un mot de passe d'application"</li>
+                      <li>Sélectionnez "Autre application" et nommez-le (ex: "PME Assistant")</li>
+                      <li>Utilisez le mot de passe généré ci-dessous</li>
+                    </ol>
+                  </AlertDescription>
+                </Alert>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="provider">Fournisseur</Label>
