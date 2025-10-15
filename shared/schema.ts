@@ -120,6 +120,9 @@ export const emails = pgTable("emails", {
   isRead: boolean("is_read").notNull().default(false),
   requiresResponse: boolean("requires_response").notNull().default(false),
   responseDeadline: timestamp("response_deadline"),
+  // Response tracking
+  sentResponse: text("sent_response"), // Final response that was sent
+  respondedAt: timestamp("responded_at"), // When the response was sent
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
