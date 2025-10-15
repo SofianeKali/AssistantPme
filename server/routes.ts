@@ -246,6 +246,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch('/api/emails/bulk/mark-processed', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const { emailIds } = req.body;
+
+      // Validate request
+      if (!Array.isArray(emailIds) || emailIds.length === 0) {
+        return res.status(400).json({ message: "Email IDs array is required" });
+      }
+
+      // Update all emails - verify ownership for each
+      const updateResults = await Promise.allSettled(
+        emailIds.map(async (emailId: string) => {
+          const email = await storage.getEmailById(emailId, userId);
+          if (!email) {
+            throw new Error(`Email ${emailId} not found`);
+          }
+          return storage.updateEmail(emailId, userId, { status: "traite" });
+        })
+      );
+
+      const successCount = updateResults.filter(r => r.status === 'fulfilled').length;
+      const failureCount = updateResults.filter(r => r.status === 'rejected').length;
+
+      res.json({ 
+        success: true,
+        processed: successCount,
+        failed: failureCount,
+        total: emailIds.length
+      });
+    } catch (error) {
+      console.error("Error bulk marking emails as processed:", error);
+      res.status(500).json({ message: "Failed to mark emails as processed" });
+    }
+  });
+
   app.get('/api/emails/:id/responses', isAuthenticated, async (req, res) => {
     try {
       const responses = await storage.getEmailResponses(req.params.id);
