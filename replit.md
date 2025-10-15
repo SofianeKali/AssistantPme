@@ -42,6 +42,24 @@ The application uses a modern web stack:
 - **mailparser**: For parsing email content.
 
 ## Recent Updates
+### ✅ Email Response Sending via SMTP (October 2025)
+- **Complete Email Response Workflow**: Production-ready implementation for sending AI-generated responses
+  - Added `sentResponse` and `respondedAt` fields to emails table for response tracking
+  - Created `server/emailSender.ts` service using nodemailer for SMTP email sending
+  - Email threading support with In-Reply-To and References headers for proper conversation threading
+  - Added `getEmailAccountById()` method to storage layer for SMTP credential retrieval
+  - Endpoint `POST /api/emails/:id/send-response` handles complete send workflow
+  - Automatic status update to "traite" when response is sent
+- **Security**: TLS certificate validation enabled by default
+  - Dev-only TLS relaxation for Replit environment (NODE_ENV=development + REPL_ID check)
+  - Production deployments maintain strict TLS certificate verification
+  - Clear warning logs when TLS validation is disabled in development
+- **UI Enhancements**:
+  - "Approuver et envoyer" button with loading states and error handling
+  - "Répondu" badge displayed on emails that have been responded to
+  - Success/error toasts for user feedback
+  - Email list auto-refreshes after sending response
+
 ### ✅ Automatic Email Response Generation with GPT (October 2025)
 - **Google Drive Document Storage**: Complete integration for automatic attachment upload
   - Fixed Buffer-to-stream conversion for reliable file uploads
