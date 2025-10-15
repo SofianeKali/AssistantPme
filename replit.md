@@ -42,6 +42,20 @@ The application uses a modern web stack:
 - **mailparser**: For parsing email content.
 
 ## Recent Updates
+### ✅ Automatic Email Response Generation with GPT (October 2025)
+- **Google Drive Document Storage**: Complete integration for automatic attachment upload
+  - Fixed Buffer-to-stream conversion for reliable file uploads
+  - Complete document schema with originalFilename, mimeType, size, storageProvider, storagePath
+  - Automatic extraction and storage of email attachments during scan
+- **GPT-Powered Auto-Response Generation**: Production-ready implementation
+  - Automatic response generation during email scan with 15-second timeout
+  - Robust error handling with proper timeout cleanup to prevent unhandled rejections
+  - Added `suggestedResponse` field to emails table for persistent storage
+  - Unified manual and automatic generation systems using single database field
+  - UI displays AI-generated responses with edit capability before sending
+  - Safe timeout implementation with clearTimeout() to prevent Node.js process issues
+- **TypeScript Improvements**: Added utility functions for safe AddressObject handling
+
 ### ✅ Multi-User Role-Based Access Control (October 2025)
 - Implemented complete role-based access control system
 - Two user types: Admin (creates workspace, manages users) and Simple (standard users with isolated email access)
