@@ -1,9 +1,27 @@
 import imaps from 'imap-simple';
-import { simpleParser, ParsedMail } from 'mailparser';
+import { simpleParser, ParsedMail, AddressObject } from 'mailparser';
 import { analyzeEmail, generateAppointmentSuggestions, generateEmailResponse } from './openai';
 import type { IStorage } from './storage';
 import type { EmailAccount, InsertEmail, InsertDocument, InsertAppointment } from '../shared/schema';
 import { uploadFileToDrive, getOrCreateFolder } from './googleDrive';
+
+// Utility function to safely extract text from AddressObject
+function getAddressText(address: AddressObject | AddressObject[] | undefined): string {
+  if (!address) return '';
+  if (Array.isArray(address)) {
+    return address.map(a => a.text || '').join(', ');
+  }
+  return address.text || '';
+}
+
+// Utility function to safely extract email addresses from AddressObject
+function getEmailAddresses(address: AddressObject | AddressObject[] | undefined): string[] {
+  if (!address) return [];
+  if (Array.isArray(address)) {
+    return address.flatMap(a => a.value || []).map(v => v.address || '').filter(Boolean);
+  }
+  return (address.value || []).map(v => v.address || '').filter(Boolean);
+}
 
 interface ScanResult {
   scanned: number;
@@ -73,17 +91,31 @@ export class EmailScanner {
           const analysis = await analyzeEmail({
             subject: mail.subject || 'Sans objet',
             body: mail.text || mail.html || '',
-            from: mail.from?.text || 'Inconnu',
+            from: getAddressText(mail.from) || 'Inconnu',
           });
 
-          // Generate suggested response with GPT
+          // Generate suggested response with GPT (with timeout and error handling)
           console.log(`[IMAP] Generating suggested response...`);
-          const suggestedResponse = await generateEmailResponse({
-            subject: mail.subject || 'Sans objet',
-            body: mail.text || mail.html || '',
-            from: mail.from?.text || 'Inconnu',
-            context: `Type: ${analysis.emailType}, Priority: ${analysis.priority}, Sentiment: ${analysis.sentiment}`,
-          });
+          let suggestedResponse: string | undefined;
+          try {
+            const responsePromise = generateEmailResponse({
+              subject: mail.subject || 'Sans objet',
+              body: mail.text || mail.html || '',
+              from: getAddressText(mail.from) || 'Inconnu',
+              context: `Type: ${analysis.emailType}, Priority: ${analysis.priority}, Sentiment: ${analysis.sentiment}`,
+            });
+            
+            // Add 15 second timeout to prevent blocking scan
+            const timeoutPromise = new Promise<string>((_, reject) => 
+              setTimeout(() => reject(new Error('Response generation timeout')), 15000)
+            );
+            
+            suggestedResponse = await Promise.race([responsePromise, timeoutPromise]);
+            console.log(`[IMAP] Response generated successfully`);
+          } catch (error) {
+            console.warn(`[IMAP] Failed to generate response:`, error);
+            suggestedResponse = undefined; // Continue scan even if response generation fails
+          }
 
           // Create email record
           const emailData: InsertEmail = {
@@ -91,9 +123,9 @@ export class EmailScanner {
             emailAccountId: account.id,
             messageId: mail.messageId || `${Date.now()}-${Math.random()}`,
             subject: mail.subject || 'Sans objet',
-            from: mail.from?.text || 'Inconnu',
-            to: mail.to?.text || '',
-            cc: mail.cc?.text || '',
+            from: getAddressText(mail.from) || 'Inconnu',
+            to: getAddressText(mail.to) || '',
+            cc: getAddressText(mail.cc) || '',
             body: mail.text || '',
             htmlBody: mail.html || '',
             receivedAt: mail.date || new Date(),
@@ -193,13 +225,10 @@ export class EmailScanner {
               const endTime = new Date(appointmentDate.getTime() + 60 * 60 * 1000); // Default 1 hour duration
 
               // Extract attendees from email
-              const attendees: string[] = [];
-              if (mail.from?.value) {
-                attendees.push(...mail.from.value.map(a => a.address || '').filter(Boolean));
-              }
-              if (mail.to?.value) {
-                attendees.push(...mail.to.value.map(a => a.address || '').filter(Boolean));
-              }
+              const attendees: string[] = [
+                ...getEmailAddresses(mail.from),
+                ...getEmailAddresses(mail.to),
+              ];
 
               // Generate AI suggestions for the appointment
               const aiSuggestions = await generateAppointmentSuggestions({

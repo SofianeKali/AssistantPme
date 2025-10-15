@@ -273,6 +273,19 @@ export default function Emails() {
               </div>
             )}
 
+            {/* Suggested Response */}
+            {selectedEmail?.suggestedResponse && (
+              <div className="p-4 rounded-md bg-chart-2/5 border border-chart-2/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <Sparkles className="h-4 w-4 text-chart-2" />
+                  <span className="text-sm font-medium">Réponse suggérée par IA</span>
+                </div>
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                  {selectedEmail.suggestedResponse}
+                </p>
+              </div>
+            )}
+
             {/* Email Body */}
             <div className="prose prose-sm max-w-none">
               <div className="text-sm whitespace-pre-wrap">{selectedEmail?.body}</div>
@@ -280,14 +293,24 @@ export default function Emails() {
 
             {/* Actions */}
             <div className="flex gap-2 pt-4 border-t">
-              <Button
-                onClick={() => generateResponseMutation.mutate(selectedEmail?.id)}
-                disabled={generateResponseMutation.isPending}
-                data-testid="button-generate-response"
-              >
-                <Sparkles className="h-4 w-4 mr-2" />
-                Générer une réponse
-              </Button>
+              {selectedEmail?.suggestedResponse ? (
+                <Button
+                  onClick={() => setShowResponseDialog(true)}
+                  data-testid="button-view-response"
+                >
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Voir / Modifier la réponse
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => generateResponseMutation.mutate(selectedEmail?.id)}
+                  disabled={generateResponseMutation.isPending}
+                  data-testid="button-generate-response"
+                >
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Générer une réponse
+                </Button>
+              )}
             </div>
           </div>
         </DialogContent>
