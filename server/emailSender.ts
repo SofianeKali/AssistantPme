@@ -15,7 +15,7 @@ export async function sendEmailResponse(
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
     // Create nodemailer transporter with SMTP configuration
-    const transporter = nodemailer.createTransport({
+    const transportConfig: any = {
       host: emailAccount.smtpHost,
       port: emailAccount.smtpPort,
       secure: emailAccount.smtpPort === 465, // true for 465, false for other ports
@@ -23,11 +23,18 @@ export async function sendEmailResponse(
         user: emailAccount.username,
         pass: emailAccount.password,
       },
-      // For Replit environment - disable certificate verification
-      tls: {
+    };
+
+    // Only disable TLS verification in development environment (Replit)
+    // SECURITY: This should NEVER be used in production
+    if (process.env.NODE_ENV === 'development' && process.env.REPL_ID) {
+      console.warn('[SMTP] WARNING: TLS certificate verification is disabled for Replit development environment');
+      transportConfig.tls = {
         rejectUnauthorized: false
-      }
-    });
+      };
+    }
+
+    const transporter = nodemailer.createTransport(transportConfig);
 
     // Verify SMTP connection
     await transporter.verify();
