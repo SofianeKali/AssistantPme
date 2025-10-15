@@ -32,7 +32,7 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
-  role: varchar("role").notNull().default("collaborateur"), // gerant, administrateur, collaborateur
+  role: varchar("role").notNull().default("simple"), // admin, simple
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -90,6 +90,7 @@ export type Tag = typeof tags.$inferSelect;
 // Emails table
 export const emails = pgTable("emails", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }), // Owner of this email
   emailAccountId: varchar("email_account_id").notNull().references(() => emailAccounts.id, { onDelete: "cascade" }),
   messageId: varchar("message_id").notNull(), // Original email message ID
   subject: text("subject"),
