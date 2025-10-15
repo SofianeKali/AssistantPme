@@ -42,6 +42,19 @@ The application uses a modern web stack:
 - **mailparser**: For parsing email content.
 
 ## Recent Updates
+### ✅ Mark Email as Processed Without Sending (October 2025)
+- **Manual Processing Option**: Users can now mark emails as "traité" without sending a response
+  - New endpoint `PATCH /api/emails/:id/mark-processed` for manual status updates
+  - Useful for emails handled via phone, in person, or requiring no response
+  - UI includes "Marquer comme traité" button in email detail dialog
+  - Alternative "Marquer traité sans envoyer" option in response dialog
+- **UI Integration**:
+  - Button only appears when email status is not already "traité"
+  - Provides clear success/error feedback via toast notifications
+  - Automatically refreshes email list after status update
+  - Maintains seamless integration with existing response workflow
+- **Testing**: End-to-end tests confirm correct status transitions and UI behavior
+
 ### ✅ Email Response Sending via SMTP (October 2025)
 - **Complete Email Response Workflow**: Production-ready implementation for sending AI-generated responses
   - Added `sentResponse` and `respondedAt` fields to emails table for response tracking
