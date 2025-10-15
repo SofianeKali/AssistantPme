@@ -257,24 +257,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Update all emails - verify ownership for each
+      // Map with index to track which email failed
       const updateResults = await Promise.allSettled(
-        emailIds.map(async (emailId: string) => {
+        emailIds.map(async (emailId: string, index: number) => {
           const email = await storage.getEmailById(emailId, userId);
           if (!email) {
             throw new Error(`Email ${emailId} not found`);
           }
-          return storage.updateEmail(emailId, userId, { status: "traite" });
+          await storage.updateEmail(emailId, userId, { status: "traite" });
+          return { emailId, index };
         })
       );
 
       const successCount = updateResults.filter(r => r.status === 'fulfilled').length;
       const failureCount = updateResults.filter(r => r.status === 'rejected').length;
+      
+      // Extract failed email IDs using their preserved indices
+      const failedIds = updateResults
+        .map((result, originalIndex) => 
+          result.status === 'rejected' ? emailIds[originalIndex] : null
+        )
+        .filter((id): id is string => id !== null);
 
       res.json({ 
         success: true,
         processed: successCount,
         failed: failureCount,
-        total: emailIds.length
+        total: emailIds.length,
+        failedIds: failedIds
       });
     } catch (error) {
       console.error("Error bulk marking emails as processed:", error);

@@ -137,14 +137,25 @@ export default function Emails() {
       return res.json();
     },
     onSuccess: (data) => {
-      // Clear selection
-      setSelectedEmailIds([]);
       // Invalidate queries to refresh email list
       queryClient.invalidateQueries({ queryKey: ["/api/emails"] });
-      toast({
-        title: "Succès",
-        description: `${data.processed} email(s) marqué(s) comme traité(s)`,
-      });
+      
+      if (data.failed > 0 && data.failedIds) {
+        // Partial failure - keep only failed emails selected for retry
+        setSelectedEmailIds(data.failedIds);
+        toast({
+          title: "Traitement partiel",
+          description: `${data.processed} email(s) traité(s), ${data.failed} échoué(s). Les emails non traités restent sélectionnés.`,
+          variant: "destructive",
+        });
+      } else {
+        // Full success - clear selection
+        setSelectedEmailIds([]);
+        toast({
+          title: "Succès",
+          description: `${data.processed} email(s) marqué(s) comme traité(s)`,
+        });
+      }
     },
     onError: (error: any) => {
       toast({
