@@ -12,8 +12,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Search, Mail, MoreVertical, Sparkles, Check } from "lucide-react";
+import { Search, Mail, MoreVertical, Sparkles, Check, X } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -33,6 +34,7 @@ export default function Emails() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [selectedEmail, setSelectedEmail] = useState<any>(null);
   const [showResponseDialog, setShowResponseDialog] = useState(false);
+  const [selectedEmailIds, setSelectedEmailIds] = useState<string[]>([]);
   const { toast } = useToast();
 
   const { data: emails, isLoading } = useQuery({
@@ -129,6 +131,30 @@ export default function Emails() {
     },
   });
 
+  const bulkMarkProcessedMutation = useMutation({
+    mutationFn: async (emailIds: string[]) => {
+      const res = await apiRequest("PATCH", "/api/emails/bulk/mark-processed", { emailIds });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      // Clear selection
+      setSelectedEmailIds([]);
+      // Invalidate queries to refresh email list
+      queryClient.invalidateQueries({ queryKey: ["/api/emails"] });
+      toast({
+        title: "Succès",
+        description: `${data.processed} email(s) marqué(s) comme traité(s)`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de marquer les emails comme traités",
+        variant: "destructive",
+      });
+    },
+  });
+
   const getEmailTypeColor = (type: string) => {
     switch (type) {
       case "devis":
@@ -183,6 +209,28 @@ export default function Emails() {
     }
   };
 
+  const handleSelectEmail = (emailId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedEmailIds([...selectedEmailIds, emailId]);
+    } else {
+      setSelectedEmailIds(selectedEmailIds.filter(id => id !== emailId));
+    }
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked && emails) {
+      setSelectedEmailIds(emails.map((email: any) => email.id));
+    } else {
+      setSelectedEmailIds([]);
+    }
+  };
+
+  const handleBulkMarkProcessed = () => {
+    if (selectedEmailIds.length > 0) {
+      bulkMarkProcessedMutation.mutate(selectedEmailIds);
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -232,8 +280,54 @@ export default function Emails() {
         </Select>
       </div>
 
+      {/* Bulk Actions Bar */}
+      {selectedEmailIds.length > 0 && (
+        <Card className="p-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium">
+                {selectedEmailIds.length} email(s) sélectionné(s)
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectedEmailIds([])}
+                data-testid="button-clear-selection"
+              >
+                <X className="h-4 w-4 mr-2" />
+                Désélectionner
+              </Button>
+            </div>
+            <Button
+              onClick={handleBulkMarkProcessed}
+              disabled={bulkMarkProcessedMutation.isPending}
+              data-testid="button-bulk-mark-processed"
+            >
+              <Check className="h-4 w-4 mr-2" />
+              {bulkMarkProcessedMutation.isPending ? "En cours..." : "Marquer comme traités"}
+            </Button>
+          </div>
+        </Card>
+      )}
+
       {/* Email List */}
       <Card className="divide-y divide-border">
+        {/* Select All Header */}
+        {emails && emails.length > 0 && (
+          <div className="p-4 bg-muted/30">
+            <div className="flex items-center gap-3">
+              <Checkbox
+                checked={emails.length > 0 && selectedEmailIds.length === emails.length}
+                onCheckedChange={handleSelectAll}
+                data-testid="checkbox-select-all"
+              />
+              <span className="text-sm text-muted-foreground">
+                Tout sélectionner
+              </span>
+            </div>
+          </div>
+        )}
+        
         {isLoading ? (
           <div className="p-4 space-y-3">
             {[...Array(5)].map((_, i) => (
@@ -244,16 +338,26 @@ export default function Emails() {
           emails.map((email: any) => (
             <div
               key={email.id}
-              className="p-4 hover-elevate cursor-pointer"
-              onClick={() => setSelectedEmail(email)}
+              className="p-4 hover-elevate"
               data-testid={`email-${email.id}`}
             >
               <div className="flex items-start gap-4">
-                <Avatar className="h-10 w-10 flex-shrink-0">
-                  <AvatarFallback className="text-xs">
-                    {email.from?.charAt(0)?.toUpperCase() || "?"}
-                  </AvatarFallback>
-                </Avatar>
+                <Checkbox
+                  checked={selectedEmailIds.includes(email.id)}
+                  onCheckedChange={(checked) => handleSelectEmail(email.id, checked as boolean)}
+                  onClick={(e) => e.stopPropagation()}
+                  data-testid={`checkbox-email-${email.id}`}
+                  className="mt-3"
+                />
+                <div 
+                  className="flex items-start gap-4 flex-1 cursor-pointer"
+                  onClick={() => setSelectedEmail(email)}
+                >
+                  <Avatar className="h-10 w-10 flex-shrink-0">
+                    <AvatarFallback className="text-xs">
+                      {email.from?.charAt(0)?.toUpperCase() || "?"}
+                    </AvatarFallback>
+                  </Avatar>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2 mb-1">
                     <div className="flex-1 min-w-0">
@@ -295,6 +399,7 @@ export default function Emails() {
                   <p className="text-sm text-muted-foreground line-clamp-2">
                     {email.body?.substring(0, 150)}...
                   </p>
+                </div>
                 </div>
               </div>
             </div>
