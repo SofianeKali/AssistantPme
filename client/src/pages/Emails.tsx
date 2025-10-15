@@ -105,6 +105,30 @@ export default function Emails() {
     },
   });
 
+  const markProcessedMutation = useMutation({
+    mutationFn: async (emailId: string) => {
+      const res = await apiRequest("PATCH", `/api/emails/${emailId}/mark-processed`, {});
+      return res.json();
+    },
+    onSuccess: (data) => {
+      // Update selected email to reflect processed status
+      setSelectedEmail(data.email);
+      // Invalidate queries to refresh email list
+      queryClient.invalidateQueries({ queryKey: ["/api/emails"] });
+      toast({
+        title: "Succès",
+        description: "Email marqué comme traité",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de marquer l'email comme traité",
+        variant: "destructive",
+      });
+    },
+  });
+
   const getEmailTypeColor = (type: string) => {
     switch (type) {
       case "devis":
@@ -349,6 +373,17 @@ export default function Emails() {
                   Générer une réponse
                 </Button>
               )}
+              {selectedEmail?.status !== "traite" && (
+                <Button
+                  variant="outline"
+                  onClick={() => markProcessedMutation.mutate(selectedEmail?.id)}
+                  disabled={markProcessedMutation.isPending}
+                  data-testid="button-mark-processed"
+                >
+                  <Check className="h-4 w-4 mr-2" />
+                  {markProcessedMutation.isPending ? "En cours..." : "Marquer comme traité"}
+                </Button>
+              )}
             </div>
           </div>
         </DialogContent>
@@ -372,22 +407,36 @@ export default function Emails() {
               rows={8}
               data-testid="textarea-response"
             />
-            <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setShowResponseDialog(false)}>
-                Annuler
-              </Button>
-              <Button
-                onClick={() =>
-                  sendResponseMutation.mutate({
-                    emailId: selectedEmail?.id,
-                    responseText: selectedEmail?.suggestedResponse || "",
-                  })
-                }
-                disabled={sendResponseMutation.isPending || !selectedEmail?.suggestedResponse}
-                data-testid="button-approve-response"
+            <div className="flex gap-2 justify-between">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  markProcessedMutation.mutate(selectedEmail?.id);
+                  setShowResponseDialog(false);
+                }}
+                disabled={markProcessedMutation.isPending}
+                data-testid="button-mark-processed-dialog"
               >
-                {sendResponseMutation.isPending ? "Envoi en cours..." : "Approuver et envoyer"}
+                <Check className="h-4 w-4 mr-2" />
+                {markProcessedMutation.isPending ? "En cours..." : "Marquer traité sans envoyer"}
               </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setShowResponseDialog(false)}>
+                  Annuler
+                </Button>
+                <Button
+                  onClick={() =>
+                    sendResponseMutation.mutate({
+                      emailId: selectedEmail?.id,
+                      responseText: selectedEmail?.suggestedResponse || "",
+                    })
+                  }
+                  disabled={sendResponseMutation.isPending || !selectedEmail?.suggestedResponse}
+                  data-testid="button-approve-response"
+                >
+                  {sendResponseMutation.isPending ? "Envoi en cours..." : "Approuver et envoyer"}
+                </Button>
+              </div>
             </div>
           </div>
         </DialogContent>
