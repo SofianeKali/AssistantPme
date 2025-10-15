@@ -38,7 +38,7 @@ export default function Dashboard() {
       testId: "stat-quotes-no-response",
     },
     {
-      title: "Factures impayées",
+      title: "Factures",
       value: stats?.unpaidInvoices || 0,
       icon: AlertTriangle,
       severity: "critical",

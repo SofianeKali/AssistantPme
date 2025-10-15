@@ -127,7 +127,7 @@
 
 ### Dashboard
 - Full-width header with greeting and date
-- Grid of 4 alert cards at top (Devis sans réponse, Factures impayées, RDV aujourd'hui, Emails non traités)
+- Grid of 4 alert cards at top (Devis sans réponse, Factures, RDV aujourd'hui, Emails non traités)
 - Below: 2-column layout with monthly stats (left) and recent activity feed (right)
 - All cards with subtle shadows, hover lift effect
 
