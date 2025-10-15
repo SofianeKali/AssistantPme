@@ -71,6 +71,7 @@ const configMenuItems = [
     url: "/users",
     icon: Users,
     testId: "sidebar-users",
+    adminOnly: true, // Only show to admin users
   },
   {
     title: "Configuration",
@@ -83,6 +84,14 @@ const configMenuItems = [
 export function AppSidebar() {
   const [location] = useLocation();
   const { user } = useAuth();
+  
+  // Filter config menu items based on user role
+  const filteredConfigMenuItems = configMenuItems.filter(item => {
+    if (item.adminOnly) {
+      return user?.role === 'admin';
+    }
+    return true;
+  });
 
   const getUserInitials = () => {
     if (user?.firstName && user?.lastName) {
@@ -92,9 +101,8 @@ export function AppSidebar() {
   };
 
   const getUserRole = () => {
-    if (user?.role === "gerant") return "Gérant";
-    if (user?.role === "administrateur") return "Administrateur";
-    return "Collaborateur";
+    if (user?.role === "admin") return "Administrateur";
+    return "Utilisateur";
   };
 
   return (
@@ -137,7 +145,7 @@ export function AppSidebar() {
           <SidebarGroupLabel>Gestion</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {configMenuItems.map((item) => (
+              {filteredConfigMenuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild

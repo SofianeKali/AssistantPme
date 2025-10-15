@@ -128,14 +128,33 @@ export async function setupAuth(app: Express) {
   
   passport.deserializeUser(async (id: string, cb) => {
     try {
+      // Handle both old session format (object) and new format (string id)
+      // Old sessions stored the whole user object, new sessions store just the ID
+      let userId: string;
+      
+      if (typeof id === 'string') {
+        userId = id;
+      } else if (typeof id === 'object' && id !== null) {
+        // Old session format - extract user ID from claims
+        userId = (id as any).claims?.sub || (id as any).id;
+      } else {
+        return cb(null, false); // Invalid session, will trigger re-authentication
+      }
+      
+      if (!userId) {
+        return cb(null, false);
+      }
+      
       // Fetch fresh user data from database to ensure role is up-to-date
-      const dbUser = await storage.getUser(id);
+      const dbUser = await storage.getUser(userId);
       if (!dbUser) {
-        return cb(new Error("User not found"), undefined);
+        // User doesn't exist - invalidate session
+        return cb(null, false);
       }
       cb(null, dbUser);
     } catch (error) {
-      cb(error, undefined);
+      console.error('[Auth] Error deserializing user:', error);
+      cb(null, false); // Return false instead of error to trigger re-authentication
     }
   });
 

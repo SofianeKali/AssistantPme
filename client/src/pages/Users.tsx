@@ -5,11 +5,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
-import { UserPlus, Mail, User as UserIcon, Shield } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
+import { UserPlus, Mail, User as UserIcon, Shield, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import type { User, InsertUser } from "@shared/schema";
+import { useAuth } from "@/hooks/useAuth";
 import {
   Dialog,
   DialogContent,
@@ -22,6 +24,8 @@ import {
 
 export default function Users() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
+  const { user } = useAuth();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState<Partial<InsertUser>>({
     email: "",
@@ -30,12 +34,13 @@ export default function Users() {
     role: "simple",
   });
 
-  // Fetch all users (admin only)
+  // Fetch all users (admin only) - only fetch if user is admin
   const { data: users = [], isLoading } = useQuery<User[]>({
     queryKey: ["/api/users"],
+    enabled: user?.role === 'admin', // Only fetch if admin
   });
-
-  // Create user mutation
+  
+  // Create user mutation - must be declared before any conditional returns
   const createUserMutation = useMutation({
     mutationFn: async (userData: Partial<InsertUser>) => {
       const res = await apiRequest("POST", "/api/users", userData);
@@ -58,6 +63,13 @@ export default function Users() {
       });
     },
   });
+  
+  // Redirect non-admin users to dashboard (useEffect to avoid hook order issues)
+  useEffect(() => {
+    if (user && user.role !== 'admin') {
+      setLocation('/');
+    }
+  }, [user, setLocation]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,23 +86,39 @@ export default function Users() {
     createUserMutation.mutate(formData);
   };
 
-  const getUserInitials = (user: User) => {
-    if (user.firstName && user.lastName) {
-      return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
+  const getUserInitials = (userObj: User) => {
+    if (userObj.firstName && userObj.lastName) {
+      return `${userObj.firstName[0]}${userObj.lastName[0]}`.toUpperCase();
     }
-    return user.email?.[0]?.toUpperCase() || "U";
+    return userObj.email?.[0]?.toUpperCase() || "U";
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-muted-foreground">Chargement...</div>
-      </div>
-    );
-  }
-
+  // Determine what content to show - no early returns to maintain hook order
+  const isNonAdmin = user && user.role !== 'admin';
+  
+  // Single return statement to avoid hook order issues
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <>
+      {/* Access denied for non-admin */}
+      {isNonAdmin && (
+        <div className="flex items-center justify-center h-full">
+          <div className="text-center">
+            <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <p className="text-muted-foreground">Accès refusé : page réservée aux administrateurs</p>
+          </div>
+        </div>
+      )}
+      
+      {/* Loading state */}
+      {!isNonAdmin && isLoading && (
+        <div className="flex items-center justify-center h-full">
+          <div className="text-muted-foreground">Chargement...</div>
+        </div>
+      )}
+      
+      {/* Main content for admin users */}
+      {!isNonAdmin && !isLoading && (
+        <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold" data-testid="text-page-title">Gestion des utilisateurs</h1>
@@ -229,6 +257,8 @@ export default function Users() {
           </CardContent>
         </Card>
       )}
-    </div>
+        </div>
+      )}
+    </>
   );
 }

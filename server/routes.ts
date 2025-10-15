@@ -17,11 +17,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const emailScanner = new EmailScanner(storage);
 
   // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  app.get('/api/auth/user', isAuthenticated, async (req, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
+      // req.user is now the full User object from database (hydrated in session deserialization)
+      res.json(req.user);
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
@@ -51,9 +50,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Email accounts
-  app.get('/api/email-accounts', isAuthenticated, async (req: any, res) => {
+  app.get('/api/email-accounts', isAuthenticated, async (req, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req.user as any).id;
       const accounts = await storage.getEmailAccounts(userId);
       res.json(accounts);
     } catch (error) {
@@ -62,9 +61,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/email-accounts', isAuthenticated, async (req: any, res) => {
+  app.post('/api/email-accounts', isAuthenticated, async (req, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req.user as any).id;
       const validatedData = insertEmailAccountSchema.parse({ ...req.body, userId });
       const account = await storage.createEmailAccount(validatedData);
       res.json(account);
@@ -85,9 +84,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Emails
-  app.get('/api/emails', isAuthenticated, async (req: any, res) => {
+  app.get('/api/emails', isAuthenticated, async (req, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req.user as any).id;
       const { type, status, search } = req.query;
       const emails = await storage.getEmails(userId, {
         type: type as string,
@@ -140,7 +139,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/emails/:id/generate-response', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req.user as any).id;
       const email = await storage.getEmailById(req.params.id, userId);
       if (!email) {
         return res.status(404).json({ message: "Email not found" });
@@ -181,7 +180,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch('/api/email-responses/:id/approve', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req.user as any).id;
       const response = await storage.updateEmailResponse(req.params.id, {
         isApproved: true,
         approvedById: userId,
@@ -221,7 +220,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Advanced sentiment analysis routes
   app.get('/api/emails/high-risk', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req.user as any).id;
       const allEmails = await storage.getEmails(userId, {});
       
       // Filter emails with high or critical risk levels
@@ -254,7 +253,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/emails/action-recommendations', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req.user as any).id;
       const allEmails = await storage.getEmails(userId, {});
       
       // Extract all action recommendations from emails
@@ -444,7 +443,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/appointments', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req.user as any).id;
       const aptData = { ...req.body, createdById: userId };
       
       // Generate AI suggestions
@@ -493,7 +492,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/alerts/:id/resolve', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = (req.user as any).id;
       const alert = await storage.resolveAlert(req.params.id, userId);
       res.json(alert);
     } catch (error) {

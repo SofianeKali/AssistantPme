@@ -61,5 +61,18 @@ The application uses a modern web stack:
 - Fixed port conversion bug (string to integer) for all providers
 - Updated Settings UI to support all three providers seamlessly
 
+### 🔧 Technical Improvements (October 2025)
+- **Session Management Refactored**: Session now properly hydrates full user object with role from database
+  - Graceful handling of both old and new session formats
+  - First user is automatically promoted to admin role
+  - Session deserializer extracts userId correctly for both legacy and new sessions
+- **API Routes Updated**: All routes now use `req.user.id` instead of `req.user.claims.sub`
+- **Admin-Only Pages**: Users page is now hidden from non-admin users
+  - Sidebar link filtered based on user role
+  - Frontend route protection with proper React hooks usage
+  - Backend routes protected with `isAdmin` middleware
+- **Database Roles Corrected**: Legacy "collaborateur" role updated to "admin" or "simple"
+
 ### ⚠️ Known Issues
-- After session management update, existing sessions may fail to deserialize. Users should log out and log back in to refresh their session.
+- Users with old sessions should log out and log back in for proper session hydration
+- Email passwords are stored in plaintext - encryption should be implemented before production
