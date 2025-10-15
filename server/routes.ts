@@ -221,31 +221,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch('/api/emails/:id/mark-processed', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = (req.user as any).id;
-
-      // Get email and verify ownership
-      const email = await storage.getEmailById(req.params.id, userId);
-      if (!email) {
-        return res.status(404).json({ message: "Email not found" });
-      }
-
-      // Update email status to processed without sending a response
-      const updatedEmail = await storage.updateEmail(email.id, userId, {
-        status: "traite",
-      });
-
-      res.json({ 
-        success: true, 
-        email: updatedEmail 
-      });
-    } catch (error) {
-      console.error("Error marking email as processed:", error);
-      res.status(500).json({ message: "Failed to mark email as processed" });
-    }
-  });
-
+  // Bulk route MUST come before the parameterized :id route to avoid conflicts
   app.patch('/api/emails/bulk/mark-processed', isAuthenticated, async (req: any, res) => {
     try {
       const userId = (req.user as any).id;
@@ -289,6 +265,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error bulk marking emails as processed:", error);
       res.status(500).json({ message: "Failed to mark emails as processed" });
+    }
+  });
+
+  app.patch('/api/emails/:id/mark-processed', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).id;
+
+      // Get email and verify ownership
+      const email = await storage.getEmailById(req.params.id, userId);
+      if (!email) {
+        return res.status(404).json({ message: "Email not found" });
+      }
+
+      // Update email status to processed without sending a response
+      const updatedEmail = await storage.updateEmail(email.id, userId, {
+        status: "traite",
+      });
+
+      res.json({ 
+        success: true, 
+        email: updatedEmail 
+      });
+    } catch (error) {
+      console.error("Error marking email as processed:", error);
+      res.status(500).json({ message: "Failed to mark email as processed" });
     }
   });
 
