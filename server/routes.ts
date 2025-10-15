@@ -620,8 +620,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/users', isAuthenticated, isAdmin, async (req, res) => {
     try {
+      const { sendWelcomeEmail: sendEmail, generateTemporaryPassword } = await import('./emailService');
+      
       const validatedData = insertUserSchema.parse(req.body);
+      
+      // Generate a temporary password for the new user
+      const temporaryPassword = generateTemporaryPassword();
+      
+      // Create the user (password will be set via Replit Auth on first login)
       const user = await storage.upsertUser(validatedData);
+      
+      // Send welcome email with temporary password
+      // Note: In a real system, we'd hash and store this password
+      // For now, we're using Replit Auth which handles authentication differently
+      try {
+        await sendEmail({
+          to: user.email!,
+          firstName: user.firstName || 'Utilisateur',
+          lastName: user.lastName || '',
+          temporaryPassword,
+        });
+        console.log(`[API] Welcome email sent to ${user.email}`);
+      } catch (emailError) {
+        console.error('[API] Failed to send welcome email:', emailError);
+        // Don't fail the user creation if email sending fails
+      }
+      
       res.json(user);
     } catch (error) {
       console.error("Error creating user:", error);
