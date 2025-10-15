@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Search, Mail, MoreVertical, Sparkles } from "lucide-react";
+import { Search, Mail, MoreVertical, Sparkles, Check } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -74,6 +74,32 @@ export default function Emails() {
       toast({
         title: "Erreur",
         description: "Impossible de générer une réponse automatique",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const sendResponseMutation = useMutation({
+    mutationFn: async ({ emailId, responseText }: { emailId: string; responseText: string }) => {
+      const res = await apiRequest("POST", `/api/emails/${emailId}/send-response`, { responseText });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      // Close the response dialog
+      setShowResponseDialog(false);
+      // Update selected email to reflect sent status
+      setSelectedEmail(data.email);
+      // Invalidate queries to refresh email list
+      queryClient.invalidateQueries({ queryKey: ["/api/emails"] });
+      toast({
+        title: "Succès",
+        description: "Réponse envoyée avec succès",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible d'envoyer la réponse",
         variant: "destructive",
       });
     },
@@ -209,6 +235,12 @@ export default function Emails() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-sm font-medium truncate">{email.from}</span>
+                        {email.respondedAt && (
+                          <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20" data-testid={`badge-responded-${email.id}`}>
+                            <Check className="h-3 w-3 mr-1" />
+                            Répondu
+                          </Badge>
+                        )}
                         {email.status && (
                           <Badge variant="outline" className={`text-xs ${getStatusColor(email.status)}`} data-testid={`badge-status-${email.id}`}>
                             {getStatusLabel(email.status)}
@@ -344,7 +376,18 @@ export default function Emails() {
               <Button variant="outline" onClick={() => setShowResponseDialog(false)}>
                 Annuler
               </Button>
-              <Button data-testid="button-approve-response">Approuver et envoyer</Button>
+              <Button
+                onClick={() =>
+                  sendResponseMutation.mutate({
+                    emailId: selectedEmail?.id,
+                    responseText: selectedEmail?.suggestedResponse || "",
+                  })
+                }
+                disabled={sendResponseMutation.isPending || !selectedEmail?.suggestedResponse}
+                data-testid="button-approve-response"
+              >
+                {sendResponseMutation.isPending ? "Envoi en cours..." : "Approuver et envoyer"}
+              </Button>
             </div>
           </div>
         </DialogContent>
