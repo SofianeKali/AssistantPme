@@ -1,4 +1,5 @@
 import { google } from 'googleapis';
+import { PassThrough } from 'stream';
 
 let connectionSettings: any;
 
@@ -65,9 +66,13 @@ export async function uploadFileToDrive(
       fileMetadata.parents = [folderId];
     }
     
+    // Convert Buffer to PassThrough Stream for Google Drive API
+    const stream = new PassThrough();
+    stream.end(fileBuffer);
+    
     const media = {
       mimeType,
-      body: Buffer.from(fileBuffer),
+      body: stream,
     };
     
     const response = await drive.files.create({
