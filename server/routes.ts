@@ -2,8 +2,9 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import { isAdmin } from "./middleware";
 import { analyzeEmail, generateEmailResponse, generateAppointmentSuggestions } from "./openai";
-import { insertEmailAccountSchema, insertTagSchema, insertEmailSchema, insertAlertSchema } from "@shared/schema";
+import { insertEmailAccountSchema, insertTagSchema, insertEmailSchema, insertAlertSchema, insertUserSchema } from "@shared/schema";
 import { EmailScanner } from "./emailScanner";
 import { processDocument } from "./ocrService";
 import { downloadFileFromDrive } from "./googleDrive";
@@ -603,6 +604,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error scanning email account:", error);
       res.status(500).json({ message: "Failed to scan email account", error: String(error) });
+    }
+  });
+
+  // User management (admin only)
+  app.get('/api/users', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  app.post('/api/users', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const validatedData = insertUserSchema.parse(req.body);
+      const user = await storage.upsertUser(validatedData);
+      res.json(user);
+    } catch (error) {
+      console.error("Error creating user:", error);
+      res.status(400).json({ message: "Invalid user data" });
     }
   });
 
