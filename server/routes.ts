@@ -84,10 +84,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Emails
-  app.get('/api/emails', isAuthenticated, async (req, res) => {
+  app.get('/api/emails', isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
       const { type, status, search } = req.query;
-      const emails = await storage.getEmails({
+      const emails = await storage.getEmails(userId, {
         type: type as string,
         status: status as string,
         search: search as string,
@@ -138,7 +139,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/emails/:id/generate-response', isAuthenticated, async (req: any, res) => {
     try {
-      const email = await storage.getEmailById(req.params.id);
+      const userId = req.user.claims.sub;
+      const email = await storage.getEmailById(req.params.id, userId);
       if (!email) {
         return res.status(404).json({ message: "Email not found" });
       }
@@ -216,9 +218,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Advanced sentiment analysis routes
-  app.get('/api/emails/high-risk', isAuthenticated, async (req, res) => {
+  app.get('/api/emails/high-risk', isAuthenticated, async (req: any, res) => {
     try {
-      const allEmails = await storage.getEmails({});
+      const userId = req.user.claims.sub;
+      const allEmails = await storage.getEmails(userId, {});
       
       // Filter emails with high or critical risk levels
       const highRiskEmails = allEmails.filter(email => {
@@ -248,9 +251,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/emails/action-recommendations', isAuthenticated, async (req, res) => {
+  app.get('/api/emails/action-recommendations', isAuthenticated, async (req: any, res) => {
     try {
-      const allEmails = await storage.getEmails({});
+      const userId = req.user.claims.sub;
+      const allEmails = await storage.getEmails(userId, {});
       
       // Extract all action recommendations from emails
       const recommendations = allEmails

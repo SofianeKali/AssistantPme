@@ -50,10 +50,11 @@ export interface IStorage {
   
   // Emails
   createEmail(email: InsertEmail): Promise<Email>;
-  getEmails(filters?: { type?: string; status?: string; search?: string; limit?: number }): Promise<Email[]>;
-  getEmailById(id: string): Promise<Email | undefined>;
+  getEmails(userId: string, filters?: { type?: string; status?: string; search?: string; limit?: number }): Promise<Email[]>;
+  getAllEmails(filters?: { type?: string; status?: string; search?: string; limit?: number }): Promise<Email[]>; // For backend services
+  getEmailById(id: string, userId: string): Promise<Email | undefined>;
   getEmailByMessageId(messageId: string): Promise<Email | undefined>;
-  updateEmail(id: string, data: Partial<Email>): Promise<Email>;
+  updateEmail(id: string, userId: string, data: Partial<Email>): Promise<Email>;
   
   // Documents
   createDocument(doc: InsertDocument): Promise<Document>;
@@ -153,10 +154,10 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async getEmails(filters?: { type?: string; status?: string; search?: string; limit?: number }): Promise<Email[]> {
+  async getEmails(userId: string, filters?: { type?: string; status?: string; search?: string; limit?: number }): Promise<Email[]> {
     let query = db.select().from(emails);
     
-    const conditions = [];
+    const conditions = [eq(emails.userId, userId)];
     if (filters?.type && filters.type !== 'all') {
       conditions.push(eq(emails.emailType, filters.type));
     }
@@ -166,12 +167,12 @@ export class DatabaseStorage implements IStorage {
         conditions.push(or(
           eq(emails.status, 'nouveau'),
           eq(emails.status, 'en_cours')
-        ));
+        )!);
       } else if (filters.status === 'traite') {
         conditions.push(or(
           eq(emails.status, 'traite'),
           eq(emails.status, 'archive')
-        ));
+        )!);
       } else {
         // Individual status filter
         conditions.push(eq(emails.status, filters.status));
@@ -183,7 +184,7 @@ export class DatabaseStorage implements IStorage {
           like(emails.subject, `%${filters.search}%`),
           like(emails.body, `%${filters.search}%`),
           like(emails.from, `%${filters.search}%`)
-        )
+        )!
       );
     }
     
@@ -200,8 +201,55 @@ export class DatabaseStorage implements IStorage {
     return await query;
   }
 
-  async getEmailById(id: string): Promise<Email | undefined> {
-    const [email] = await db.select().from(emails).where(eq(emails.id, id));
+  async getAllEmails(filters?: { type?: string; status?: string; search?: string; limit?: number }): Promise<Email[]> {
+    let query = db.select().from(emails);
+    
+    const conditions = [];
+    if (filters?.type && filters.type !== 'all') {
+      conditions.push(eq(emails.emailType, filters.type));
+    }
+    if (filters?.status && filters.status !== 'all') {
+      // Handle grouped statuses
+      if (filters.status === 'non_traite') {
+        conditions.push(or(
+          eq(emails.status, 'nouveau'),
+          eq(emails.status, 'en_cours')
+        )!);
+      } else if (filters.status === 'traite') {
+        conditions.push(or(
+          eq(emails.status, 'traite'),
+          eq(emails.status, 'archive')
+        )!);
+      } else {
+        // Individual status filter
+        conditions.push(eq(emails.status, filters.status));
+      }
+    }
+    if (filters?.search) {
+      conditions.push(
+        or(
+          like(emails.subject, `%${filters.search}%`),
+          like(emails.body, `%${filters.search}%`),
+          like(emails.from, `%${filters.search}%`)
+        )!
+      );
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
+    }
+    
+    query = query.orderBy(desc(emails.receivedAt)) as any;
+    
+    if (filters?.limit) {
+      query = query.limit(filters.limit) as any;
+    }
+    
+    return await query;
+  }
+
+  async getEmailById(id: string, userId: string): Promise<Email | undefined> {
+    const [email] = await db.select().from(emails).where(and(eq(emails.id, id), eq(emails.userId, userId)));
     return email;
   }
 
@@ -210,11 +258,11 @@ export class DatabaseStorage implements IStorage {
     return email;
   }
 
-  async updateEmail(id: string, data: Partial<Email>): Promise<Email> {
+  async updateEmail(id: string, userId: string, data: Partial<Email>): Promise<Email> {
     const [updated] = await db
       .update(emails)
       .set({ ...data, updatedAt: new Date() })
-      .where(eq(emails.id, id))
+      .where(and(eq(emails.id, id), eq(emails.userId, userId)))
       .returning();
     return updated;
   }

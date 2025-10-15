@@ -23,7 +23,7 @@ export class ReminderService {
 
   private async checkQuotesReminders(result: { created: number; sent: number; errors: number }): Promise<void> {
     try {
-      const emails = await this.storage.getEmails({ type: 'devis' });
+      const emails = await this.storage.getAllEmails({ type: 'devis' });
       const now = new Date();
 
       for (const email of emails) {
@@ -121,7 +121,7 @@ export class ReminderService {
 
   private async checkInvoiceReminders(result: { created: number; sent: number; errors: number }): Promise<void> {
     try {
-      const emails = await this.storage.getEmails({ type: 'facture' });
+      const emails = await this.storage.getAllEmails({ type: 'facture' });
       const now = new Date();
 
       for (const email of emails) {

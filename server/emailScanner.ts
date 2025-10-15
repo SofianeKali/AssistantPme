@@ -78,6 +78,7 @@ export class EmailScanner {
 
           // Create email record
           const emailData: InsertEmail = {
+            userId: account.userId, // Associate email with the user who owns the email account
             emailAccountId: account.id,
             messageId: mail.messageId || `${Date.now()}-${Math.random()}`,
             subject: mail.subject || 'Sans objet',

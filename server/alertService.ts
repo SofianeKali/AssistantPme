@@ -34,7 +34,7 @@ export class AlertService {
 
   private async checkQuotesWithoutResponse(result: { created: number; errors: number }): Promise<void> {
     try {
-      const emails = await this.storage.getEmails({ type: 'devis' });
+      const emails = await this.storage.getAllEmails({ type: 'devis' });
       const now = new Date();
       
       // Fetch all existing unresolved alerts once
@@ -79,7 +79,7 @@ export class AlertService {
 
   private async checkUnpaidInvoices(result: { created: number; errors: number }): Promise<void> {
     try {
-      const emails = await this.storage.getEmails({ type: 'facture' });
+      const emails = await this.storage.getAllEmails({ type: 'facture' });
       const now = new Date();
       const fifteenDaysAgo = new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000);
       
@@ -126,7 +126,7 @@ export class AlertService {
   private async checkUnprocessedEmails(result: { created: number; errors: number }): Promise<void> {
     try {
       // Get all emails - we'll filter in memory for proper logic
-      const allEmails = await this.storage.getEmails();
+      const allEmails = await this.storage.getAllEmails();
       const now = new Date();
       const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
