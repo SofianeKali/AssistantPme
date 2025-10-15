@@ -42,6 +42,30 @@ The application uses a modern web stack:
 - **mailparser**: For parsing email content.
 
 ## Recent Updates
+### ✅ Bulk Email Selection and Processing (October 2025)
+- **Multi-Select Functionality**: Users can now select multiple emails for batch operations
+  - Individual checkboxes for each email row (data-testid="checkbox-email-{id}")
+  - "Select All" checkbox in list header to toggle all visible emails
+  - Checkboxes use stopPropagation to prevent conflicts with row clicks
+  - selectedEmailIds state tracks all checked emails
+- **Batch Processing**: New endpoint `PATCH /api/emails/bulk/mark-processed` for bulk operations
+  - Accepts array of email IDs: `{emailIds: string[]}`
+  - Returns detailed results: `{processed, failed, total, failedIds}`
+  - Verifies ownership for each email using Promise.allSettled for partial failure resilience
+  - Preserves original indices to accurately identify which emails failed
+- **Smart Partial Failure Handling**:
+  - Full success: Clears all selections, shows success toast
+  - Partial failure: Keeps only failed email IDs selected for easy retry
+  - Differentiated messaging: Success vs. partial failure toasts with counts
+  - Example: "3 email(s) traité(s), 2 échoué(s). Les emails non traités restent sélectionnés."
+- **Bulk Actions UI**:
+  - Action bar appears when emails are selected
+  - Shows count: "X emails sélectionnés"
+  - "Désélectionner" button to clear all selections
+  - "Marquer comme traités" button (data-testid="button-bulk-mark-processed")
+  - Loading states and proper error handling
+- **Testing**: End-to-end tests verify complete bulk workflow including partial failures
+
 ### ✅ Mark Email as Processed Without Sending (October 2025)
 - **Manual Processing Option**: Users can now mark emails as "traité" without sending a response
   - New endpoint `PATCH /api/emails/:id/mark-processed` for manual status updates
