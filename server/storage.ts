@@ -45,6 +45,7 @@ export interface IStorage {
   // Email accounts
   createEmailAccount(account: InsertEmailAccount): Promise<EmailAccount>;
   getEmailAccounts(userId?: string): Promise<EmailAccount[]>;
+  getEmailAccountById(id: string): Promise<EmailAccount | undefined>;
   getAllEmailAccounts(): Promise<EmailAccount[]>;
   deleteEmailAccount(id: string): Promise<void>;
   
@@ -138,6 +139,11 @@ export class DatabaseStorage implements IStorage {
       return await db.select().from(emailAccounts).where(eq(emailAccounts.userId, userId));
     }
     return await db.select().from(emailAccounts);
+  }
+
+  async getEmailAccountById(id: string): Promise<EmailAccount | undefined> {
+    const [account] = await db.select().from(emailAccounts).where(eq(emailAccounts.id, id));
+    return account;
   }
 
   async getAllEmailAccounts(): Promise<EmailAccount[]> {

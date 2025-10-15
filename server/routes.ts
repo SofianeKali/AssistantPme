@@ -8,6 +8,7 @@ import { insertEmailAccountSchema, insertTagSchema, insertEmailSchema, insertAle
 import { EmailScanner } from "./emailScanner";
 import { processDocument } from "./ocrService";
 import { downloadFileFromDrive } from "./googleDrive";
+import { sendEmailResponse } from "./emailSender";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -161,6 +162,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error generating response:", error);
       res.status(500).json({ message: "Failed to generate response" });
+    }
+  });
+
+  app.post('/api/emails/:id/send-response', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const { responseText } = req.body;
+
+      // Validate response text
+      if (!responseText || responseText.trim().length === 0) {
+        return res.status(400).json({ message: "Response text is required" });
+      }
+
+      // Get email and verify ownership
+      const email = await storage.getEmailById(req.params.id, userId);
+      if (!email) {
+        return res.status(404).json({ message: "Email not found" });
+      }
+
+      // Get email account for SMTP credentials
+      const emailAccount = await storage.getEmailAccountById(email.emailAccountId);
+      if (!emailAccount) {
+        return res.status(404).json({ message: "Email account not found" });
+      }
+
+      // Send email via SMTP
+      const sendResult = await sendEmailResponse(emailAccount, {
+        to: email.from,
+        subject: email.subject || "Re: (no subject)",
+        body: responseText,
+        inReplyTo: email.messageId,
+        references: email.messageId,
+      });
+
+      if (!sendResult.success) {
+        return res.status(500).json({ 
+          message: "Failed to send email", 
+          error: sendResult.error 
+        });
+      }
+
+      // Update email record
+      const updatedEmail = await storage.updateEmail(email.id, userId, {
+        sentResponse: responseText,
+        respondedAt: new Date(),
+        status: "traite",
+      });
+
+      res.json({ 
+        success: true, 
+        email: updatedEmail,
+        messageId: sendResult.messageId 
+      });
+    } catch (error) {
+      console.error("Error sending response:", error);
+      res.status(500).json({ message: "Failed to send response" });
     }
   });
 
