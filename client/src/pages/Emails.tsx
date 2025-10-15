@@ -30,17 +30,34 @@ import { Textarea } from "@/components/ui/textarea";
 export default function Emails() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [selectedEmail, setSelectedEmail] = useState<any>(null);
   const [showResponseDialog, setShowResponseDialog] = useState(false);
   const { toast } = useToast();
 
   const { data: emails, isLoading } = useQuery({
-    queryKey: ["/api/emails", { type: typeFilter, search }],
+    queryKey: ["/api/emails", { type: typeFilter, status: statusFilter, search }],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (typeFilter && typeFilter !== 'all') params.append('type', typeFilter);
+      if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter);
+      if (search) params.append('search', search);
+      
+      const url = `/api/emails${params.toString() ? `?${params.toString()}` : ''}`;
+      const res = await fetch(url, { credentials: 'include' });
+      
+      if (!res.ok) {
+        throw new Error(`${res.status}: ${res.statusText}`);
+      }
+      
+      return res.json();
+    },
   });
 
   const generateResponseMutation = useMutation({
     mutationFn: async (emailId: string) => {
-      return await apiRequest("POST", `/api/emails/${emailId}/generate-response`, {});
+      const res = await apiRequest("POST", `/api/emails/${emailId}/generate-response`, {});
+      return res.json();
     },
     onSuccess: (data) => {
       setSelectedEmail({ ...selectedEmail, suggestedResponse: data.response });
@@ -80,6 +97,36 @@ export default function Emails() {
     }
   };
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "nouveau":
+        return "bg-chart-2/10 text-chart-2 border-chart-2/20";
+      case "en_cours":
+        return "bg-chart-3/10 text-chart-3 border-chart-3/20";
+      case "traite":
+        return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20";
+      case "archive":
+        return "bg-muted text-muted-foreground border-border";
+      default:
+        return "bg-muted text-muted-foreground border-border";
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "nouveau":
+        return "Nouveau";
+      case "en_cours":
+        return "En cours";
+      case "traite":
+        return "Traité";
+      case "archive":
+        return "Archivé";
+      default:
+        return status;
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -114,6 +161,19 @@ export default function Emails() {
             <SelectItem value="general">Général</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-full sm:w-48" data-testid="select-email-status">
+            <SelectValue placeholder="Statut" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tous les statuts</SelectItem>
+            <SelectItem value="non_traite">Non traités</SelectItem>
+            <SelectItem value="traite">Traités</SelectItem>
+            <SelectItem value="nouveau">Nouveau</SelectItem>
+            <SelectItem value="en_cours">En cours</SelectItem>
+            <SelectItem value="archive">Archivé</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Email List */}
@@ -143,6 +203,11 @@ export default function Emails() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-sm font-medium truncate">{email.from}</span>
+                        {email.status && (
+                          <Badge variant="outline" className={`text-xs ${getStatusColor(email.status)}`} data-testid={`badge-status-${email.id}`}>
+                            {getStatusLabel(email.status)}
+                          </Badge>
+                        )}
                         {email.emailType && (
                           <Badge variant="outline" className={`text-xs ${getEmailTypeColor(email.emailType)}`}>
                             {email.emailType}

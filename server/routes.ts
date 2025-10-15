@@ -86,9 +86,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Emails
   app.get('/api/emails', isAuthenticated, async (req, res) => {
     try {
-      const { type, search } = req.query;
+      const { type, status, search } = req.query;
       const emails = await storage.getEmails({
         type: type as string,
+        status: status as string,
         search: search as string,
       });
       res.json(emails);

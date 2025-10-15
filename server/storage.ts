@@ -50,7 +50,7 @@ export interface IStorage {
   
   // Emails
   createEmail(email: InsertEmail): Promise<Email>;
-  getEmails(filters?: { type?: string; search?: string; limit?: number }): Promise<Email[]>;
+  getEmails(filters?: { type?: string; status?: string; search?: string; limit?: number }): Promise<Email[]>;
   getEmailById(id: string): Promise<Email | undefined>;
   getEmailByMessageId(messageId: string): Promise<Email | undefined>;
   updateEmail(id: string, data: Partial<Email>): Promise<Email>;
@@ -153,12 +153,29 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async getEmails(filters?: { type?: string; search?: string; limit?: number }): Promise<Email[]> {
+  async getEmails(filters?: { type?: string; status?: string; search?: string; limit?: number }): Promise<Email[]> {
     let query = db.select().from(emails);
     
     const conditions = [];
     if (filters?.type && filters.type !== 'all') {
       conditions.push(eq(emails.emailType, filters.type));
+    }
+    if (filters?.status && filters.status !== 'all') {
+      // Handle grouped statuses
+      if (filters.status === 'non_traite') {
+        conditions.push(or(
+          eq(emails.status, 'nouveau'),
+          eq(emails.status, 'en_cours')
+        ));
+      } else if (filters.status === 'traite') {
+        conditions.push(or(
+          eq(emails.status, 'traite'),
+          eq(emails.status, 'archive')
+        ));
+      } else {
+        // Individual status filter
+        conditions.push(eq(emails.status, filters.status));
+      }
     }
     if (filters?.search) {
       conditions.push(
@@ -621,10 +638,12 @@ export class DatabaseStorage implements IStorage {
     let processedCount = 0;
     
     for (const email of processedEmails) {
-      const processingTime = (email.updatedAt.getTime() - email.receivedAt.getTime()) / (1000 * 60 * 60); // hours
-      if (processingTime >= 0 && processingTime < 720) { // Exclude outliers (30 days max)
-        totalProcessingTime += processingTime;
-        processedCount++;
+      if (email.updatedAt) {
+        const processingTime = (email.updatedAt.getTime() - email.receivedAt.getTime()) / (1000 * 60 * 60); // hours
+        if (processingTime >= 0 && processingTime < 720) { // Exclude outliers (30 days max)
+          totalProcessingTime += processingTime;
+          processedCount++;
+        }
       }
     }
     
