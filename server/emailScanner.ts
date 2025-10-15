@@ -152,12 +152,14 @@ export class EmailScanner {
                   const documentData: InsertDocument = {
                     emailId: createdEmail.id,
                     filename: filename,
-                    fileType: mimeType,
-                    fileSize: buffer.length,
+                    originalFilename: filename, // Store original filename
+                    mimeType: mimeType,
+                    size: buffer.length,
+                    storageProvider: 'google_drive',
+                    storagePath: uploadResult.fileId, // Store Drive file ID as path
                     driveFileId: uploadResult.fileId,
                     driveUrl: uploadResult.webViewLink,
                     documentType: documentType,
-                    uploadedBy: account.userId,
                   };
 
                   await this.storage.createDocument(documentData);
