@@ -42,6 +42,17 @@ The application uses a modern web stack:
 - **mailparser**: For parsing email content.
 
 ## Recent Updates
+### ✅ Multi-User Role-Based Access Control (October 2025)
+- Implemented complete role-based access control system
+- Two user types: Admin (creates workspace, manages users) and Simple (standard users with isolated email access)
+- Database schema updated: added userId to emails table for data isolation
+- Storage layer refactored: getEmails() filters by userId, getAllEmails() for backend services
+- Admin middleware created to protect admin-only routes (GET/POST /api/users)
+- Resend email integration configured for onboarding emails with temporary passwords
+- First user auto-promoted to admin role on workspace creation
+- Session management updated to hydrate full user object with role from database
+- Users page created for admin UI to create and manage simple users
+
 ### ✅ Yahoo Email Support (October 2025)
 - Added Yahoo as a third email provider option alongside Gmail and Outlook
 - Automatic IMAP/SMTP configuration for Yahoo accounts:
@@ -49,3 +60,6 @@ The application uses a modern web stack:
   - SMTP: smtp.mail.yahoo.com:465
 - Fixed port conversion bug (string to integer) for all providers
 - Updated Settings UI to support all three providers seamlessly
+
+### ⚠️ Known Issues
+- After session management update, existing sessions may fail to deserialize. Users should log out and log back in to refresh their session.

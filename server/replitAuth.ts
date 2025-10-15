@@ -82,9 +82,29 @@ export async function setupAuth(app: Express) {
     tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
     verified: passport.AuthenticateCallback
   ) => {
-    const user = {};
-    updateUserSession(user, tokens);
-    await upsertUser(tokens.claims());
+    const claims = tokens.claims();
+    if (!claims) {
+      return verified(new Error("No claims found"), undefined);
+    }
+    
+    await upsertUser(claims);
+    
+    // Fetch the full user from database to get role and other fields
+    const dbUser = await storage.getUser(claims["sub"]);
+    
+    if (!dbUser) {
+      return verified(new Error("User not found"), undefined);
+    }
+    
+    // Create session user with both tokens and database user data
+    const user = {
+      ...dbUser,
+      claims,
+      access_token: tokens.access_token,
+      refresh_token: tokens.refresh_token,
+      expires_at: claims?.exp,
+    };
+    
     verified(null, user);
   };
 
@@ -101,8 +121,23 @@ export async function setupAuth(app: Express) {
     passport.use(strategy);
   }
 
-  passport.serializeUser((user: Express.User, cb) => cb(null, user));
-  passport.deserializeUser((user: Express.User, cb) => cb(null, user));
+  passport.serializeUser((user: Express.User, cb) => {
+    // Store user ID in session to fetch fresh data on each request
+    cb(null, (user as any).id);
+  });
+  
+  passport.deserializeUser(async (id: string, cb) => {
+    try {
+      // Fetch fresh user data from database to ensure role is up-to-date
+      const dbUser = await storage.getUser(id);
+      if (!dbUser) {
+        return cb(new Error("User not found"), undefined);
+      }
+      cb(null, dbUser);
+    } catch (error) {
+      cb(error, undefined);
+    }
+  });
 
   app.get("/api/login", (req, res, next) => {
     passport.authenticate(`replitauth:${req.hostname}`, {
@@ -131,30 +166,9 @@ export async function setupAuth(app: Express) {
 }
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
-  const user = req.user as any;
-
-  if (!req.isAuthenticated() || !user.expires_at) {
+  if (!req.isAuthenticated() || !req.user) {
     return res.status(401).json({ message: "Unauthorized" });
   }
-
-  const now = Math.floor(Date.now() / 1000);
-  if (now <= user.expires_at) {
-    return next();
-  }
-
-  const refreshToken = user.refresh_token;
-  if (!refreshToken) {
-    res.status(401).json({ message: "Unauthorized" });
-    return;
-  }
-
-  try {
-    const config = await getOidcConfig();
-    const tokenResponse = await client.refreshTokenGrant(config, refreshToken);
-    updateUserSession(user, tokenResponse);
-    return next();
-  } catch (error) {
-    res.status(401).json({ message: "Unauthorized" });
-    return;
-  }
+  
+  return next();
 };
