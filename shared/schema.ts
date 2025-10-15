@@ -112,6 +112,7 @@ export const emails = pgTable("emails", {
   emailType: varchar("email_type"), // devis, facture, rdv, general
   priority: varchar("priority").default("normal"), // urgent, high, normal, low
   sentiment: varchar("sentiment"), // positive, neutral, negative
+  suggestedResponse: text("suggested_response"), // AI-generated response suggestion
   // Assignment and status
   assignedToId: varchar("assigned_to_id").references(() => users.id),
   status: varchar("status").notNull().default("nouveau"), // nouveau, en_cours, traite, archive
