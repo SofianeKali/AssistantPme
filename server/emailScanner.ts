@@ -1,6 +1,6 @@
 import imaps from 'imap-simple';
 import { simpleParser, ParsedMail } from 'mailparser';
-import { analyzeEmail, generateAppointmentSuggestions } from './openai';
+import { analyzeEmail, generateAppointmentSuggestions, generateEmailResponse } from './openai';
 import type { IStorage } from './storage';
 import type { EmailAccount, InsertEmail, InsertDocument, InsertAppointment } from '../shared/schema';
 import { uploadFileToDrive, getOrCreateFolder } from './googleDrive';
@@ -76,6 +76,15 @@ export class EmailScanner {
             from: mail.from?.text || 'Inconnu',
           });
 
+          // Generate suggested response with GPT
+          console.log(`[IMAP] Generating suggested response...`);
+          const suggestedResponse = await generateEmailResponse({
+            subject: mail.subject || 'Sans objet',
+            body: mail.text || mail.html || '',
+            from: mail.from?.text || 'Inconnu',
+            context: `Type: ${analysis.emailType}, Priority: ${analysis.priority}, Sentiment: ${analysis.sentiment}`,
+          });
+
           // Create email record
           const emailData: InsertEmail = {
             userId: account.userId, // Associate email with the user who owns the email account
@@ -91,6 +100,7 @@ export class EmailScanner {
             emailType: analysis.emailType,
             priority: analysis.priority,
             sentiment: analysis.sentiment,
+            suggestedResponse: suggestedResponse, // Add AI-generated response
             aiAnalysis: {
               summary: analysis.summary,
               extractedData: analysis.extractedData,
