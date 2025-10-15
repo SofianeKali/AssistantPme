@@ -60,9 +60,15 @@ export default function Emails() {
       return res.json();
     },
     onSuccess: (data) => {
+      // Update selected email with the generated response
       setSelectedEmail({ ...selectedEmail, suggestedResponse: data.response });
       setShowResponseDialog(true);
+      // Invalidate queries to refresh email list with updated suggestedResponse
       queryClient.invalidateQueries({ queryKey: ["/api/emails"] });
+      toast({
+        title: "Succès",
+        description: "Réponse générée avec succès",
+      });
     },
     onError: () => {
       toast({

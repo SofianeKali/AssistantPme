@@ -105,13 +105,20 @@ export class EmailScanner {
               context: `Type: ${analysis.emailType}, Priority: ${analysis.priority}, Sentiment: ${analysis.sentiment}`,
             });
             
-            // Add 15 second timeout to prevent blocking scan
-            const timeoutPromise = new Promise<string>((_, reject) => 
-              setTimeout(() => reject(new Error('Response generation timeout')), 15000)
-            );
+            // Add 15 second timeout with proper cleanup to prevent blocking scan
+            let timeoutHandle: NodeJS.Timeout;
+            const timeoutPromise = new Promise<string>((_, reject) => {
+              timeoutHandle = setTimeout(() => reject(new Error('Response generation timeout')), 15000);
+            });
             
-            suggestedResponse = await Promise.race([responsePromise, timeoutPromise]);
-            console.log(`[IMAP] Response generated successfully`);
+            try {
+              suggestedResponse = await Promise.race([responsePromise, timeoutPromise]);
+              clearTimeout(timeoutHandle!); // Clear timeout if response completes in time
+              console.log(`[IMAP] Response generated successfully`);
+            } catch (error) {
+              clearTimeout(timeoutHandle!); // Clear timeout on error too
+              throw error;
+            }
           } catch (error) {
             console.warn(`[IMAP] Failed to generate response:`, error);
             suggestedResponse = undefined; // Continue scan even if response generation fails

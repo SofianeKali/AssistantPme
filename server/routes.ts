@@ -152,16 +152,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         context: req.body.context,
       });
       
-      const emailResponse = await storage.createEmailResponse({
-        emailId: email.id,
-        generatedBy: "ai",
-        subject: `Re: ${email.subject}`,
-        body: responseBody,
-        isApproved: false,
-        isSent: false,
+      // Update the email with the suggested response
+      const updatedEmail = await storage.updateEmail(email.id, userId, {
+        suggestedResponse: responseBody,
       });
       
-      res.json(emailResponse);
+      res.json({ response: responseBody, email: updatedEmail });
     } catch (error) {
       console.error("Error generating response:", error);
       res.status(500).json({ message: "Failed to generate response" });
