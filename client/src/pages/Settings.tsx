@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Mail, Save, Trash2, RefreshCw, Info } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -32,6 +33,7 @@ export default function Settings() {
     smtpPort: "587",
     username: "",
     password: "",
+    emailCategoriesToRetain: ["devis", "facture", "rdv", "autre"] as string[],
   });
 
   const addAccountMutation = useMutation({
@@ -50,6 +52,7 @@ export default function Settings() {
         smtpPort: "587",
         username: "",
         password: "",
+        emailCategoriesToRetain: ["devis", "facture", "rdv", "autre"],
       });
     },
     onError: (error: any) => {
@@ -251,6 +254,50 @@ export default function Settings() {
                   />
                 </div>
               </div>
+              
+              {/* Email Categories to Retain */}
+              <div className="space-y-3 p-4 border rounded-md">
+                <Label className="text-base font-medium">Catégories d'emails à retenir</Label>
+                <p className="text-sm text-muted-foreground">
+                  Sélectionnez les types d'emails que vous souhaitez importer lors du scan
+                </p>
+                <div className="grid grid-cols-2 gap-3 mt-3">
+                  {[
+                    { value: "devis", label: "Devis" },
+                    { value: "facture", label: "Factures" },
+                    { value: "rdv", label: "Rendez-vous" },
+                    { value: "autre", label: "Autres" },
+                  ].map((category) => (
+                    <div key={category.value} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`category-${category.value}`}
+                        checked={newAccount.emailCategoriesToRetain.includes(category.value)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setNewAccount({
+                              ...newAccount,
+                              emailCategoriesToRetain: [...newAccount.emailCategoriesToRetain, category.value],
+                            });
+                          } else {
+                            setNewAccount({
+                              ...newAccount,
+                              emailCategoriesToRetain: newAccount.emailCategoriesToRetain.filter((c) => c !== category.value),
+                            });
+                          }
+                        }}
+                        data-testid={`checkbox-category-${category.value}`}
+                      />
+                      <Label
+                        htmlFor={`category-${category.value}`}
+                        className="text-sm font-normal cursor-pointer"
+                      >
+                        {category.label}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
               <Button
                 onClick={() => addAccountMutation.mutate({
                   ...newAccount,

@@ -42,6 +42,26 @@ The application uses a modern web stack:
 - **mailparser**: For parsing email content.
 
 ## Recent Updates
+### ✅ Filtrage d'Emails par Catégories Configurables (Octobre 2025)
+- **Configuration des Catégories à Retenir**: Les utilisateurs peuvent maintenant configurer quelles catégories d'emails sont importées lors du scan
+  - Nouveau champ `emailCategoriesToRetain` dans la table email_accounts (array de texte)
+  - Valeur par défaut: ['devis', 'facture', 'rdv', 'autre'] (toutes les catégories)
+  - Interface de sélection avec checkboxes dans la page Settings
+  - Chaque compte email peut avoir sa propre configuration de catégories
+- **Scanner d'Emails Intelligent**: Le scanner filtre automatiquement les emails
+  - Vérifie le type détecté par l'IA (analysis.emailType) contre emailCategoriesToRetain
+  - Skip automatiquement les emails qui ne correspondent pas aux catégories configurées
+  - Log: "[IMAP] Email type 'X' not in categories to retain, skipping"
+- **Dashboard par Catégories**: Nouveau tableau de bord avec vue par catégories
+  - Section "Emails par catégorie" avec 4 blocs cliquables (Devis, Factures, RDV, Autres)
+  - Endpoint API `GET /api/emails/stats/by-category` pour récupérer les counts
+  - Chaque bloc affiche l'icône colorée et le nombre d'emails de la catégorie
+  - Redirection vers /emails?category={key} au clic sur un bloc
+- **Filtrage Dynamique sur Page Emails**: Navigation fluide entre dashboard et emails
+  - Lecture automatique du paramètre URL `category` pour filtrer les emails
+  - useEffect pour initialiser le filtre typeFilter depuis l'URL
+  - Compatible avec les filtres existants (status, search)
+
 ### ✅ Bulk Email Selection and Processing (October 2025)
 - **Multi-Select Functionality**: Users can now select multiple emails for batch operations
   - Individual checkboxes for each email row (data-testid="checkbox-email-{id}")

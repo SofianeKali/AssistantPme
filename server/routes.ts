@@ -101,6 +101,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/emails/stats/by-category', isAuthenticated, async (req, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const categoryCounts = await storage.getEmailStatsByCategory(userId);
+      res.json(categoryCounts);
+    } catch (error) {
+      console.error("Error fetching email category stats:", error);
+      res.status(500).json({ message: "Failed to fetch email category stats" });
+    }
+  });
+
   app.post('/api/emails', isAuthenticated, async (req: any, res) => {
     try {
       const emailData = req.body;

@@ -94,6 +94,15 @@ export class EmailScanner {
             from: getAddressText(mail.from) || 'Inconnu',
           });
 
+          // Check if email type is in the categories to retain
+          const emailType = analysis.emailType || 'autre';
+          const categoriesToRetain = account.emailCategoriesToRetain || ['devis', 'facture', 'rdv', 'autre'];
+          
+          if (!categoriesToRetain.includes(emailType)) {
+            console.log(`[IMAP] Email type '${emailType}' not in categories to retain, skipping`);
+            continue; // Skip this email
+          }
+
           // Generate suggested response with GPT (with timeout and error handling)
           console.log(`[IMAP] Generating suggested response...`);
           let suggestedResponse: string | undefined;

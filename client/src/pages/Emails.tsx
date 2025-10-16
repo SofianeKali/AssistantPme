@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -27,8 +27,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { useLocation } from "wouter";
 
 export default function Emails() {
+  const [location] = useLocation();
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -36,6 +38,15 @@ export default function Emails() {
   const [showResponseDialog, setShowResponseDialog] = useState(false);
   const [selectedEmailIds, setSelectedEmailIds] = useState<string[]>([]);
   const { toast } = useToast();
+  
+  // Read category from URL query parameters
+  useEffect(() => {
+    const params = new URLSearchParams(location.split('?')[1]);
+    const category = params.get('category');
+    if (category) {
+      setTypeFilter(category);
+    }
+  }, [location]);
 
   const { data: emails, isLoading } = useQuery({
     queryKey: ["/api/emails", { type: typeFilter, status: statusFilter, search }],

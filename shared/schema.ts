@@ -63,6 +63,9 @@ export const emailAccounts = pgTable("email_accounts", {
   password: text("password").notNull(),
   isActive: boolean("is_active").notNull().default(true),
   scanFrequency: integer("scan_frequency").notNull().default(15), // minutes
+  // Email categories to retain during scan (devis, facture, rdv, autre)
+  // Default: all categories are retained
+  emailCategoriesToRetain: text("email_categories_to_retain").array().notNull().default(sql`ARRAY['devis', 'facture', 'rdv', 'autre']::text[]`),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

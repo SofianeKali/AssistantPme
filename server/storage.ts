@@ -100,6 +100,7 @@ export interface IStorage {
   // Dashboard stats
   getDashboardStats(): Promise<any>;
   getAdvancedKPIs(): Promise<any>;
+  getEmailStatsByCategory(userId: string): Promise<{ devis: number; facture: number; rdv: number; autre: number }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -835,6 +836,36 @@ export class DatabaseStorage implements IStorage {
         processed: lastProcessed,
         appointments: lastApts,
       },
+    };
+  }
+
+  // Email stats by category (optimized with SQL aggregation)
+  async getEmailStatsByCategory(userId: string): Promise<{ devis: number; facture: number; rdv: number; autre: number }> {
+    const [devisCount] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(emails)
+      .where(and(eq(emails.userId, userId), eq(emails.emailType, 'devis')));
+    
+    const [factureCount] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(emails)
+      .where(and(eq(emails.userId, userId), eq(emails.emailType, 'facture')));
+    
+    const [rdvCount] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(emails)
+      .where(and(eq(emails.userId, userId), eq(emails.emailType, 'rdv')));
+    
+    const [autreCount] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(emails)
+      .where(and(eq(emails.userId, userId), or(eq(emails.emailType, 'autre'), isNull(emails.emailType))));
+    
+    return {
+      devis: Number(devisCount?.count || 0),
+      facture: Number(factureCount?.count || 0),
+      rdv: Number(rdvCount?.count || 0),
+      autre: Number(autreCount?.count || 0),
     };
   }
 }
