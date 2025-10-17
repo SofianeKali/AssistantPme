@@ -10,6 +10,7 @@ import {
   integer,
   boolean,
   decimal,
+  unique,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -106,7 +107,9 @@ export const emailCategories = pgTable("email_categories", {
   generateAutoResponse: boolean("generate_auto_response").notNull().default(true), // Whether to generate AI auto-response
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => ({
+  uniqueAccountKey: unique().on(table.emailAccountId, table.key),
+}));
 
 export const insertEmailCategorySchema = createInsertSchema(emailCategories).omit({
   id: true,

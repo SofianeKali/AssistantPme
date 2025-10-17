@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Mail, Save, Trash2, RefreshCw, Info, Plus, Tag } from "lucide-react";
+import { Mail, Save, Trash2, RefreshCw, Info, Plus, Tag, AlertCircle } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -25,6 +25,7 @@ export default function Settings() {
   });
 
   const [selectedAccountId, setSelectedAccountId] = useState<string>("");
+  const [activeTab, setActiveTab] = useState<string>("email");
 
   // Auto-select first account when accounts load
   useEffect(() => {
@@ -219,7 +220,7 @@ export default function Settings() {
         </p>
       </div>
 
-      <Tabs defaultValue="email" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
         <TabsList>
           <TabsTrigger value="email" data-testid="tab-email">Comptes Email</TabsTrigger>
           <TabsTrigger value="categories" data-testid="tab-categories">Catégories</TabsTrigger>
@@ -422,19 +423,38 @@ export default function Settings() {
                 Les catégories personnalisées sont liées à un compte email spécifique
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <Select value={selectedAccountId} onValueChange={setSelectedAccountId}>
-                <SelectTrigger data-testid="select-email-account">
-                  <SelectValue placeholder="Choisir un compte email" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(emailAccounts as any[] || []).map((account: any) => (
-                    <SelectItem key={account.id} value={account.id}>
-                      {account.email} ({account.provider})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <CardContent className="space-y-4">
+              {emailAccountsLoading ? (
+                <Skeleton className="h-10 w-full" />
+              ) : (!emailAccounts || emailAccounts.length === 0) ? (
+                <Alert data-testid="alert-no-email-accounts">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription className="flex items-center justify-between gap-4">
+                    <span>Aucun compte email configuré. Configurez d'abord un compte email pour gérer les catégories.</span>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setActiveTab("email")}
+                      data-testid="button-go-to-email-tab"
+                    >
+                      Configurer un compte
+                    </Button>
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <Select value={selectedAccountId} onValueChange={setSelectedAccountId}>
+                  <SelectTrigger data-testid="select-email-account">
+                    <SelectValue placeholder="Choisir un compte email" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(emailAccounts as any[] || []).map((account: any) => (
+                      <SelectItem key={account.id} value={account.id}>
+                        {account.email} ({account.provider})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </CardContent>
           </Card>
 
