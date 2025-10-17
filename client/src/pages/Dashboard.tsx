@@ -72,7 +72,7 @@ export default function Dashboard() {
 
       {/* Email Categories */}
       <div>
-        <h2 className="text-xl font-semibold mb-4">Emails par catégorie</h2>
+        <h2 className="text-xl font-semibold mb-4">Emails non traités par catégorie</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {categoryStatsLoading || categoriesLoading ? (
             [...Array(4)].map((_, i) => <Skeleton key={i} className="h-32" />)
@@ -112,7 +112,7 @@ export default function Dashboard() {
                     <CardContent>
                       <div className="text-2xl font-semibold">{categoryStats?.[category.key] || 0}</div>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Cliquez pour filtrer
+                        Non traités
                       </p>
                     </CardContent>
                   </Card>

@@ -856,18 +856,22 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Email stats by category (optimized with SQL aggregation, dynamic categories)
+  // Only counts unprocessed emails (status = 'nouveau')
   async getEmailStatsByCategory(userId: string): Promise<Record<string, number>> {
     // Get all categories first to ensure all are represented in the result
     const categories = await this.getAllEmailCategories();
     
-    // Get email counts grouped by type
+    // Get email counts grouped by type - only unprocessed emails
     const results = await db
       .select({
         emailType: emails.emailType,
         count: sql<number>`count(*)`
       })
       .from(emails)
-      .where(eq(emails.userId, userId))
+      .where(and(
+        eq(emails.userId, userId),
+        eq(emails.status, 'nouveau') // Only count unprocessed emails
+      ))
       .groupBy(emails.emailType);
     
     // Build a map with all categories (starting at 0)
