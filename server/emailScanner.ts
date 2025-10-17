@@ -103,11 +103,11 @@ export class EmailScanner {
           }, availableCategories);
 
           // Check if email type is in the account's available categories
-          const emailType = analysis.emailType || 'autre';
+          let emailType = analysis.emailType || 'autre';
           
           if (!availableCategoryKeys.has(emailType)) {
-            console.log(`[IMAP] Email type '${emailType}' not available for this account, skipping`);
-            continue; // Skip this email
+            console.log(`[IMAP] Email type '${emailType}' not available for this account, classifying as 'autre'`);
+            emailType = 'autre'; // Fallback to 'autre' category
           }
 
           // Generate suggested response with GPT (with timeout and error handling)
@@ -158,7 +158,7 @@ export class EmailScanner {
             body: mail.text || '',
             htmlBody: mail.html || '',
             receivedAt: mail.date || new Date(),
-            emailType: analysis.emailType,
+            emailType: emailType, // Use the normalized emailType (fallback to 'autre' if category not available)
             priority: analysis.priority,
             sentiment: analysis.sentiment,
             suggestedResponse: suggestedResponse, // Add AI-generated response
@@ -174,8 +174,8 @@ export class EmailScanner {
               actionRecommendations: analysis.actionRecommendations || [],
             },
             hasAttachments: (mail.attachments?.length || 0) > 0,
-            requiresResponse: analysis.emailType === 'devis' || analysis.priority === 'urgent',
-            responseDeadline: analysis.emailType === 'devis' 
+            requiresResponse: emailType === 'devis' || analysis.priority === 'urgent',
+            responseDeadline: emailType === 'devis' 
               ? new Date(Date.now() + 48 * 60 * 60 * 1000) // 48h for quotes
               : undefined,
           };

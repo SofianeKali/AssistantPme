@@ -10,7 +10,10 @@ This project is an intelligent web application designed to automate administrati
 - **Unique constraint added**: `(emailAccountId, key)` prevents duplicate category keys per account
 - **System categories** (devis, facture, rdv, autre) remain global with `emailAccountId = NULL`
 - **Custom categories** are now linked to specific email accounts for better organization
-- **Email scanner updated**: Loads categories via `getEmailCategoriesForAccount()`, skips emails if detected category doesn't exist for that account
+- **Email scanner enhanced**: 
+  - Loads categories via `getEmailCategoriesForAccount()`
+  - **Auto-fallback to "Autres"**: If GPT detects a category that doesn't exist for the account, the email is automatically classified as "autre" instead of being skipped
+  - Ensures no emails are lost due to missing category configurations
 - **Settings UI enhanced**: Categories tab now requires account selection before creating/viewing categories
 - **Dashboard optimized**: Deduplicates categories by key for display
 - **User experience improved**: Added alert with call-to-action when no email accounts are configured
