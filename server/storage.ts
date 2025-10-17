@@ -44,6 +44,7 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
   getAllUsers(): Promise<User[]>;
+  deleteUser(id: string): Promise<void>;
   
   // Email accounts
   createEmailAccount(account: InsertEmailAccount): Promise<EmailAccount>;
@@ -137,6 +138,10 @@ export class DatabaseStorage implements IStorage {
 
   async getAllUsers(): Promise<User[]> {
     return await db.select().from(users);
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    await db.delete(users).where(eq(users.id, id));
   }
 
   // Email accounts
