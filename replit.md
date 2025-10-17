@@ -3,6 +3,18 @@
 ## Overview
 This project is an intelligent web application designed to automate administrative tasks for SMEs. It leverages AI (GPT) for email analysis and automates the management of quotes, invoices, appointments, and documents. The core purpose is to streamline administrative workflows, enhance efficiency, and provide actionable insights for small and medium-sized businesses.
 
+## Recent Changes (October 2025)
+### Per-Account Email Categories System
+- **Refactored email categories** from global to account-specific architecture
+- **Database schema updated**: Added `emailAccountId` field to `email_categories` table (nullable for system categories)
+- **Unique constraint added**: `(emailAccountId, key)` prevents duplicate category keys per account
+- **System categories** (devis, facture, rdv, autre) remain global with `emailAccountId = NULL`
+- **Custom categories** are now linked to specific email accounts for better organization
+- **Email scanner updated**: Loads categories via `getEmailCategoriesForAccount()`, skips emails if detected category doesn't exist for that account
+- **Settings UI enhanced**: Categories tab now requires account selection before creating/viewing categories
+- **Dashboard optimized**: Deduplicates categories by key for display
+- **User experience improved**: Added alert with call-to-action when no email accounts are configured
+
 ## User Preferences
 I prefer detailed explanations.
 I want to be asked before major changes are made to the codebase.
