@@ -40,9 +40,10 @@ export class EmailScanner {
     const result: ScanResult = { scanned: 0, created: 0, errors: 0 };
 
     try {
-      // Fetch available email categories
-      const categories = await this.storage.getAllEmailCategories();
+      // Fetch email categories for this account (system + custom categories)
+      const categories = await this.storage.getEmailCategoriesForAccount(account.id);
       const availableCategories = categories.map(c => ({ key: c.key, label: c.label }));
+      const availableCategoryKeys = new Set(categories.map(c => c.key));
       
       // Create a map for category settings (generateAutoResponse)
       const categorySettingsMap = new Map(categories.map(c => [c.key, c.generateAutoResponse]));
@@ -101,12 +102,11 @@ export class EmailScanner {
             from: getAddressText(mail.from) || 'Inconnu',
           }, availableCategories);
 
-          // Check if email type is in the categories to retain
+          // Check if email type is in the account's available categories
           const emailType = analysis.emailType || 'autre';
-          const categoriesToRetain = account.emailCategoriesToRetain || ['devis', 'facture', 'rdv', 'autre'];
           
-          if (!categoriesToRetain.includes(emailType)) {
-            console.log(`[IMAP] Email type '${emailType}' not in categories to retain, skipping`);
+          if (!availableCategoryKeys.has(emailType)) {
+            console.log(`[IMAP] Email type '${emailType}' not available for this account, skipping`);
             continue; // Skip this email
           }
 
