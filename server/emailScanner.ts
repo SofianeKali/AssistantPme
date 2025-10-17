@@ -3,7 +3,7 @@ import { simpleParser, ParsedMail, AddressObject } from 'mailparser';
 import { analyzeEmail, generateAppointmentSuggestions, generateEmailResponse } from './openai';
 import type { IStorage } from './storage';
 import type { EmailAccount, InsertEmail, InsertDocument, InsertAppointment } from '../shared/schema';
-import { uploadFileToDrive, getOrCreateFolder } from './googleDrive';
+import { uploadFileToDrive, getOrCreateFolder, getOrCreateSubfolder } from './googleDrive';
 
 // Utility function to safely extract text from AddressObject
 function getAddressText(address: AddressObject | AddressObject[] | undefined): string {
@@ -190,8 +190,12 @@ export class EmailScanner {
             console.log(`[IMAP] Processing ${mail.attachments.length} attachments...`);
             
             try {
-              // Get or create a Google Drive folder for documents
-              const folderId = await getOrCreateFolder('PME-Assistant-Documents');
+              // Get or create main Google Drive folder
+              const mainFolderId = await getOrCreateFolder('PME-Assistant-Documents');
+              
+              // Get or create category-specific subfolder
+              const categoryFolderId = await getOrCreateSubfolder(mainFolderId, emailType);
+              console.log(`[IMAP] Using category folder: ${emailType}`);
               
               for (const attachment of mail.attachments) {
                 try {
@@ -199,21 +203,21 @@ export class EmailScanner {
                   const mimeType = attachment.contentType || 'application/octet-stream';
                   const buffer = attachment.content;
 
-                  console.log(`[IMAP] Uploading attachment: ${filename}`);
+                  console.log(`[IMAP] Uploading attachment: ${filename} to /${emailType}/`);
                   
-                  // Upload to Google Drive
+                  // Upload to Google Drive in category-specific folder
                   const uploadResult = await uploadFileToDrive(
                     filename,
                     mimeType,
                     buffer,
-                    folderId
+                    categoryFolderId
                   );
 
-                  // Detect document type based on mime type and AI analysis
+                  // Detect document type based on mime type and normalized email type
                   let documentType: 'facture' | 'devis' | 'contrat' | 'autre' = 'autre';
-                  if (analysis.emailType === 'facture') {
+                  if (emailType === 'facture') {
                     documentType = 'facture';
-                  } else if (analysis.emailType === 'devis') {
+                  } else if (emailType === 'devis') {
                     documentType = 'devis';
                   } else if (mimeType.includes('pdf') && filename.toLowerCase().includes('contrat')) {
                     documentType = 'contrat';
@@ -246,7 +250,7 @@ export class EmailScanner {
           }
 
           // Auto-create appointment if email type is 'rdv' and appointmentDate is available
-          if (analysis.emailType === 'rdv' && analysis.extractedData?.appointmentDate) {
+          if (emailType === 'rdv' && analysis.extractedData?.appointmentDate) {
             try {
               console.log(`[IMAP] Creating appointment from email: ${createdEmail.id}`);
               
