@@ -676,7 +676,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Email Categories
   app.get('/api/email-categories', isAuthenticated, async (req, res) => {
     try {
-      const categories = await storage.getAllEmailCategories();
+      const { emailAccountId } = req.query;
+      
+      // If emailAccountId is provided, return categories for that account (system + custom)
+      // Otherwise, return all categories
+      const categories = emailAccountId 
+        ? await storage.getEmailCategoriesForAccount(emailAccountId as string)
+        : await storage.getAllEmailCategories();
+      
       res.json(categories);
     } catch (error) {
       console.error("Error fetching email categories:", error);
