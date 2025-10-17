@@ -841,6 +841,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete('/api/users/:id', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const currentUserId = req.user.id;
+
+      // Prevent self-deletion
+      if (id === currentUserId) {
+        return res.status(400).json({ message: "Vous ne pouvez pas supprimer votre propre compte" });
+      }
+
+      // Get the user to be deleted
+      const userToDelete = await storage.getUser(id);
+      if (!userToDelete) {
+        return res.status(404).json({ message: "Utilisateur non trouvé" });
+      }
+
+      // If deleting an admin, ensure at least one admin remains
+      if (userToDelete.role === 'admin') {
+        const allUsers = await storage.getAllUsers();
+        const adminCount = allUsers.filter(u => u.role === 'admin').length;
+        
+        if (adminCount <= 1) {
+          return res.status(400).json({ 
+            message: "Impossible de supprimer le dernier administrateur. Il doit y avoir au moins un administrateur dans le système." 
+          });
+        }
+      }
+
+      // Delete the user (cascade will delete related data)
+      await storage.deleteUser(id);
+      
+      console.log(`[API] User ${userToDelete.email} deleted by ${req.user.email}`);
+      res.json({ success: true, message: "Utilisateur supprimé avec succès" });
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      res.status(500).json({ message: "Impossible de supprimer l'utilisateur" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
