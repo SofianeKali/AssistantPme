@@ -97,6 +97,28 @@ export const insertTagSchema = createInsertSchema(tags).omit({
 export type InsertTag = z.infer<typeof insertTagSchema>;
 export type Tag = typeof tags.$inferSelect;
 
+// Email Categories table - Custom categories for email classification
+export const emailCategories = pgTable("email_categories", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  key: varchar("key").notNull().unique(), // Unique identifier (slug): devis, facture, rdv, autre, custom-1, etc.
+  label: varchar("label").notNull(), // Display name: Devis, Factures, Rendez-vous, etc.
+  color: varchar("color").notNull().default("#6366f1"), // Hex color for UI
+  icon: varchar("icon").notNull().default("Mail"), // Lucide icon name
+  isSystem: boolean("is_system").notNull().default(false), // System categories cannot be deleted
+  generateAutoResponse: boolean("generate_auto_response").notNull().default(true), // Whether to generate AI auto-response
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertEmailCategorySchema = createInsertSchema(emailCategories).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertEmailCategory = z.infer<typeof insertEmailCategorySchema>;
+export type EmailCategory = typeof emailCategories.$inferSelect;
+
 // Emails table
 export const emails = pgTable("emails", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

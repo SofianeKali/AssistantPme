@@ -669,6 +669,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Email Categories
+  app.get('/api/email-categories', isAuthenticated, async (req, res) => {
+    try {
+      const categories = await storage.getAllEmailCategories();
+      res.json(categories);
+    } catch (error) {
+      console.error("Error fetching email categories:", error);
+      res.status(500).json({ message: "Failed to fetch email categories" });
+    }
+  });
+
+  app.post('/api/email-categories', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { insertEmailCategorySchema } = await import("@shared/schema");
+      const validatedData = insertEmailCategorySchema.parse(req.body);
+      const category = await storage.createEmailCategory(validatedData);
+      res.json(category);
+    } catch (error) {
+      console.error("Error creating email category:", error);
+      res.status(400).json({ message: "Invalid email category data" });
+    }
+  });
+
+  app.patch('/api/email-categories/:id', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const updated = await storage.updateEmailCategory(req.params.id, req.body);
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating email category:", error);
+      res.status(500).json({ message: "Failed to update email category" });
+    }
+  });
+
+  app.delete('/api/email-categories/:id', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      // Check if category is system category
+      const category = await storage.getAllEmailCategories();
+      const toDelete = category.find(c => c.id === req.params.id);
+      if (toDelete?.isSystem) {
+        return res.status(400).json({ message: "Cannot delete system category" });
+      }
+      await storage.deleteEmailCategory(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting email category:", error);
+      res.status(500).json({ message: "Failed to delete email category" });
+    }
+  });
+
   // Users
   app.get('/api/users', isAuthenticated, async (req, res) => {
     try {

@@ -12,6 +12,7 @@ import {
   emailTags,
   documentTags,
   appointmentTags,
+  emailCategories,
   type User,
   type UpsertUser,
   type EmailAccount,
@@ -32,6 +33,8 @@ import {
   type InsertEmailResponse,
   type Reminder,
   type InsertReminder,
+  type EmailCategory,
+  type InsertEmailCategory,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, gte, lte, like, or, isNull, sql } from "drizzle-orm";
@@ -101,6 +104,13 @@ export interface IStorage {
   getDashboardStats(): Promise<any>;
   getAdvancedKPIs(): Promise<any>;
   getEmailStatsByCategory(userId: string): Promise<{ devis: number; facture: number; rdv: number; autre: number }>;
+  
+  // Email categories
+  createEmailCategory(category: InsertEmailCategory): Promise<EmailCategory>;
+  getAllEmailCategories(): Promise<EmailCategory[]>;
+  getEmailCategoryByKey(key: string): Promise<EmailCategory | undefined>;
+  updateEmailCategory(id: string, data: Partial<EmailCategory>): Promise<EmailCategory>;
+  deleteEmailCategory(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -867,6 +877,34 @@ export class DatabaseStorage implements IStorage {
       rdv: Number(rdvCount?.count || 0),
       autre: Number(autreCount?.count || 0),
     };
+  }
+
+  // Email categories
+  async createEmailCategory(category: InsertEmailCategory): Promise<EmailCategory> {
+    const [result] = await db.insert(emailCategories).values(category).returning();
+    return result;
+  }
+
+  async getAllEmailCategories(): Promise<EmailCategory[]> {
+    return await db.select().from(emailCategories).orderBy(emailCategories.createdAt);
+  }
+
+  async getEmailCategoryByKey(key: string): Promise<EmailCategory | undefined> {
+    const [category] = await db.select().from(emailCategories).where(eq(emailCategories.key, key));
+    return category;
+  }
+
+  async updateEmailCategory(id: string, data: Partial<EmailCategory>): Promise<EmailCategory> {
+    const [updated] = await db
+      .update(emailCategories)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(emailCategories.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteEmailCategory(id: string): Promise<void> {
+    await db.delete(emailCategories).where(eq(emailCategories.id, id));
   }
 }
 
