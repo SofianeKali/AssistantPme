@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,8 +24,26 @@ export default function Settings() {
     queryKey: ["/api/settings"],
   });
 
+  const [selectedAccountId, setSelectedAccountId] = useState<string>("");
+
+  // Auto-select first account when accounts load
+  useEffect(() => {
+    if (emailAccounts && (emailAccounts as any[]).length > 0 && !selectedAccountId) {
+      setSelectedAccountId((emailAccounts as any[])[0].id);
+    }
+  }, [emailAccounts, selectedAccountId]);
+
   const { data: emailCategories, isLoading: categoriesLoading } = useQuery<any>({
-    queryKey: ["/api/email-categories"],
+    queryKey: ["/api/email-categories", selectedAccountId],
+    queryFn: async () => {
+      const url = selectedAccountId 
+        ? `/api/email-categories?emailAccountId=${selectedAccountId}`
+        : '/api/email-categories';
+      const res = await fetch(url, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to fetch categories');
+      return res.json();
+    },
+    enabled: !!selectedAccountId, // Only fetch when an account is selected
   });
 
   const [newAccount, setNewAccount] = useState({
@@ -112,11 +130,16 @@ export default function Settings() {
 
   const addCategoryMutation = useMutation({
     mutationFn: async (data: any) => {
-      return await apiRequest("POST", "/api/email-categories", data);
+      // Include emailAccountId when creating a custom category
+      const categoryData = {
+        ...data,
+        emailAccountId: selectedAccountId,
+      };
+      return await apiRequest("POST", "/api/email-categories", categoryData);
     },
     onSuccess: () => {
       toast({ title: "Catégorie ajoutée avec succès" });
-      queryClient.invalidateQueries({ queryKey: ["/api/email-categories"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/email-categories", selectedAccountId] });
       setNewCategory({
         key: "",
         label: "",
@@ -141,7 +164,7 @@ export default function Settings() {
     },
     onSuccess: () => {
       toast({ title: "Catégorie supprimée" });
-      queryClient.invalidateQueries({ queryKey: ["/api/email-categories"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/email-categories", selectedAccountId] });
     },
     onError: () => {
       toast({
@@ -391,6 +414,30 @@ export default function Settings() {
 
         {/* Categories Tab */}
         <TabsContent value="categories" className="space-y-6">
+          {/* Account Selector */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl">Sélectionner un compte email</CardTitle>
+              <CardDescription>
+                Les catégories personnalisées sont liées à un compte email spécifique
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Select value={selectedAccountId} onValueChange={setSelectedAccountId}>
+                <SelectTrigger data-testid="select-email-account">
+                  <SelectValue placeholder="Choisir un compte email" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(emailAccounts as any[] || []).map((account: any) => (
+                    <SelectItem key={account.id} value={account.id}>
+                      {account.email} ({account.provider})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </CardContent>
+          </Card>
+
           {/* Add New Category */}
           <Card>
             <CardHeader>
@@ -457,7 +504,7 @@ export default function Settings() {
               </div>
               <Button
                 onClick={() => addCategoryMutation.mutate(newCategory)}
-                disabled={addCategoryMutation.isPending || !newCategory.key || !newCategory.label}
+                disabled={addCategoryMutation.isPending || !newCategory.key || !newCategory.label || !selectedAccountId}
                 data-testid="button-add-category"
               >
                 <Plus className="h-4 w-4 mr-2" />
