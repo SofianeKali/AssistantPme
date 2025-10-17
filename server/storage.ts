@@ -109,7 +109,8 @@ export interface IStorage {
   // Email categories
   createEmailCategory(category: InsertEmailCategory): Promise<EmailCategory>;
   getAllEmailCategories(): Promise<EmailCategory[]>;
-  getEmailCategoryByKey(key: string): Promise<EmailCategory | undefined>;
+  getEmailCategoriesForAccount(emailAccountId: string): Promise<EmailCategory[]>;
+  getEmailCategoryByKey(key: string, emailAccountId?: string | null): Promise<EmailCategory | undefined>;
   updateEmailCategory(id: string, data: Partial<EmailCategory>): Promise<EmailCategory>;
   deleteEmailCategory(id: string): Promise<void>;
 }
@@ -895,9 +896,49 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(emailCategories).orderBy(emailCategories.createdAt);
   }
 
-  async getEmailCategoryByKey(key: string): Promise<EmailCategory | undefined> {
-    const [category] = await db.select().from(emailCategories).where(eq(emailCategories.key, key));
-    return category;
+  async getEmailCategoriesForAccount(emailAccountId: string): Promise<EmailCategory[]> {
+    // Return system categories (emailAccountId IS NULL) + custom categories for this account
+    return await db
+      .select()
+      .from(emailCategories)
+      .where(
+        or(
+          isNull(emailCategories.emailAccountId),
+          eq(emailCategories.emailAccountId, emailAccountId)
+        )
+      )
+      .orderBy(emailCategories.isSystem, emailCategories.createdAt);
+  }
+
+  async getEmailCategoryByKey(key: string, emailAccountId?: string | null): Promise<EmailCategory | undefined> {
+    // If emailAccountId is provided, look for account-specific or system category
+    // If not provided, look for system category only
+    if (emailAccountId) {
+      const [category] = await db
+        .select()
+        .from(emailCategories)
+        .where(
+          and(
+            eq(emailCategories.key, key),
+            or(
+              isNull(emailCategories.emailAccountId),
+              eq(emailCategories.emailAccountId, emailAccountId)
+            )
+          )
+        );
+      return category;
+    } else {
+      const [category] = await db
+        .select()
+        .from(emailCategories)
+        .where(
+          and(
+            eq(emailCategories.key, key),
+            isNull(emailCategories.emailAccountId)
+          )
+        );
+      return category;
+    }
   }
 
   async updateEmailCategory(id: string, data: Partial<EmailCategory>): Promise<EmailCategory> {
