@@ -63,9 +63,6 @@ export const emailAccounts = pgTable("email_accounts", {
   password: text("password").notNull(),
   isActive: boolean("is_active").notNull().default(true),
   scanFrequency: integer("scan_frequency").notNull().default(15), // minutes
-  // Email categories to retain during scan (devis, facture, rdv, autre)
-  // Default: all categories are retained
-  emailCategoriesToRetain: text("email_categories_to_retain").array().notNull().default(sql`ARRAY['devis', 'facture', 'rdv', 'autre']::text[]`),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -100,7 +97,8 @@ export type Tag = typeof tags.$inferSelect;
 // Email Categories table - Custom categories for email classification
 export const emailCategories = pgTable("email_categories", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  key: varchar("key").notNull().unique(), // Unique identifier (slug): devis, facture, rdv, autre, custom-1, etc.
+  emailAccountId: varchar("email_account_id").references(() => emailAccounts.id, { onDelete: "cascade" }), // NULL for system categories, specific account for custom categories
+  key: varchar("key").notNull(), // Unique identifier within account scope: devis, facture, rdv, autre, custom-1, etc.
   label: varchar("label").notNull(), // Display name: Devis, Factures, Rendez-vous, etc.
   color: varchar("color").notNull().default("#6366f1"), // Hex color for UI
   icon: varchar("icon").notNull().default("Mail"), // Lucide icon name
