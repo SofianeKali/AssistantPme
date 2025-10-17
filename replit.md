@@ -32,6 +32,21 @@ This project is an intelligent web application designed to automate administrati
 - **Custom category support**: Custom categories automatically get their own subfolders in Google Drive
 - **Implementation**: Added `getOrCreateSubfolder()` function for hierarchical folder management
 
+### Direct Document Access from UI
+- **Integrated Google Drive access**: Documents page now provides direct access to files stored in Google Drive
+- **Multiple interaction methods**:
+  - Click on document card/row → Opens document in Google Drive (new tab)
+  - "Voir" (View) button → Opens document in Google Drive
+  - "Télécharger" (Download) button → Downloads document file locally
+- **Security implementation**:
+  - Document ownership verification: ensures users can only access their own documents via `email.userId` check
+  - Filename sanitization: prevents header injection attacks by removing quotes, newlines, and special characters
+  - Full authorization flow: all actions require authentication and proper permissions
+- **Technical details**:
+  - Download route: `GET /api/documents/:id/download`
+  - Uses `downloadFileFromDrive()` from Google Drive integration
+  - Returns file with proper Content-Disposition and Content-Type headers
+
 ## User Preferences
 I prefer detailed explanations.
 I want to be asked before major changes are made to the codebase.
