@@ -18,6 +18,20 @@ This project is an intelligent web application designed to automate administrati
 - **Dashboard optimized**: Deduplicates categories by key for display
 - **User experience improved**: Added alert with call-to-action when no email accounts are configured
 
+### Document Organization by Category
+- **Google Drive folder structure**: Documents are now automatically organized in category-specific subfolders
+- **Hierarchical storage**: 
+  ```
+  PME-Assistant-Documents/
+  ├── facture/     (invoices)
+  ├── devis/       (quotes)
+  ├── rdv/         (appointments)
+  └── autre/       (others)
+  ```
+- **Automatic categorization**: Email attachments are stored in the subfolder matching their email category
+- **Custom category support**: Custom categories automatically get their own subfolders in Google Drive
+- **Implementation**: Added `getOrCreateSubfolder()` function for hierarchical folder management
+
 ## User Preferences
 I prefer detailed explanations.
 I want to be asked before major changes are made to the codebase.
