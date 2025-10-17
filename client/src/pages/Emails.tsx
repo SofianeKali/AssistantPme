@@ -53,7 +53,7 @@ export default function Emails() {
     }
   }, [location]);
 
-  const { data: emails, isLoading } = useQuery({
+  const { data: rawEmails, isLoading } = useQuery({
     queryKey: ["/api/emails", { type: typeFilter, status: statusFilter, search }],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -71,6 +71,16 @@ export default function Emails() {
       return res.json();
     },
   });
+
+  // Sort emails: unprocessed (nouveau) first, then by received date
+  const emails = rawEmails ? [...rawEmails].sort((a, b) => {
+    // First, sort by status: "nouveau" comes first
+    if (a.status === 'nouveau' && b.status !== 'nouveau') return -1;
+    if (a.status !== 'nouveau' && b.status === 'nouveau') return 1;
+    
+    // Then sort by received date (most recent first)
+    return new Date(b.receivedAt).getTime() - new Date(a.receivedAt).getTime();
+  }) : [];
 
   const generateResponseMutation = useMutation({
     mutationFn: async (emailId: string) => {
@@ -366,7 +376,11 @@ export default function Emails() {
           emails.map((email: any) => (
             <div
               key={email.id}
-              className="p-4 hover-elevate"
+              className={`p-4 hover-elevate ${
+                email.status === 'nouveau' 
+                  ? 'border-l-4 border-l-primary bg-primary/5 dark:bg-primary/10' 
+                  : ''
+              }`}
               data-testid={`email-${email.id}`}
             >
               <div className="flex items-start gap-4">
