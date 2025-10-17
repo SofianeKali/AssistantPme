@@ -77,33 +77,48 @@ export default function Dashboard() {
           {categoryStatsLoading || categoriesLoading ? (
             [...Array(4)].map((_, i) => <Skeleton key={i} className="h-32" />)
           ) : (
-            emailCategories && emailCategories.map((category: any) => {
-              const IconComponent = getIconComponent(category.icon);
-              return (
-                <Card
-                  key={category.key}
-                  className="hover-elevate cursor-pointer"
-                  onClick={() => setLocation(`/emails?category=${category.key}`)}
-                  data-testid={`category-block-${category.key}`}
-                >
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">{category.label}</CardTitle>
-                    <div 
-                      className="w-8 h-8 rounded-md flex items-center justify-center"
-                      style={{ backgroundColor: category.color + '20', color: category.color }}
-                    >
-                      <IconComponent className="h-4 w-4" />
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-semibold">{categoryStats?.[category.key] || 0}</div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Cliquez pour filtrer
-                    </p>
-                  </CardContent>
-                </Card>
-              );
-            })
+            emailCategories && (() => {
+              // Deduplicate categories by key (prioritize system categories)
+              const uniqueCategories = emailCategories.reduce((acc: any[], category: any) => {
+                const existing = acc.find(c => c.key === category.key);
+                if (!existing) {
+                  acc.push(category);
+                } else if (category.isSystem && !existing.isSystem) {
+                  // Replace with system category if found
+                  const index = acc.indexOf(existing);
+                  acc[index] = category;
+                }
+                return acc;
+              }, []);
+
+              return uniqueCategories.map((category: any) => {
+                const IconComponent = getIconComponent(category.icon);
+                return (
+                  <Card
+                    key={category.key}
+                    className="hover-elevate cursor-pointer"
+                    onClick={() => setLocation(`/emails?category=${category.key}`)}
+                    data-testid={`category-block-${category.key}`}
+                  >
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">{category.label}</CardTitle>
+                      <div 
+                        className="w-8 h-8 rounded-md flex items-center justify-center"
+                        style={{ backgroundColor: category.color + '20', color: category.color }}
+                      >
+                        <IconComponent className="h-4 w-4" />
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-semibold">{categoryStats?.[category.key] || 0}</div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Cliquez pour filtrer
+                      </p>
+                    </CardContent>
+                  </Card>
+                );
+              });
+            })()
           )}
         </div>
       </div>
