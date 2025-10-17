@@ -25,6 +25,16 @@ export default function Documents() {
     queryKey: ["/api/documents", { type: typeFilter, search }],
   });
 
+  const handleView = (doc: any) => {
+    if (doc.driveUrl) {
+      window.open(doc.driveUrl, '_blank');
+    }
+  };
+
+  const handleDownload = (doc: any) => {
+    window.open(`/api/documents/${doc.id}/download`, '_blank');
+  };
+
   const getDocTypeColor = (type: string) => {
     switch (type) {
       case "facture":
@@ -127,6 +137,7 @@ export default function Documents() {
                 key={doc.id}
                 className="p-4 hover-elevate cursor-pointer"
                 data-testid={`document-card-${doc.id}`}
+                onClick={() => handleView(doc)}
               >
                 <div className="flex flex-col h-full">
                   <div className="flex items-center justify-center h-32 bg-muted rounded-md mb-3">
@@ -144,11 +155,29 @@ export default function Documents() {
                     </div>
                   </div>
                   <div className="flex gap-2 mt-3 pt-3 border-t">
-                    <Button variant="ghost" size="sm" className="flex-1">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="flex-1"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleView(doc);
+                      }}
+                      data-testid={`button-view-${doc.id}`}
+                    >
                       <Eye className="h-3 w-3 mr-1" />
                       Voir
                     </Button>
-                    <Button variant="ghost" size="sm" className="flex-1">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="flex-1"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDownload(doc);
+                      }}
+                      data-testid={`button-download-${doc.id}`}
+                    >
                       <Download className="h-3 w-3 mr-1" />
                       Télécharger
                     </Button>
@@ -171,6 +200,7 @@ export default function Documents() {
                 key={doc.id}
                 className="p-4 hover-elevate cursor-pointer"
                 data-testid={`document-row-${doc.id}`}
+                onClick={() => handleView(doc)}
               >
                 <div className="flex items-center gap-4">
                   <div className="flex-shrink-0">{getFileIcon(doc.mimeType)}</div>
@@ -189,10 +219,26 @@ export default function Documents() {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="ghost" size="sm">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleView(doc);
+                      }}
+                      data-testid={`button-view-${doc.id}`}
+                    >
                       <Eye className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="sm">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDownload(doc);
+                      }}
+                      data-testid={`button-download-${doc.id}`}
+                    >
                       <Download className="h-4 w-4" />
                     </Button>
                   </div>

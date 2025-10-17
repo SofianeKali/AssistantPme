@@ -518,6 +518,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Download document from Google Drive
+  app.get('/api/documents/:id/download', isAuthenticated, async (req, res) => {
+    try {
+      const document = await storage.getDocumentById(req.params.id);
+      if (!document) {
+        return res.status(404).json({ message: "Document not found" });
+      }
+
+      // Check document ownership - verify user has access to this document via the email
+      const userId = (req.user as any).id;
+      const email = await storage.getEmailById(document.emailId, userId);
+      if (!email) {
+        return res.status(403).json({ message: "Unauthorized access to document" });
+      }
+
+      if (!document.driveFileId) {
+        return res.status(400).json({ message: "Document not in Google Drive" });
+      }
+
+      console.log(`[Download] Downloading document: ${document.filename} from Drive`);
+      const fileBuffer = await downloadFileFromDrive(document.driveFileId);
+      
+      // Sanitize filename to prevent header injection
+      const safeFilename = document.filename
+        .replace(/["\r\n]/g, '') // Remove quotes and newlines
+        .replace(/[^\w\s.-]/g, '_'); // Replace special chars with underscore
+      
+      // Set appropriate headers for download
+      res.setHeader('Content-Type', document.mimeType || 'application/octet-stream');
+      res.setHeader('Content-Disposition', `attachment; filename="${safeFilename}"`);
+      res.setHeader('Content-Length', fileBuffer.length);
+      
+      res.send(fileBuffer);
+    } catch (error) {
+      console.error("Error downloading document:", error);
+      res.status(500).json({ message: "Failed to download document" });
+    }
+  });
+
   // OCR processing for documents
   app.post('/api/documents/:id/ocr', isAuthenticated, async (req, res) => {
     try {
