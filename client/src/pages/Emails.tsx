@@ -39,6 +39,11 @@ export default function Emails() {
   const [selectedEmailIds, setSelectedEmailIds] = useState<string[]>([]);
   const { toast } = useToast();
   
+  // Load email categories dynamically
+  const { data: emailCategories } = useQuery<any>({
+    queryKey: ["/api/email-categories"],
+  });
+  
   // Read category from URL query parameters
   useEffect(() => {
     const params = new URLSearchParams(location.split('?')[1]);
@@ -281,10 +286,11 @@ export default function Emails() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tous les types</SelectItem>
-            <SelectItem value="devis">Devis</SelectItem>
-            <SelectItem value="facture">Facture</SelectItem>
-            <SelectItem value="rdv">Rendez-vous</SelectItem>
-            <SelectItem value="general">Général</SelectItem>
+            {emailCategories?.map((category: any) => (
+              <SelectItem key={category.key} value={category.key}>
+                {category.label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
