@@ -42,6 +42,32 @@ The application uses a modern web stack:
 - **mailparser**: For parsing email content.
 
 ## Recent Updates
+### ✅ Catégories d'Emails Personnalisables (Octobre 2025)
+- **Système de Catégories Dynamiques**: Les administrateurs peuvent maintenant créer et gérer des catégories d'emails personnalisées
+  - Nouvelle table `email_categories` avec champs: key, label, icon, color, generateAutoResponse, isSystemCategory
+  - 4 catégories système par défaut: devis, facture, rdv, autre (ne peuvent pas être supprimées)
+  - Les admins peuvent créer des catégories illimitées avec labels, icônes et couleurs personnalisés
+  - Chaque catégorie peut activer/désactiver la génération automatique de réponses
+- **Interface de Gestion**: Nouvel onglet "Catégories" dans Settings (admin uniquement)
+  - Formulaire de création avec sélection d'icône Lucide (FileText, Calendar, Mail, MessageSquare, etc.)
+  - Sélecteur de couleur avec prévisualisation
+  - Option pour activer/désactiver l'auto-réponse par catégorie
+  - Suppression de catégories personnalisées (catégories système protégées)
+- **Classification AI Dynamique**: L'analyse GPT utilise les catégories configurées
+  - `analyzeEmail()` reçoit la liste des catégories disponibles depuis la base de données
+  - L'IA classe les emails selon les catégories configurées
+  - Fallback vers "autre" pour les emails non classifiés
+  - Exclusion automatique de la génération de réponse pour catégories avec `generateAutoResponse=false`
+- **Dashboard Dynamique**: Affichage intelligent des catégories
+  - Chargement automatique des catégories depuis `/api/email-categories`
+  - Résolution d'icônes via `getIconComponent()` pour afficher les icônes Lucide configurées
+  - Chaque bloc affiche: label personnalisé, icône configurée avec couleur, nombre d'emails
+  - Redirection vers `/emails?category={key}` au clic sur un bloc
+- **Stats Dynamiques**: Endpoint `/api/emails/stats/by-category` retourne les counts pour toutes les catégories
+  - Utilise SQL GROUP BY pour optimisation
+  - Inclut toutes les catégories configurées (même avec count=0)
+  - Format: `Record<string, number>` au lieu d'objet hard-codé
+
 ### ✅ Filtrage d'Emails par Catégories Configurables (Octobre 2025)
 - **Configuration des Catégories à Retenir**: Les utilisateurs peuvent maintenant configurer quelles catégories d'emails sont importées lors du scan
   - Nouveau champ `emailCategoriesToRetain` dans la table email_accounts (array de texte)
@@ -52,11 +78,6 @@ The application uses a modern web stack:
   - Vérifie le type détecté par l'IA (analysis.emailType) contre emailCategoriesToRetain
   - Skip automatiquement les emails qui ne correspondent pas aux catégories configurées
   - Log: "[IMAP] Email type 'X' not in categories to retain, skipping"
-- **Dashboard par Catégories**: Nouveau tableau de bord avec vue par catégories
-  - Section "Emails par catégorie" avec 4 blocs cliquables (Devis, Factures, RDV, Autres)
-  - Endpoint API `GET /api/emails/stats/by-category` pour récupérer les counts
-  - Chaque bloc affiche l'icône colorée et le nombre d'emails de la catégorie
-  - Redirection vers /emails?category={key} au clic sur un bloc
 - **Filtrage Dynamique sur Page Emails**: Navigation fluide entre dashboard et emails
   - Lecture automatique du paramètre URL `category` pour filtrer les emails
   - useEffect pour initialiser le filtre typeFilter depuis l'URL
