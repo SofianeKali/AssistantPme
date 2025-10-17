@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { UserPlus, Mail, User as UserIcon, Shield, AlertCircle } from "lucide-react";
+import { UserPlus, Mail, User as UserIcon, Shield, AlertCircle, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import type { User, InsertUser } from "@shared/schema";
@@ -21,12 +21,23 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function Users() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const { user } = useAuth();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [formData, setFormData] = useState<Partial<InsertUser>>({
     email: "",
     firstName: "",
@@ -61,6 +72,30 @@ export default function Users() {
         description: error.message || "Impossible de créer l'utilisateur",
         variant: "destructive",
       });
+    },
+  });
+
+  // Delete user mutation
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const res = await apiRequest("DELETE", `/api/users/${userId}`, {});
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      toast({
+        title: "Utilisateur supprimé",
+        description: "L'utilisateur a été supprimé avec succès.",
+      });
+      setUserToDelete(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de supprimer l'utilisateur",
+        variant: "destructive",
+      });
+      setUserToDelete(null);
     },
   });
   
@@ -234,12 +269,23 @@ export default function Users() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-sm text-muted-foreground">
-                Créé le {new Date(user.createdAt!).toLocaleDateString("fr-FR", {
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                })}
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-muted-foreground">
+                  Créé le {new Date(user.createdAt!).toLocaleDateString("fr-FR", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setUserToDelete(user)}
+                  className="text-destructive hover:text-destructive hover-elevate"
+                  data-testid={`button-delete-user-${user.id}`}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -257,6 +303,29 @@ export default function Users() {
           </CardContent>
         </Card>
       )}
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={!!userToDelete} onOpenChange={(open) => !open && setUserToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de vouloir supprimer l'utilisateur <strong>{userToDelete?.firstName} {userToDelete?.lastName}</strong> ?
+              Cette action est irréversible et supprimera toutes les données associées (emails, documents, etc.).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete">Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => userToDelete && deleteUserMutation.mutate(userToDelete.id)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="button-confirm-delete"
+            >
+              {deleteUserMutation.isPending ? "Suppression..." : "Supprimer"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
         </div>
       )}
     </>
