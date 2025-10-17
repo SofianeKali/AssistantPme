@@ -1,9 +1,29 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle, FileText, Calendar, Mail, TrendingUp, TrendingDown } from "lucide-react";
+import { AlertTriangle, FileText, Calendar, Mail, TrendingUp, TrendingDown, LucideIcon } from "lucide-react";
+import * as LucideIcons from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLocation } from "wouter";
+
+// Map icon names to Lucide components
+const getIconComponent = (iconName: string): LucideIcon => {
+  const iconMap: Record<string, LucideIcon> = {
+    FileText: LucideIcons.FileText,
+    Calendar: LucideIcons.Calendar,
+    Mail: LucideIcons.Mail,
+    CreditCard: LucideIcons.CreditCard,
+    Receipt: LucideIcons.Receipt,
+    Phone: LucideIcons.Phone,
+    MessageSquare: LucideIcons.MessageSquare,
+    Inbox: LucideIcons.Inbox,
+    Send: LucideIcons.Send,
+    Archive: LucideIcons.Archive,
+    AlertCircle: LucideIcons.AlertCircle,
+  };
+  
+  return iconMap[iconName] || LucideIcons.Mail; // Default to Mail if icon not found
+};
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
@@ -14,6 +34,10 @@ export default function Dashboard() {
 
   const { data: categoryStats, isLoading: categoryStatsLoading } = useQuery<any>({
     queryKey: ["/api/emails/stats/by-category"],
+  });
+
+  const { data: emailCategories, isLoading: categoriesLoading } = useQuery<any>({
+    queryKey: ["/api/email-categories"],
   });
 
   const { data: alerts, isLoading: alertsLoading } = useQuery<any>({
@@ -50,33 +74,36 @@ export default function Dashboard() {
       <div>
         <h2 className="text-xl font-semibold mb-4">Emails par catégorie</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {categoryStatsLoading ? (
+          {categoryStatsLoading || categoriesLoading ? (
             [...Array(4)].map((_, i) => <Skeleton key={i} className="h-32" />)
           ) : (
-            [
-              { key: 'devis', label: 'Devis', icon: FileText, color: 'text-chart-1', bgColor: 'bg-chart-1/10', borderColor: 'border-chart-1/20' },
-              { key: 'facture', label: 'Factures', icon: FileText, color: 'text-chart-3', bgColor: 'bg-chart-3/10', borderColor: 'border-chart-3/20' },
-              { key: 'rdv', label: 'Rendez-vous', icon: Calendar, color: 'text-chart-2', bgColor: 'bg-chart-2/10', borderColor: 'border-chart-2/20' },
-              { key: 'autre', label: 'Autres', icon: Mail, color: 'text-muted-foreground', bgColor: 'bg-muted', borderColor: 'border-border' },
-            ].map((category) => (
-              <Card
-                key={category.key}
-                className="hover-elevate cursor-pointer"
-                onClick={() => setLocation(`/emails?category=${category.key}`)}
-                data-testid={`category-${category.key}`}
-              >
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">{category.label}</CardTitle>
-                  <category.icon className={`h-4 w-4 ${category.color}`} />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-semibold">{categoryStats?.[category.key] || 0}</div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Cliquez pour filtrer
-                  </p>
-                </CardContent>
-              </Card>
-            ))
+            emailCategories && emailCategories.map((category: any) => {
+              const IconComponent = getIconComponent(category.icon);
+              return (
+                <Card
+                  key={category.key}
+                  className="hover-elevate cursor-pointer"
+                  onClick={() => setLocation(`/emails?category=${category.key}`)}
+                  data-testid={`category-block-${category.key}`}
+                >
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">{category.label}</CardTitle>
+                    <div 
+                      className="w-8 h-8 rounded-md flex items-center justify-center"
+                      style={{ backgroundColor: category.color + '20', color: category.color }}
+                    >
+                      <IconComponent className="h-4 w-4" />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-semibold">{categoryStats?.[category.key] || 0}</div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Cliquez pour filtrer
+                    </p>
+                  </CardContent>
+                </Card>
+              );
+            })
           )}
         </div>
       </div>

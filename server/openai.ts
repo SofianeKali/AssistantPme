@@ -7,7 +7,12 @@ export async function analyzeEmail(emailContent: {
   subject: string;
   body: string;
   from: string;
-}): Promise<{
+}, availableCategories: Array<{ key: string; label: string }> = [
+  { key: 'devis', label: 'Devis' },
+  { key: 'facture', label: 'Factures' },
+  { key: 'rdv', label: 'Rendez-vous' },
+  { key: 'autre', label: 'Autres' }
+]): Promise<{
   emailType: string;
   priority: string;
   sentiment: string;
@@ -21,6 +26,12 @@ export async function analyzeEmail(emailContent: {
   actionRecommendations?: Array<{ action: string; priority: string; reason: string }>;
 }> {
   try {
+    // Build category descriptions for the prompt
+    const categoryDescriptions = availableCategories
+      .filter(cat => cat.key !== 'autre')
+      .map(cat => `"${cat.key}" (${cat.label})`)
+      .join(', ');
+    
     const response = await openai.chat.completions.create({
       model: "gpt-5",
       messages: [
@@ -31,7 +42,7 @@ export async function analyzeEmail(emailContent: {
 Analyze the email and extract:
 
 BASIC CLASSIFICATION:
-1. emailType: one of "devis" (quote request), "facture" (invoice), "rdv" (appointment), or "general"
+1. emailType: one of ${categoryDescriptions}, or "autre" (other) if none match
 2. priority: one of "urgent", "high", "normal", "low"
 3. sentiment: one of "positive", "neutral", "negative"
 4. summary: brief summary in French (max 150 chars)

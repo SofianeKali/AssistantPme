@@ -103,7 +103,7 @@ export interface IStorage {
   // Dashboard stats
   getDashboardStats(): Promise<any>;
   getAdvancedKPIs(): Promise<any>;
-  getEmailStatsByCategory(userId: string): Promise<{ devis: number; facture: number; rdv: number; autre: number }>;
+  getEmailStatsByCategory(userId: string): Promise<Record<string, number>>;
   
   // Email categories
   createEmailCategory(category: InsertEmailCategory): Promise<EmailCategory>;
@@ -849,34 +849,35 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  // Email stats by category (optimized with SQL aggregation)
-  async getEmailStatsByCategory(userId: string): Promise<{ devis: number; facture: number; rdv: number; autre: number }> {
-    const [devisCount] = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(emails)
-      .where(and(eq(emails.userId, userId), eq(emails.emailType, 'devis')));
+  // Email stats by category (optimized with SQL aggregation, dynamic categories)
+  async getEmailStatsByCategory(userId: string): Promise<Record<string, number>> {
+    // Get all categories first to ensure all are represented in the result
+    const categories = await this.getAllEmailCategories();
     
-    const [factureCount] = await db
-      .select({ count: sql<number>`count(*)` })
+    // Get email counts grouped by type
+    const results = await db
+      .select({
+        emailType: emails.emailType,
+        count: sql<number>`count(*)`
+      })
       .from(emails)
-      .where(and(eq(emails.userId, userId), eq(emails.emailType, 'facture')));
+      .where(eq(emails.userId, userId))
+      .groupBy(emails.emailType);
     
-    const [rdvCount] = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(emails)
-      .where(and(eq(emails.userId, userId), eq(emails.emailType, 'rdv')));
+    // Build a map with all categories (starting at 0)
+    const statsMap: Record<string, number> = {};
+    categories.forEach(cat => {
+      statsMap[cat.key] = 0;
+    });
     
-    const [autreCount] = await db
-      .select({ count: sql<number>`count(*)` })
-      .from(emails)
-      .where(and(eq(emails.userId, userId), or(eq(emails.emailType, 'autre'), isNull(emails.emailType))));
+    // Fill in actual counts
+    results.forEach(result => {
+      if (result.emailType) {
+        statsMap[result.emailType] = Number(result.count || 0);
+      }
+    });
     
-    return {
-      devis: Number(devisCount?.count || 0),
-      facture: Number(factureCount?.count || 0),
-      rdv: Number(rdvCount?.count || 0),
-      autre: Number(autreCount?.count || 0),
-    };
+    return statsMap;
   }
 
   // Email categories

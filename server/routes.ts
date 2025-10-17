@@ -116,12 +116,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const emailData = req.body;
       
+      // Get available email categories
+      const categories = await storage.getAllEmailCategories();
+      const availableCategories = categories.map(c => ({ key: c.key, label: c.label }));
+      
       // Analyze email with GPT (with advanced sentiment analysis)
       const analysis = await analyzeEmail({
         subject: emailData.subject,
         body: emailData.body,
         from: emailData.from,
-      });
+      }, availableCategories);
       
       const validatedData = insertEmailSchema.parse({
         ...emailData,

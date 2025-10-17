@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Mail, Save, Trash2, RefreshCw, Info } from "lucide-react";
+import { Mail, Save, Trash2, RefreshCw, Info, Plus, Tag } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -20,8 +20,12 @@ export default function Settings() {
     queryKey: ["/api/email-accounts"],
   });
 
-  const { data: settings, isLoading: settingsLoading } = useQuery({
+  const { data: settings, isLoading: settingsLoading} = useQuery({
     queryKey: ["/api/settings"],
+  });
+
+  const { data: emailCategories, isLoading: categoriesLoading } = useQuery<any>({
+    queryKey: ["/api/email-categories"],
   });
 
   const [newAccount, setNewAccount] = useState({
@@ -34,6 +38,15 @@ export default function Settings() {
     username: "",
     password: "",
     emailCategoriesToRetain: ["devis", "facture", "rdv", "autre"] as string[],
+  });
+
+  const [newCategory, setNewCategory] = useState({
+    key: "",
+    label: "",
+    color: "#6366f1",
+    icon: "Mail",
+    isSystem: false,
+    generateAutoResponse: true,
   });
 
   const addAccountMutation = useMutation({
@@ -99,6 +112,48 @@ export default function Settings() {
     },
   });
 
+  const addCategoryMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return await apiRequest("POST", "/api/email-categories", data);
+    },
+    onSuccess: () => {
+      toast({ title: "Catégorie ajoutée avec succès" });
+      queryClient.invalidateQueries({ queryKey: ["/api/email-categories"] });
+      setNewCategory({
+        key: "",
+        label: "",
+        color: "#6366f1",
+        icon: "Mail",
+        isSystem: false,
+        generateAutoResponse: true,
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erreur",
+        description: "Impossible d'ajouter la catégorie",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteCategoryMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await apiRequest("DELETE", `/api/email-categories/${id}`, {});
+    },
+    onSuccess: () => {
+      toast({ title: "Catégorie supprimée" });
+      queryClient.invalidateQueries({ queryKey: ["/api/email-categories"] });
+    },
+    onError: () => {
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer la catégorie système",
+        variant: "destructive",
+      });
+    },
+  });
+
   const scanEmailsMutation = useMutation({
     mutationFn: async () => {
       return await apiRequest("POST", "/api/email-scan", {});
@@ -146,6 +201,7 @@ export default function Settings() {
       <Tabs defaultValue="email" className="space-y-6">
         <TabsList>
           <TabsTrigger value="email" data-testid="tab-email">Comptes Email</TabsTrigger>
+          <TabsTrigger value="categories" data-testid="tab-categories">Catégories</TabsTrigger>
           <TabsTrigger value="automation" data-testid="tab-automation">Automatisation</TabsTrigger>
           <TabsTrigger value="general" data-testid="tab-general">Général</TabsTrigger>
         </TabsList>
@@ -372,6 +428,140 @@ export default function Settings() {
               ) : (
                 <div className="text-center py-8 text-sm text-muted-foreground">
                   Aucun compte configuré
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Categories Tab */}
+        <TabsContent value="categories" className="space-y-6">
+          {/* Add New Category */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl">Ajouter une catégorie personnalisée</CardTitle>
+              <CardDescription>
+                Créez des catégories pour classifier vos emails
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="category-key">Clé (identifiant unique)</Label>
+                  <Input
+                    id="category-key"
+                    placeholder="ex: contrat"
+                    value={newCategory.key}
+                    onChange={(e) => setNewCategory({ ...newCategory, key: e.target.value })}
+                    data-testid="input-category-key"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="category-label">Libellé</Label>
+                  <Input
+                    id="category-label"
+                    placeholder="ex: Contrats"
+                    value={newCategory.label}
+                    onChange={(e) => setNewCategory({ ...newCategory, label: e.target.value })}
+                    data-testid="input-category-label"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="category-color">Couleur (hex)</Label>
+                  <Input
+                    id="category-color"
+                    placeholder="#6366f1"
+                    value={newCategory.color}
+                    onChange={(e) => setNewCategory({ ...newCategory, color: e.target.value })}
+                    data-testid="input-category-color"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="category-icon">Icône Lucide</Label>
+                  <Input
+                    id="category-icon"
+                    placeholder="Mail"
+                    value={newCategory.icon}
+                    onChange={(e) => setNewCategory({ ...newCategory, icon: e.target.value })}
+                    data-testid="input-category-icon"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="generate-auto-response"
+                  checked={newCategory.generateAutoResponse}
+                  onCheckedChange={(checked) => setNewCategory({ ...newCategory, generateAutoResponse: checked as boolean })}
+                  data-testid="checkbox-generate-auto-response"
+                />
+                <Label htmlFor="generate-auto-response" className="text-sm font-normal">
+                  Générer une réponse automatique pour cette catégorie
+                </Label>
+              </div>
+              <Button
+                onClick={() => addCategoryMutation.mutate(newCategory)}
+                disabled={addCategoryMutation.isPending || !newCategory.key || !newCategory.label}
+                data-testid="button-add-category"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Ajouter la catégorie
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Existing Categories */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl">Catégories configurées</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {categoriesLoading ? (
+                <div className="space-y-3">
+                  {[...Array(4)].map((_, i) => (
+                    <Skeleton key={i} className="h-16" />
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {emailCategories && emailCategories.length > 0 ? (
+                    emailCategories.map((category: any) => (
+                      <div
+                        key={category.id}
+                        className="flex items-center justify-between p-4 border border-border rounded-md hover-elevate"
+                        data-testid={`category-item-${category.key}`}
+                      >
+                        <div className="flex items-center gap-4">
+                          <div
+                            className="w-10 h-10 rounded-md flex items-center justify-center text-white"
+                            style={{ backgroundColor: category.color }}
+                          >
+                            <Tag className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <div className="font-medium">{category.label}</div>
+                            <div className="text-sm text-muted-foreground">
+                              Clé: {category.key} • {category.generateAutoResponse ? "Réponse auto activée" : "Réponse auto désactivée"}
+                            </div>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => deleteCategoryMutation.mutate(category.id)}
+                          disabled={category.isSystem || deleteCategoryMutation.isPending}
+                          data-testid={`button-delete-category-${category.key}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-8">
+                      Aucune catégorie configurée
+                    </p>
+                  )}
                 </div>
               )}
             </CardContent>

@@ -40,6 +40,13 @@ export class EmailScanner {
     const result: ScanResult = { scanned: 0, created: 0, errors: 0 };
 
     try {
+      // Fetch available email categories
+      const categories = await this.storage.getAllEmailCategories();
+      const availableCategories = categories.map(c => ({ key: c.key, label: c.label }));
+      
+      // Create a map for category settings (generateAutoResponse)
+      const categorySettingsMap = new Map(categories.map(c => [c.key, c.generateAutoResponse]));
+      
       const config = {
         imap: {
           user: account.username,
@@ -87,12 +94,12 @@ export class EmailScanner {
             }
           }
 
-          // Analyze email with GPT (with advanced sentiment analysis)
+          // Analyze email with GPT (with advanced sentiment analysis) - pass available categories
           const analysis = await analyzeEmail({
             subject: mail.subject || 'Sans objet',
             body: mail.text || mail.html || '',
             from: getAddressText(mail.from) || 'Inconnu',
-          });
+          }, availableCategories);
 
           // Check if email type is in the categories to retain
           const emailType = analysis.emailType || 'autre';
@@ -104,33 +111,39 @@ export class EmailScanner {
           }
 
           // Generate suggested response with GPT (with timeout and error handling)
-          console.log(`[IMAP] Generating suggested response...`);
+          // Exclude auto-response generation for categories with generateAutoResponse=false (like "autre")
+          const shouldGenerateResponse = categorySettingsMap.get(emailType) !== false;
+          console.log(`[IMAP] Auto-response generation ${shouldGenerateResponse ? 'enabled' : 'disabled'} for category '${emailType}'`);
+          
           let suggestedResponse: string | undefined;
-          try {
-            const responsePromise = generateEmailResponse({
-              subject: mail.subject || 'Sans objet',
-              body: mail.text || mail.html || '',
-              from: getAddressText(mail.from) || 'Inconnu',
-              context: `Type: ${analysis.emailType}, Priority: ${analysis.priority}, Sentiment: ${analysis.sentiment}`,
-            });
-            
-            // Add 15 second timeout with proper cleanup to prevent blocking scan
-            let timeoutHandle: NodeJS.Timeout;
-            const timeoutPromise = new Promise<string>((_, reject) => {
-              timeoutHandle = setTimeout(() => reject(new Error('Response generation timeout')), 15000);
-            });
-            
+          if (shouldGenerateResponse) {
+            console.log(`[IMAP] Generating suggested response...`);
             try {
-              suggestedResponse = await Promise.race([responsePromise, timeoutPromise]);
-              clearTimeout(timeoutHandle!); // Clear timeout if response completes in time
-              console.log(`[IMAP] Response generated successfully`);
+              const responsePromise = generateEmailResponse({
+                subject: mail.subject || 'Sans objet',
+                body: mail.text || mail.html || '',
+                from: getAddressText(mail.from) || 'Inconnu',
+                context: `Type: ${analysis.emailType}, Priority: ${analysis.priority}, Sentiment: ${analysis.sentiment}`,
+              });
+              
+              // Add 15 second timeout with proper cleanup to prevent blocking scan
+              let timeoutHandle: NodeJS.Timeout;
+              const timeoutPromise = new Promise<string>((_, reject) => {
+                timeoutHandle = setTimeout(() => reject(new Error('Response generation timeout')), 15000);
+              });
+              
+              try {
+                suggestedResponse = await Promise.race([responsePromise, timeoutPromise]);
+                clearTimeout(timeoutHandle!); // Clear timeout if response completes in time
+                console.log(`[IMAP] Response generated successfully`);
+              } catch (error) {
+                clearTimeout(timeoutHandle!); // Clear timeout on error too
+                throw error;
+              }
             } catch (error) {
-              clearTimeout(timeoutHandle!); // Clear timeout on error too
-              throw error;
+              console.warn(`[IMAP] Failed to generate response:`, error);
+              suggestedResponse = undefined; // Continue scan even if response generation fails
             }
-          } catch (error) {
-            console.warn(`[IMAP] Failed to generate response:`, error);
-            suggestedResponse = undefined; // Continue scan even if response generation fails
           }
 
           // Create email record
