@@ -528,6 +528,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Check document ownership - verify user has access to this document via the email
       const userId = (req.user as any).id;
+      if (!document.emailId) {
+        return res.status(400).json({ message: "Document not associated with any email" });
+      }
       const email = await storage.getEmailById(document.emailId, userId);
       if (!email) {
         return res.status(403).json({ message: "Unauthorized access to document" });

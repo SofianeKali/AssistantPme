@@ -157,30 +157,6 @@ export default function Emails() {
     },
   });
 
-  const markProcessedMutation = useMutation({
-    mutationFn: async (emailId: string) => {
-      const res = await apiRequest("PATCH", `/api/emails/${emailId}/mark-processed`, {});
-      return res.json();
-    },
-    onSuccess: (data) => {
-      // Update selected email to reflect processed status
-      setSelectedEmail(data.email);
-      // Invalidate queries to refresh email list
-      queryClient.invalidateQueries({ queryKey: ["/api/emails"] });
-      toast({
-        title: "Succès",
-        description: "Email marqué comme traité",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Erreur",
-        description: error.message || "Impossible de marquer l'email comme traité",
-        variant: "destructive",
-      });
-    },
-  });
-
   const bulkMarkProcessedMutation = useMutation({
     mutationFn: async (emailIds: string[]) => {
       const res = await apiRequest("PATCH", "/api/emails/bulk/mark-processed", { emailIds });
