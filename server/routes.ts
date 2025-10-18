@@ -166,6 +166,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         body: email.body || "",
         from: email.from,
         context: req.body.context,
+        customPrompt: req.body.customPrompt, // Accept custom prompt from frontend
       });
       
       // Update the email with the suggested response

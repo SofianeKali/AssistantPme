@@ -128,32 +128,55 @@ export async function generateEmailResponse(emailContent: {
   body: string;
   from: string;
   context?: string;
+  customPrompt?: string;
 }): Promise<string> {
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-5",
-      messages: [
-        {
-          role: "system",
-          content: `You are a professional email assistant for a French SME. Generate polite, professional responses in French.
+    // Use custom prompt if provided, otherwise use default instructions
+    const systemContent = emailContent.customPrompt 
+      ? `You are a professional email assistant for a French SME. Generate a response based on the user's specific instructions.
+          
+Rules:
+- Follow the user's instructions carefully
+- Use formal French ("vous" form) unless instructed otherwise
+- Be professional and polite
+- End with appropriate salutations`
+      : `You are a professional email assistant for a French SME. Generate polite, professional responses in French.
           
 Rules:
 - Be concise and professional
 - Use formal French ("vous" form)
 - Match the tone of the original email
 - Include relevant context if provided
-- End with appropriate salutations`
-        },
-        {
-          role: "user",
-          content: `Generate a professional response to this email:
+- End with appropriate salutations`;
+
+    const userContent = emailContent.customPrompt
+      ? `Email to respond to:
 
 Subject: ${emailContent.subject}
 From: ${emailContent.from}
 
 ${emailContent.body}
 
-${emailContent.context ? `Context: ${emailContent.context}` : ""}`
+${emailContent.context ? `Context: ${emailContent.context}\n\n` : ""}User instructions: ${emailContent.customPrompt}`
+      : `Generate a professional response to this email:
+
+Subject: ${emailContent.subject}
+From: ${emailContent.from}
+
+${emailContent.body}
+
+${emailContent.context ? `Context: ${emailContent.context}` : ""}`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-5",
+      messages: [
+        {
+          role: "system",
+          content: systemContent
+        },
+        {
+          role: "user",
+          content: userContent
         }
       ],
     });

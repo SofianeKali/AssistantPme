@@ -37,6 +37,8 @@ export default function Emails() {
   const [selectedEmail, setSelectedEmail] = useState<any>(null);
   const [showResponseDialog, setShowResponseDialog] = useState(false);
   const [selectedEmailIds, setSelectedEmailIds] = useState<string[]>([]);
+  const [customPrompt, setCustomPrompt] = useState<string>("");
+  const [showPromptInput, setShowPromptInput] = useState<boolean>(false);
   const { toast } = useToast();
   
   // Load email categories dynamically
@@ -83,19 +85,33 @@ export default function Emails() {
   }) : [];
 
   const generateResponseMutation = useMutation({
-    mutationFn: async (emailId: string) => {
-      const res = await apiRequest("POST", `/api/emails/${emailId}/generate-response`, {});
+    mutationFn: async ({ emailId, customPrompt }: { emailId: string; customPrompt?: string }) => {
+      // Only send customPrompt if it has actual content (not empty string)
+      const promptToSend = customPrompt && customPrompt.trim().length > 0 ? customPrompt.trim() : undefined;
+      
+      const res = await apiRequest("POST", `/api/emails/${emailId}/generate-response`, {
+        ...(promptToSend && { customPrompt: promptToSend }),
+      });
       return res.json();
     },
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       // Update selected email with the generated response
       setSelectedEmail({ ...selectedEmail, suggestedResponse: data.response });
       setShowResponseDialog(true);
+      // Clear custom prompt and hide input after successful generation
+      setCustomPrompt("");
+      setShowPromptInput(false);
       // Invalidate queries to refresh email list with updated suggestedResponse
       queryClient.invalidateQueries({ queryKey: ["/api/emails"] });
+      
+      // Determine if custom prompt was actually used
+      const usedCustomPrompt = variables.customPrompt && variables.customPrompt.trim().length > 0;
+      
       toast({
         title: "Succès",
-        description: "Réponse générée avec succès",
+        description: usedCustomPrompt 
+          ? "Réponse générée selon vos instructions" 
+          : "Réponse générée avec succès",
       });
     },
     onError: () => {
@@ -606,8 +622,27 @@ export default function Emails() {
               <div className="text-sm whitespace-pre-wrap">{selectedEmail?.body}</div>
             </div>
 
+            {/* Custom Prompt Input */}
+            {!selectedEmail?.suggestedResponse && showPromptInput && (
+              <div className="space-y-2 p-4 rounded-md bg-muted/50 border">
+                <label className="text-sm font-medium">
+                  Instructions personnalisées pour l'IA
+                </label>
+                <Textarea
+                  value={customPrompt}
+                  onChange={(e) => setCustomPrompt(e.target.value)}
+                  placeholder="Ex: Répondre de manière formelle en proposant un rendez-vous la semaine prochaine..."
+                  rows={3}
+                  data-testid="textarea-custom-prompt"
+                />
+                <p className="text-xs text-muted-foreground">
+                  L'IA utilisera ces instructions pour générer la réponse
+                </p>
+              </div>
+            )}
+
             {/* Actions */}
-            <div className="flex gap-2 pt-4 border-t">
+            <div className="flex flex-col gap-3 pt-4 border-t">
               {selectedEmail?.suggestedResponse ? (
                 <Button
                   onClick={() => setShowResponseDialog(true)}
@@ -617,14 +652,34 @@ export default function Emails() {
                   Voir / Modifier la réponse
                 </Button>
               ) : (
-                <Button
-                  onClick={() => generateResponseMutation.mutate(selectedEmail?.id)}
-                  disabled={generateResponseMutation.isPending}
-                  data-testid="button-generate-response"
-                >
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Générer une réponse
-                </Button>
+                <div className="flex flex-col gap-2">
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => generateResponseMutation.mutate({ 
+                        emailId: selectedEmail?.id,
+                        customPrompt: customPrompt || undefined
+                      })}
+                      disabled={generateResponseMutation.isPending}
+                      data-testid="button-generate-response"
+                      className="flex-1"
+                    >
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      {generateResponseMutation.isPending ? "Génération..." : "Générer une réponse"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setShowPromptInput(!showPromptInput);
+                        if (showPromptInput) {
+                          setCustomPrompt("");
+                        }
+                      }}
+                      data-testid="button-toggle-custom-prompt"
+                    >
+                      {showPromptInput ? "Masquer les instructions" : "Personnaliser"}
+                    </Button>
+                  </div>
+                </div>
               )}
               {selectedEmail?.status !== "traite" && (
                 <Button

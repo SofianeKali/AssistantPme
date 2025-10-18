@@ -67,6 +67,26 @@ This project is an intelligent web application designed to automate administrati
   - Toast notifications with detailed feedback
   - Cache invalidation for emails, stats, and dashboard data
 
+### Custom AI Prompt for Email Responses
+- **Personalized AI instructions**: Users can provide custom instructions to guide the AI when generating email responses
+- **Flexible interface**:
+  - "Personnaliser" toggle button reveals/hides the custom prompt input field
+  - Textarea with helpful placeholder showing example instructions
+  - Works seamlessly with existing auto-response generation
+- **Smart prompt handling**:
+  - Backend accepts optional `customPrompt` parameter in `/api/emails/:id/generate-response`
+  - OpenAI function (`generateEmailResponse`) adjusts system and user messages based on custom instructions
+  - Empty or whitespace-only prompts are ignored (default generation is used)
+- **Enhanced user experience**:
+  - Custom prompt field is automatically hidden after successful generation
+  - Differentiated toast notifications: "Réponse générée selon vos instructions" vs "Réponse générée avec succès"
+  - State cleanup after generation prevents confusion
+- **Use cases**:
+  - Adjust tone (formal, friendly, concise, detailed)
+  - Include specific actions (propose meeting, request documents, negotiate price)
+  - Follow company guidelines or templates
+  - Handle special situations requiring tailored responses
+
 ## User Preferences
 I prefer detailed explanations.
 I want to be asked before major changes are made to the codebase.
