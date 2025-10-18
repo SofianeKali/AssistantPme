@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Search, Mail, MoreVertical, Sparkles, Check, X } from "lucide-react";
+import { Search, Mail, MoreVertical, Sparkles, Check, X, MailCheck } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
@@ -102,6 +102,30 @@ export default function Emails() {
       toast({
         title: "Erreur",
         description: "Impossible de générer une réponse automatique",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const markProcessedMutation = useMutation({
+    mutationFn: async (emailId: string) => {
+      const res = await apiRequest("PATCH", `/api/emails/${emailId}/mark-processed`, {});
+      return res.json();
+    },
+    onSuccess: () => {
+      // Invalidate queries to refresh email list
+      queryClient.invalidateQueries({ queryKey: ["/api/emails"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/emails/stats/by-category"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      toast({
+        title: "Succès",
+        description: "Email marqué comme traité",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erreur",
+        description: "Impossible de marquer l'email comme traité",
         variant: "destructive",
       });
     },
@@ -433,6 +457,22 @@ export default function Emails() {
                       <span className="text-xs text-muted-foreground">
                         {format(new Date(email.receivedAt), "dd MMM", { locale: fr })}
                       </span>
+                      {email.status !== 'traite' && (
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            markProcessedMutation.mutate(email.id);
+                          }}
+                          disabled={markProcessedMutation.isPending}
+                          data-testid={`button-mark-processed-${email.id}`}
+                          title="Marquer comme traité"
+                        >
+                          <MailCheck className="h-4 w-4" />
+                        </Button>
+                      )}
                       <Button variant="ghost" size="icon" className="h-8 w-8">
                         <MoreVertical className="h-4 w-4" />
                       </Button>
