@@ -47,6 +47,26 @@ This project is an intelligent web application designed to automate administrati
   - Uses `downloadFileFromDrive()` from Google Drive integration
   - Returns file with proper Content-Disposition and Content-Type headers
 
+### Bulk Email Status Management
+- **Multiple selection system**: Users can select one or multiple emails using checkboxes
+- **Bulk actions bar**: Appears when emails are selected, showing:
+  - Count of selected emails
+  - Clear selection button
+  - Status change buttons (Nouveau, En cours, Traité, Archivé)
+- **Select all functionality**: Checkbox at the top of the email list selects/deselects all emails
+- **Efficient batch processing**: Backend route `/api/emails/bulk/update-status` handles bulk updates
+  - Validates status values (nouveau, en_cours, traite, archive)
+  - Verifies ownership for each email
+  - Uses `Promise.allSettled` for resilient partial failure handling
+  - Returns detailed results including success/failure counts
+- **Smart UX patterns**:
+  - All buttons disabled during mutation to prevent duplicate submissions
+  - Loading indicator shows "Mise à jour en cours..." during batch updates
+  - Selection cleared after successful update
+  - Failed emails remain selected for retry on partial failures
+  - Toast notifications with detailed feedback
+  - Cache invalidation for emails, stats, and dashboard data
+
 ## User Preferences
 I prefer detailed explanations.
 I want to be asked before major changes are made to the codebase.

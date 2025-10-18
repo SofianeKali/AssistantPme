@@ -236,6 +236,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Bulk update status - generic route for any status change
+  app.patch('/api/emails/bulk/update-status', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const { emailIds, status } = req.body;
+
+      // Validate request
+      if (!Array.isArray(emailIds) || emailIds.length === 0) {
+        return res.status(400).json({ message: "Email IDs array is required" });
+      }
+
+      if (!status) {
+        return res.status(400).json({ message: "Status is required" });
+      }
+
+      // Validate status value
+      const validStatuses = ['nouveau', 'en_cours', 'traite', 'archive'];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({ 
+          message: `Invalid status. Must be one of: ${validStatuses.join(', ')}` 
+        });
+      }
+
+      // Update all emails - verify ownership for each
+      const updateResults = await Promise.allSettled(
+        emailIds.map(async (emailId: string, index: number) => {
+          const email = await storage.getEmailById(emailId, userId);
+          if (!email) {
+            throw new Error(`Email ${emailId} not found`);
+          }
+          await storage.updateEmail(emailId, userId, { status });
+          return { emailId, index };
+        })
+      );
+
+      const successCount = updateResults.filter(r => r.status === 'fulfilled').length;
+      const failureCount = updateResults.filter(r => r.status === 'rejected').length;
+      
+      // Extract failed email IDs using their preserved indices
+      const failedIds = updateResults
+        .map((result, originalIndex) => 
+          result.status === 'rejected' ? emailIds[originalIndex] : null
+        )
+        .filter((id): id is string => id !== null);
+
+      res.json({ 
+        success: true,
+        updated: successCount,
+        failed: failureCount,
+        total: emailIds.length,
+        failedIds: failedIds,
+        status: status
+      });
+    } catch (error) {
+      console.error("Error bulk updating email status:", error);
+      res.status(500).json({ message: "Failed to update email status" });
+    }
+  });
+
   // Bulk route MUST come before the parameterized :id route to avoid conflicts
   app.patch('/api/emails/bulk/mark-processed', isAuthenticated, async (req: any, res) => {
     try {

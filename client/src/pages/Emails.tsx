@@ -157,6 +157,50 @@ export default function Emails() {
     },
   });
 
+  const bulkUpdateStatusMutation = useMutation({
+    mutationFn: async ({ emailIds, status }: { emailIds: string[]; status: string }) => {
+      const res = await apiRequest("PATCH", "/api/emails/bulk/update-status", { emailIds, status });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      // Invalidate queries to refresh email list
+      queryClient.invalidateQueries({ queryKey: ["/api/emails"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/emails/stats/by-category"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      
+      const statusLabels: Record<string, string> = {
+        nouveau: "nouveau",
+        en_cours: "en cours",
+        traite: "traité",
+        archive: "archivé",
+      };
+      
+      if (data.failed > 0 && data.failedIds) {
+        // Partial failure - keep only failed emails selected for retry
+        setSelectedEmailIds(data.failedIds);
+        toast({
+          title: "Traitement partiel",
+          description: `${data.updated} email(s) mis à jour, ${data.failed} échoué(s). Les emails non traités restent sélectionnés.`,
+          variant: "destructive",
+        });
+      } else {
+        // Full success - clear selection
+        setSelectedEmailIds([]);
+        toast({
+          title: "Succès",
+          description: `${data.updated} email(s) marqué(s) comme ${statusLabels[data.status] || data.status}`,
+        });
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de mettre à jour le statut des emails",
+        variant: "destructive",
+      });
+    },
+  });
+
   const bulkMarkProcessedMutation = useMutation({
     mutationFn: async (emailIds: string[]) => {
       const res = await apiRequest("PATCH", "/api/emails/bulk/mark-processed", { emailIds });
@@ -165,6 +209,8 @@ export default function Emails() {
     onSuccess: (data) => {
       // Invalidate queries to refresh email list
       queryClient.invalidateQueries({ queryKey: ["/api/emails"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/emails/stats/by-category"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       
       if (data.failed > 0 && data.failedIds) {
         // Partial failure - keep only failed emails selected for retry
@@ -268,6 +314,12 @@ export default function Emails() {
     }
   };
 
+  const handleBulkUpdateStatus = (status: string) => {
+    if (selectedEmailIds.length > 0) {
+      bulkUpdateStatusMutation.mutate({ emailIds: selectedEmailIds, status });
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -321,7 +373,7 @@ export default function Emails() {
       {/* Bulk Actions Bar */}
       {selectedEmailIds.length > 0 && (
         <Card className="p-4">
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <span className="text-sm font-medium">
                 {selectedEmailIds.length} email(s) sélectionné(s)
@@ -330,20 +382,58 @@ export default function Emails() {
                 variant="outline"
                 size="sm"
                 onClick={() => setSelectedEmailIds([])}
+                disabled={bulkUpdateStatusMutation.isPending}
                 data-testid="button-clear-selection"
               >
                 <X className="h-4 w-4 mr-2" />
                 Désélectionner
               </Button>
             </div>
-            <Button
-              onClick={handleBulkMarkProcessed}
-              disabled={bulkMarkProcessedMutation.isPending}
-              data-testid="button-bulk-mark-processed"
-            >
-              <Check className="h-4 w-4 mr-2" />
-              {bulkMarkProcessedMutation.isPending ? "En cours..." : "Marquer comme traités"}
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              {bulkUpdateStatusMutation.isPending ? (
+                <span className="text-sm text-muted-foreground">Mise à jour en cours...</span>
+              ) : (
+                <span className="text-sm text-muted-foreground">Changer le statut :</span>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleBulkUpdateStatus('nouveau')}
+                disabled={bulkUpdateStatusMutation.isPending}
+                data-testid="button-bulk-mark-nouveau"
+              >
+                <Mail className="h-4 w-4 mr-2" />
+                Nouveau
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleBulkUpdateStatus('en_cours')}
+                disabled={bulkUpdateStatusMutation.isPending}
+                data-testid="button-bulk-mark-en-cours"
+              >
+                En cours
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => handleBulkUpdateStatus('traite')}
+                disabled={bulkUpdateStatusMutation.isPending}
+                data-testid="button-bulk-mark-traite"
+              >
+                <Check className="h-4 w-4 mr-2" />
+                Traité
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleBulkUpdateStatus('archive')}
+                disabled={bulkUpdateStatusMutation.isPending}
+                data-testid="button-bulk-mark-archive"
+              >
+                Archivé
+              </Button>
+            </div>
           </div>
         </Card>
       )}
