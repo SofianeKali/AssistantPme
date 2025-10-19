@@ -5,6 +5,7 @@ import {
   documents,
   appointments,
   alerts,
+  alertRules,
   tags,
   settings,
   emailResponses,
@@ -25,6 +26,8 @@ import {
   type InsertAppointment,
   type Alert,
   type InsertAlert,
+  type AlertRule,
+  type InsertAlertRule,
   type Tag,
   type InsertTag,
   type Setting,
@@ -100,6 +103,13 @@ export interface IStorage {
   getReminders(emailId?: string): Promise<Reminder[]>;
   getReminderById(id: string): Promise<Reminder | undefined>;
   updateReminder(id: string, data: Partial<Reminder>): Promise<Reminder>;
+  
+  // Alert rules (règles d'alertes personnalisées)
+  createAlertRule(rule: InsertAlertRule): Promise<AlertRule>;
+  getAlertRules(filters?: { isActive?: boolean }): Promise<AlertRule[]>;
+  getAlertRuleById(id: string): Promise<AlertRule | undefined>;
+  updateAlertRule(id: string, data: Partial<AlertRule>): Promise<AlertRule>;
+  deleteAlertRule(id: string): Promise<void>;
   
   // Dashboard stats
   getDashboardStats(): Promise<any>;
@@ -504,6 +514,42 @@ export class DatabaseStorage implements IStorage {
       .where(eq(reminders.id, id))
       .returning();
     return result;
+  }
+
+  // Alert rules
+  async createAlertRule(rule: InsertAlertRule): Promise<AlertRule> {
+    const [result] = await db.insert(alertRules).values(rule).returning();
+    return result;
+  }
+
+  async getAlertRules(filters?: { isActive?: boolean }): Promise<AlertRule[]> {
+    let query = db.select().from(alertRules);
+    
+    if (filters?.isActive !== undefined) {
+      query = query.where(eq(alertRules.isActive, filters.isActive)) as any;
+    }
+    
+    query = query.orderBy(desc(alertRules.createdAt)) as any;
+    
+    return await query;
+  }
+
+  async getAlertRuleById(id: string): Promise<AlertRule | undefined> {
+    const [rule] = await db.select().from(alertRules).where(eq(alertRules.id, id));
+    return rule;
+  }
+
+  async updateAlertRule(id: string, data: Partial<AlertRule>): Promise<AlertRule> {
+    const [result] = await db
+      .update(alertRules)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(alertRules.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteAlertRule(id: string): Promise<void> {
+    await db.delete(alertRules).where(eq(alertRules.id, id));
   }
 
   // Dashboard stats
