@@ -23,7 +23,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/auth/user', isAuthenticated, async (req, res) => {
     try {
       // req.user is now the full User object from database (hydrated in session deserialization)
-      res.json(req.user);
+      // Remove sensitive fields before sending response
+      const user = req.user as any;
+      const { passwordHash, ...safeUser } = user;
+      res.json(safeUser);
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
@@ -941,17 +944,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Users
-  app.get('/api/users', isAuthenticated, async (req, res) => {
-    try {
-      const users = await storage.getAllUsers();
-      res.json(users);
-    } catch (error) {
-      console.error("Error fetching users:", error);
-      res.status(500).json({ message: "Failed to fetch users" });
-    }
-  });
-
   // Settings
   app.get('/api/settings', isAuthenticated, async (req, res) => {
     try {
@@ -1018,7 +1010,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/users', isAuthenticated, isAdmin, async (req, res) => {
     try {
       const users = await storage.getAllUsers();
-      res.json(users);
+      // Remove sensitive fields before sending response
+      const safeUsers = users.map(({ passwordHash, ...user }) => user);
+      res.json(safeUsers);
     } catch (error) {
       console.error("Error fetching users:", error);
       res.status(500).json({ message: "Failed to fetch users" });

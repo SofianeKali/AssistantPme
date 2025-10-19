@@ -61,7 +61,10 @@ export function setupLocalAuth(app: Express) {
         }
         
         console.log(`[LocalAuth] User ${user.email} logged in successfully`);
-        return res.json(user);
+        
+        // Remove sensitive fields before sending response
+        const { passwordHash, ...safeUser } = user;
+        return res.json(safeUser);
       });
     })(req, res, next);
   });
