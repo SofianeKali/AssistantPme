@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Mail, Zap, BarChart3, Calendar, FileText, Shield } from "lucide-react";
+import logoUrl from "@/assets/izyinbox-logo.png";
 
 export default function Landing() {
   return (
@@ -8,20 +9,42 @@ export default function Landing() {
       <div className="border-b border-border">
         <div className="container mx-auto px-6 py-20">
           <div className="max-w-3xl mx-auto text-center">
+            <div className="flex justify-center mb-6">
+              <img
+                src={logoUrl}
+                alt="IzyInbox"
+                className="h-24 w-24 rounded-md"
+                data-testid="img-logo"
+              />
+            </div>
             <h1 className="text-4xl font-semibold text-foreground mb-4">
-              Assistant Administratif Intelligent pour PME
+              IzyInbox
             </h1>
-            <p className="text-lg text-muted-foreground mb-8">
+            <p className="text-lg text-muted-foreground mb-2">
+              Smart Automation for Busy Managers
+            </p>
+            <p className="text-base text-muted-foreground mb-8">
               Automatisez la gestion de vos emails, devis, factures et rendez-vous grâce à l'intelligence artificielle
             </p>
-            <Button
-              size="lg"
-              onClick={() => (window.location.href = "/api/login")}
-              data-testid="button-login"
-              className="text-base"
-            >
-              Se connecter
-            </Button>
+            <div className="flex gap-4 justify-center flex-wrap">
+              <Button
+                size="lg"
+                onClick={() => (window.location.href = "/login")}
+                data-testid="button-login"
+                className="text-base"
+              >
+                Connexion Email/Mot de passe
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => (window.location.href = "/api/login")}
+                data-testid="button-replit-login"
+                className="text-base"
+              >
+                Connexion avec Replit
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -74,13 +97,23 @@ export default function Landing() {
           <p className="text-muted-foreground mb-8">
             Commencez dès maintenant et gagnez du temps précieux
           </p>
-          <Button
-            size="lg"
-            onClick={() => (window.location.href = "/api/login")}
-            data-testid="button-cta-login"
-          >
-            Démarrer gratuitement
-          </Button>
+          <div className="flex gap-4 justify-center flex-wrap">
+            <Button
+              size="lg"
+              onClick={() => (window.location.href = "/login")}
+              data-testid="button-cta-login"
+            >
+              Démarrer gratuitement
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => (window.location.href = "/api/login")}
+              data-testid="button-cta-replit-login"
+            >
+              Connexion Replit
+            </Button>
+          </div>
         </div>
       </div>
     </div>
