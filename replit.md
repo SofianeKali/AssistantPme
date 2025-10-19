@@ -1,7 +1,11 @@
-# Assistant Administratif Intelligent pour PME
+# IzyInbox - Assistant Administratif Intelligent pour PME
 
 ## Overview
-This project is an intelligent web application designed to automate administrative tasks for SMEs. It leverages AI (GPT) for email analysis and automates the management of quotes, invoices, appointments, and documents. The core purpose is to streamline administrative workflows, enhance efficiency, and provide actionable insights for small and medium-sized businesses.
+IzyInbox is an intelligent web application designed to automate administrative tasks for SMEs. It leverages AI (GPT) for email analysis and automates the management of quotes, invoices, appointments, and documents. The core purpose is to streamline administrative workflows, enhance efficiency, and provide actionable insights for small and medium-sized businesses.
+
+**Product Name**: IzyInbox  
+**Tagline**: Smart Automation for Busy Managers  
+**Suggested Domains**: izyinbox.app, izyinbox.io
 
 ## Recent Changes (October 2025)
 ### Per-Account Email Categories System
