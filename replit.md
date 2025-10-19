@@ -87,6 +87,42 @@ This project is an intelligent web application designed to automate administrati
   - Follow company guidelines or templates
   - Handle special situations requiring tailored responses
 
+### AI-Powered Custom Alert Rules System
+- **Natural language rule creation**: Administrators can create custom alert rules using natural language prompts that are automatically converted to structured rules by GPT-5
+- **Database schema**: New `alert_rules` table stores custom rules with:
+  - `name`: Short descriptive name for the rule
+  - `prompt`: Original natural language prompt (preserved for transparency)
+  - `ruleData`: Structured rule data as JSON (validated by strict Zod schemas)
+  - `severity`: critical, warning, or info
+  - `isActive`: Enable/disable toggle for each rule
+- **Strict validation**: 
+  - GPT-5 output validated using Zod schemas (`alertRuleFiltersSchema`, `alertRuleDataSchema`, `interpretAlertPromptResponseSchema`) before persistence
+  - Prevents malformed AI responses from corrupting the database
+  - Validates entity types, filters, severity levels, and message structure
+- **Rule evaluation engine**: 
+  - AlertService evaluates custom rules hourly alongside predefined system rules
+  - Supports two entity types: emails and appointments
+  - Email filters: category, status, priority, ageInHours
+  - Appointment filters: appointmentStatus, timeUntilStartInHours, timeAfterEndInHours
+  - Duplicate prevention: checks for existing unresolved alerts before creating new ones
+- **Performance optimizations**:
+  - Database-level filtering in `getAllEmails()` (category, status, priority, olderThanHours)
+  - Database-level filtering in `getAlerts()` (resolved, type, relatedEntityType, relatedEntityId)
+  - Avoids O(N) memory scans by using targeted SQL queries
+- **Admin-only access**:
+  - Backend: Admin-protected API routes (`POST/GET/PATCH/DELETE /api/alert-rules`) using `isAdmin` middleware
+  - Frontend: Alertes tab in Settings page visible only to administrators (role-based UI protection)
+  - OIDC authentication enhanced to support admin role assignment via `is_admin` or `role` claims (critical for testing)
+- **User interface** (Settings > Alertes tab):
+  - Create rules: Textarea for natural language prompt with examples
+  - View rules: List of all custom rules with name, prompt, severity badge, and activation status
+  - Toggle activation: Switch to enable/disable rules without deleting them
+  - Delete rules: Remove unwanted rules with confirmation
+- **Example prompts**:
+  - "Alerte rouge sur les emails de factures non traitées depuis plus de 24 heures"
+  - "Avertissement pour les devis urgents sans réponse depuis 48h"
+  - "Rappel pour les rendez-vous confirmés qui commencent dans moins de 2 heures"
+
 ## User Preferences
 I prefer detailed explanations.
 I want to be asked before major changes are made to the codebase.
