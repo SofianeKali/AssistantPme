@@ -310,3 +310,154 @@ Générez un email de relance approprié.`
     };
   }
 }
+
+// Type definition for alert rule structure
+export interface AlertRuleData {
+  entityType: "email" | "appointment";
+  filters: {
+    // For emails
+    category?: string; // devis, facture, rdv, autre
+    status?: string; // nouveau, en_cours, traite, archive
+    priority?: string; // urgent, high, normal, low
+    ageInHours?: number; // Age threshold in hours
+    // For appointments
+    appointmentStatus?: string; // planifie, confirme, annule, termine
+    timeUntilStartInHours?: number; // Hours until appointment start
+    timeAfterEndInHours?: number; // Hours after appointment end
+  };
+  message: string; // Template message for the alert
+}
+
+export async function interpretAlertPrompt(prompt: string): Promise<{
+  name: string;
+  ruleData: AlertRuleData;
+  severity: "critical" | "warning" | "info";
+}> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-5",
+      messages: [
+        {
+          role: "system",
+          content: `You are an AI assistant specialized in converting natural language alert rules into structured data for a French SME administrative system.
+
+The system manages two types of entities:
+1. EMAILS: Can be filtered by category (devis, facture, rdv, autre), status (nouveau, en_cours, traite, archive), priority (urgent, high, normal, low), and age in hours
+2. APPOINTMENTS (RENDEZ-VOUS): Can be filtered by status (planifie, confirme, annule, termine), time until start (hours), or time after end (hours)
+
+Analyze the user's prompt and extract:
+1. **entityType**: "email" or "appointment" based on what the rule targets
+2. **filters**: Specific conditions to match entities
+   - For emails: category, status, priority, ageInHours (e.g., "> 24h" becomes 24)
+   - For appointments: appointmentStatus, timeUntilStartInHours, timeAfterEndInHours
+3. **message**: A template message in French that will be displayed in the alert (keep it concise and professional)
+4. **severity**: "critical" (red/urgent), "warning" (yellow/important), or "info" (blue/informational)
+5. **name**: A short descriptive name for the rule (max 50 chars)
+
+EXAMPLES:
+
+Prompt: "Alerte rouge sur les emails de factures non traitées depuis plus de 24 heures"
+Output:
+{
+  "name": "Factures non traitées 24h",
+  "ruleData": {
+    "entityType": "email",
+    "filters": {
+      "category": "facture",
+      "status": "nouveau",
+      "ageInHours": 24
+    },
+    "message": "Des factures non traitées depuis plus de 24h ont été détectées"
+  },
+  "severity": "critical"
+}
+
+Prompt: "Avertissement pour les devis urgents sans réponse depuis 48h"
+Output:
+{
+  "name": "Devis urgents 48h",
+  "ruleData": {
+    "entityType": "email",
+    "filters": {
+      "category": "devis",
+      "priority": "urgent",
+      "ageInHours": 48
+    },
+    "message": "Des devis urgents attendent une réponse depuis plus de 48h"
+  },
+  "severity": "warning"
+}
+
+Prompt: "Rappel pour les rendez-vous confirmés qui commencent dans moins de 2 heures"
+Output:
+{
+  "name": "RDV dans 2h",
+  "ruleData": {
+    "entityType": "appointment",
+    "filters": {
+      "appointmentStatus": "confirme",
+      "timeUntilStartInHours": 2
+    },
+    "message": "Des rendez-vous confirmés débutent dans moins de 2 heures"
+  },
+  "severity": "info"
+}
+
+Prompt: "Alerte critique pour les rendez-vous planifiés qui n'ont pas été confirmés et qui commencent dans 4 heures"
+Output:
+{
+  "name": "RDV non confirmés 4h",
+  "ruleData": {
+    "entityType": "appointment",
+    "filters": {
+      "appointmentStatus": "planifie",
+      "timeUntilStartInHours": 4
+    },
+    "message": "Des rendez-vous non confirmés débutent dans moins de 4 heures"
+  },
+  "severity": "critical"
+}
+
+IMPORTANT RULES:
+- Always use French for the message and name
+- Be precise about time thresholds
+- Match severity to the urgency: critical for immediate action, warning for important but not urgent, info for notifications
+- Keep filters simple and relevant
+- The message should explain what triggered the alert
+
+Respond ONLY with valid JSON matching this exact structure:
+{
+  "name": "string",
+  "ruleData": {
+    "entityType": "email" | "appointment",
+    "filters": { /* appropriate filters */ },
+    "message": "string"
+  },
+  "severity": "critical" | "warning" | "info"
+}`
+        },
+        {
+          role: "user",
+          content: `Analyze this alert rule prompt and convert it to structured data:\n\n${prompt}`
+        }
+      ],
+      response_format: { type: "json_object" },
+    });
+
+    const result = JSON.parse(response.choices[0].message.content || "{}");
+    
+    // Validate the result structure
+    if (!result.name || !result.ruleData || !result.severity) {
+      throw new Error("Invalid response structure from AI");
+    }
+    
+    if (!result.ruleData.entityType || !result.ruleData.filters || !result.ruleData.message) {
+      throw new Error("Invalid ruleData structure from AI");
+    }
+
+    return result;
+  } catch (error) {
+    console.error("Error interpreting alert prompt:", error);
+    throw new Error("Impossible d'interpréter le prompt d'alerte. Veuillez reformuler votre demande.");
+  }
+}
