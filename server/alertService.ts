@@ -23,6 +23,9 @@ export class AlertService {
       // 3. Check for unprocessed emails
       await this.checkUnprocessedEmails(result);
 
+      // 4. Check custom alert rules
+      await this.checkCustomAlertRules(result);
+
       console.log(`[Alerts] Alert generation complete - Created: ${result.created}, Errors: ${result.errors}`);
     } catch (error) {
       console.error('[Alerts] Error during alert generation:', error);
@@ -170,6 +173,172 @@ export class AlertService {
     } catch (error) {
       console.error('[Alerts] Error checking unprocessed emails:', error);
       result.errors++;
+    }
+  }
+
+  private async checkCustomAlertRules(result: { created: number; errors: number }): Promise<void> {
+    try {
+      // Get all active custom alert rules
+      const rules = await this.storage.getAlertRules({ isActive: true });
+      
+      if (rules.length === 0) {
+        console.log('[Alerts] No active custom alert rules found');
+        return;
+      }
+
+      console.log(`[Alerts] Checking ${rules.length} custom alert rules`);
+      
+      // Fetch all existing unresolved alerts once
+      const existingAlerts = await this.storage.getAlerts();
+      const unresolvedAlerts = existingAlerts.filter(a => !a.isResolved);
+
+      for (const rule of rules) {
+        try {
+          const ruleData = rule.ruleData as any;
+          
+          if (ruleData.entityType === 'email') {
+            await this.evaluateEmailRule(rule, ruleData, unresolvedAlerts, result);
+          } else if (ruleData.entityType === 'appointment') {
+            await this.evaluateAppointmentRule(rule, ruleData, unresolvedAlerts, result);
+          }
+        } catch (error) {
+          console.error(`[Alerts] Error evaluating rule ${rule.id}:`, error);
+          result.errors++;
+        }
+      }
+    } catch (error) {
+      console.error('[Alerts] Error checking custom alert rules:', error);
+      result.errors++;
+    }
+  }
+
+  private async evaluateEmailRule(
+    rule: any,
+    ruleData: any,
+    unresolvedAlerts: any[],
+    result: { created: number; errors: number }
+  ): Promise<void> {
+    // Get all emails (we'll filter in memory)
+    const allEmails = await this.storage.getAllEmails();
+    const now = new Date();
+    const filters = ruleData.filters || {};
+
+    // Filter emails based on rule criteria
+    const matchingEmails = allEmails.filter(email => {
+      // Check category filter
+      if (filters.category && email.emailType !== filters.category) {
+        return false;
+      }
+
+      // Check status filter
+      if (filters.status && email.status !== filters.status) {
+        return false;
+      }
+
+      // Check priority filter
+      if (filters.priority && email.priority !== filters.priority) {
+        return false;
+      }
+
+      // Check age filter (ageInHours)
+      if (filters.ageInHours) {
+        const ageThreshold = new Date(now.getTime() - filters.ageInHours * 60 * 60 * 1000);
+        if (email.receivedAt >= ageThreshold) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+
+    // Create alerts for matching emails
+    for (const email of matchingEmails) {
+      // Check if unresolved alert already exists for this email and rule
+      const hasUnresolvedAlert = unresolvedAlerts.some(
+        alert =>
+          alert.relatedEntityType === 'email' &&
+          alert.relatedEntityId === email.id &&
+          alert.type === `custom_rule_${rule.id}`
+      );
+
+      if (!hasUnresolvedAlert) {
+        const alertData: InsertAlert = {
+          type: `custom_rule_${rule.id}`,
+          severity: rule.severity,
+          title: rule.name,
+          message: ruleData.message,
+          relatedEntityType: 'email',
+          relatedEntityId: email.id,
+        };
+
+        await this.storage.createAlert(alertData);
+        result.created++;
+        console.log(`[Alerts] Created custom rule alert for email: ${email.id} (rule: ${rule.name})`);
+      }
+    }
+  }
+
+  private async evaluateAppointmentRule(
+    rule: any,
+    ruleData: any,
+    unresolvedAlerts: any[],
+    result: { created: number; errors: number }
+  ): Promise<void> {
+    // Get all appointments
+    const allAppointments = await this.storage.getAppointments();
+    const now = new Date();
+    const filters = ruleData.filters || {};
+
+    // Filter appointments based on rule criteria
+    const matchingAppointments = allAppointments.filter(apt => {
+      // Check appointment status filter
+      if (filters.appointmentStatus && apt.status !== filters.appointmentStatus) {
+        return false;
+      }
+
+      // Check time until start filter (timeUntilStartInHours)
+      if (filters.timeUntilStartInHours !== undefined) {
+        const timeUntilStart = (apt.startTime.getTime() - now.getTime()) / (60 * 60 * 1000);
+        if (timeUntilStart > filters.timeUntilStartInHours || timeUntilStart < 0) {
+          return false;
+        }
+      }
+
+      // Check time after end filter (timeAfterEndInHours)
+      if (filters.timeAfterEndInHours !== undefined) {
+        const timeAfterEnd = (now.getTime() - apt.endTime.getTime()) / (60 * 60 * 1000);
+        if (timeAfterEnd < filters.timeAfterEndInHours) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+
+    // Create alerts for matching appointments
+    for (const apt of matchingAppointments) {
+      // Check if unresolved alert already exists for this appointment and rule
+      const hasUnresolvedAlert = unresolvedAlerts.some(
+        alert =>
+          alert.relatedEntityType === 'appointment' &&
+          alert.relatedEntityId === apt.id &&
+          alert.type === `custom_rule_${rule.id}`
+      );
+
+      if (!hasUnresolvedAlert) {
+        const alertData: InsertAlert = {
+          type: `custom_rule_${rule.id}`,
+          severity: rule.severity,
+          title: rule.name,
+          message: ruleData.message,
+          relatedEntityType: 'appointment',
+          relatedEntityId: apt.id,
+        };
+
+        await this.storage.createAlert(alertData);
+        result.created++;
+        console.log(`[Alerts] Created custom rule alert for appointment: ${apt.id} (rule: ${rule.name})`);
+      }
     }
   }
 }
