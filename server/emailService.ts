@@ -29,7 +29,7 @@ export async function sendWelcomeEmail(params: SendWelcomeEmailParams): Promise<
               padding: 20px;
             }
             .header {
-              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              background: linear-gradient(135deg, #1a2744 0%, #00d9ff 100%);
               color: white;
               padding: 30px;
               border-radius: 8px 8px 0 0;
@@ -42,7 +42,7 @@ export async function sendWelcomeEmail(params: SendWelcomeEmailParams): Promise<
             }
             .password-box {
               background: white;
-              border: 2px solid #667eea;
+              border: 2px solid #00d9ff;
               border-radius: 8px;
               padding: 20px;
               margin: 20px 0;
@@ -51,7 +51,7 @@ export async function sendWelcomeEmail(params: SendWelcomeEmailParams): Promise<
             .password {
               font-size: 24px;
               font-weight: bold;
-              color: #667eea;
+              color: #1a2744;
               letter-spacing: 2px;
               font-family: 'Courier New', monospace;
             }
@@ -64,7 +64,7 @@ export async function sendWelcomeEmail(params: SendWelcomeEmailParams): Promise<
             }
             .button {
               display: inline-block;
-              background: #667eea;
+              background: #1a2744;
               color: white;
               padding: 12px 30px;
               text-decoration: none;
@@ -83,44 +83,56 @@ export async function sendWelcomeEmail(params: SendWelcomeEmailParams): Promise<
         </head>
         <body>
           <div class="header">
-            <h1>🎉 Bienvenue !</h1>
+            <h1>🎉 Bienvenue sur IzyInbox !</h1>
             <p>Votre compte a été créé avec succès</p>
           </div>
           
           <div class="content">
             <p>Bonjour ${params.firstName} ${params.lastName},</p>
             
-            <p>Votre compte utilisateur pour l'Assistant Administratif Intelligent a été créé par votre administrateur.</p>
+            <p>Votre compte utilisateur pour <strong>IzyInbox</strong> (Smart Automation for Busy Managers) a été créé par votre administrateur.</p>
             
             <p>Voici vos identifiants de connexion :</p>
             
+            <div style="margin: 20px 0; padding: 15px; background: #f0f9ff; border-radius: 8px;">
+              <p style="margin: 0 0 10px 0; color: #1a2744; font-size: 15px;"><strong>📧 Email :</strong></p>
+              <p style="margin: 0; color: #1a2744; font-weight: 600;">${params.to}</p>
+            </div>
+            
             <div class="password-box">
-              <p style="margin: 0; color: #6b7280; font-size: 14px;">Mot de passe temporaire</p>
+              <p style="margin: 0; color: #6b7280; font-size: 14px;">🔑 Mot de passe temporaire</p>
               <div class="password">${params.temporaryPassword}</div>
             </div>
             
             <div class="warning">
-              <strong>⚠️ Important :</strong> Ce mot de passe est temporaire. Pour des raisons de sécurité, vous devrez le changer lors de votre première connexion.
+              <strong>⚠️ Important :</strong> Conservez ce mot de passe en lieu sûr. Vous pouvez le changer plus tard depuis votre profil.
             </div>
             
             <p style="text-align: center;">
               <a href="${process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000'}" class="button">
-                Se connecter maintenant
+                🚀 Se connecter maintenant
               </a>
             </p>
             
-            <h3>Premiers pas :</h3>
+            <h3>📋 Pour vous connecter :</h3>
             <ol>
-              <li>Connectez-vous avec l'adresse email : <strong>${params.to}</strong></li>
-              <li>Utilisez le mot de passe temporaire ci-dessus</li>
-              <li>Configurez votre compte email (Gmail, Outlook ou Yahoo)</li>
-              <li>Commencez à gérer vos emails intelligemment !</li>
+              <li>Cliquez sur le bouton "Se connecter" ci-dessus</li>
+              <li>Entrez votre adresse email : <strong>${params.to}</strong></li>
+              <li>Entrez le mot de passe temporaire ci-dessus</li>
+              <li>Vous serez redirigé vers votre tableau de bord</li>
             </ol>
+            
+            <h3>🎯 Prochaines étapes :</h3>
+            <ul>
+              <li>Configurez votre compte email (Gmail, Outlook ou Yahoo)</li>
+              <li>Explorez le tableau de bord et les fonctionnalités d'IA</li>
+              <li>Commencez à automatiser votre gestion administrative !</li>
+            </ul>
             
             <p>Si vous avez des questions, n'hésitez pas à contacter votre administrateur.</p>
             
             <div class="footer">
-              <p>Assistant Administratif Intelligent pour PME</p>
+              <p><strong>IzyInbox</strong> - Smart Automation for Busy Managers</p>
               <p style="font-size: 12px; color: #9ca3af;">Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
             </div>
           </div>
@@ -131,7 +143,7 @@ export async function sendWelcomeEmail(params: SendWelcomeEmailParams): Promise<
     await client.emails.send({
       from: fromEmail,
       to: params.to,
-      subject: '🎉 Bienvenue - Votre compte a été créé',
+      subject: '🎉 Bienvenue sur IzyInbox - Vos identifiants de connexion',
       html: htmlContent,
     });
 
