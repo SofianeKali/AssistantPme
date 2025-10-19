@@ -743,6 +743,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/alerts/generate', isAuthenticated, async (req, res) => {
+    try {
+      const { AlertService } = await import('./alertService');
+      const alertService = new AlertService(storage);
+      const result = await alertService.generateAlerts();
+      res.json(result);
+    } catch (error) {
+      console.error("Error generating alerts:", error);
+      res.status(500).json({ message: "Failed to generate alerts" });
+    }
+  });
+
   // Alert Rules (règles d'alertes personnalisées)
   app.post('/api/alert-rules', isAuthenticated, isAdmin, async (req: any, res) => {
     try {
