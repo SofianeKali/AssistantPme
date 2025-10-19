@@ -7,6 +7,7 @@ import {
   Tag,
   Bell,
   Users,
+  LogOut,
 } from "lucide-react";
 import {
   Sidebar,
@@ -24,7 +25,7 @@ import { useLocation, Link } from "wouter";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { LogOut } from "lucide-react";
+import logoUrl from "../assets/izyinbox-logo.png";
 
 const mainMenuItems = [
   {
@@ -109,12 +110,14 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader className="p-4 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <Mail className="h-5 w-5" />
-          </div>
+          <img 
+            src={logoUrl} 
+            alt="IzyInbox Logo" 
+            className="h-10 w-10 rounded-md object-contain"
+          />
           <div className="flex flex-col">
-            <span className="text-sm font-semibold">Assistant Admin</span>
-            <span className="text-xs text-muted-foreground">Intelligent PME</span>
+            <span className="text-sm font-semibold">IzyInbox</span>
+            <span className="text-xs text-muted-foreground">Smart Automation</span>
           </div>
         </div>
       </SidebarHeader>
