@@ -743,6 +743,102 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Alert Rules (règles d'alertes personnalisées)
+  app.post('/api/alert-rules', isAuthenticated, isAdmin, async (req: any, res) => {
+    try {
+      const { prompt } = req.body;
+      
+      if (!prompt || typeof prompt !== 'string') {
+        return res.status(400).json({ message: "Le prompt est requis" });
+      }
+
+      // Import the function dynamically to avoid circular dependencies
+      const { interpretAlertPrompt } = await import('./openai');
+      
+      // Use AI to interpret the prompt and generate the rule structure
+      const { name, ruleData, severity } = await interpretAlertPrompt(prompt);
+      
+      // Import schema dynamically
+      const { insertAlertRuleSchema } = await import("@shared/schema");
+      
+      // Create the alert rule
+      const alertRuleData = {
+        name,
+        prompt,
+        ruleData,
+        severity,
+        createdById: (req.user as any).id,
+        isActive: true,
+      };
+      
+      const validatedData = insertAlertRuleSchema.parse(alertRuleData);
+      const rule = await storage.createAlertRule(validatedData);
+      
+      res.json(rule);
+    } catch (error: any) {
+      console.error("Error creating alert rule:", error);
+      res.status(400).json({ message: error.message || "Impossible de créer la règle d'alerte" });
+    }
+  });
+
+  app.get('/api/alert-rules', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { isActive } = req.query;
+      const rules = await storage.getAlertRules({
+        isActive: isActive === 'true' ? true : isActive === 'false' ? false : undefined,
+      });
+      res.json(rules);
+    } catch (error) {
+      console.error("Error fetching alert rules:", error);
+      res.status(500).json({ message: "Failed to fetch alert rules" });
+    }
+  });
+
+  app.get('/api/alert-rules/:id', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const rule = await storage.getAlertRuleById(req.params.id);
+      if (!rule) {
+        return res.status(404).json({ message: "Règle d'alerte non trouvée" });
+      }
+      res.json(rule);
+    } catch (error) {
+      console.error("Error fetching alert rule:", error);
+      res.status(500).json({ message: "Failed to fetch alert rule" });
+    }
+  });
+
+  app.patch('/api/alert-rules/:id', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updateData = req.body;
+      
+      // If prompt is updated, re-interpret it
+      if (updateData.prompt) {
+        const { interpretAlertPrompt } = await import('./openai');
+        const { name, ruleData, severity } = await interpretAlertPrompt(updateData.prompt);
+        updateData.name = name;
+        updateData.ruleData = ruleData;
+        updateData.severity = severity;
+      }
+      
+      const rule = await storage.updateAlertRule(id, updateData);
+      res.json(rule);
+    } catch (error: any) {
+      console.error("Error updating alert rule:", error);
+      res.status(400).json({ message: error.message || "Failed to update alert rule" });
+    }
+  });
+
+  app.delete('/api/alert-rules/:id', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      await storage.deleteAlertRule(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting alert rule:", error);
+      res.status(500).json({ message: "Failed to delete alert rule" });
+    }
+  });
+
   // Tags
   app.get('/api/tags', isAuthenticated, async (req, res) => {
     try {
