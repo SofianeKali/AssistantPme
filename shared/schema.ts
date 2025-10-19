@@ -333,12 +333,35 @@ export const insertReminderSchema = createInsertSchema(reminders).omit({
 export type InsertReminder = z.infer<typeof insertReminderSchema>;
 export type Reminder = typeof reminders.$inferSelect;
 
+// Alert Rules (règles d'alertes personnalisées via IA)
+export const alertRules = pgTable("alert_rules", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(), // Nom de la règle (ex: "Factures non traitées 24h")
+  prompt: text("prompt").notNull(), // Prompt en langage naturel saisi par l'admin
+  ruleData: jsonb("rule_data").notNull(), // Règle structurée générée par l'IA
+  isActive: boolean("is_active").notNull().default(true),
+  severity: varchar("severity").notNull().default("warning"), // critical, warning, info
+  createdById: varchar("created_by_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertAlertRuleSchema = createInsertSchema(alertRules).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertAlertRule = z.infer<typeof insertAlertRuleSchema>;
+export type AlertRule = typeof alertRules.$inferSelect;
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   emailAccounts: many(emailAccounts),
   assignedEmails: many(emails),
   createdAppointments: many(appointments),
   resolvedAlerts: many(alerts),
+  createdAlertRules: many(alertRules),
 }));
 
 export const emailAccountsRelations = relations(emailAccounts, ({ one, many }) => ({
@@ -446,5 +469,12 @@ export const remindersRelations = relations(reminders, ({ one }) => ({
   email: one(emails, {
     fields: [reminders.emailId],
     references: [emails.id],
+  }),
+}));
+
+export const alertRulesRelations = relations(alertRules, ({ one }) => ({
+  createdBy: one(users, {
+    fields: [alertRules.createdById],
+    references: [users.id],
   }),
 }));
