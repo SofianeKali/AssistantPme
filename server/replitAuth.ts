@@ -59,14 +59,24 @@ async function upsertUser(claims: any) {
   const allUsers = await storage.getAllUsers();
   const isFirstUser = allUsers.length === 0;
   
+  // Determine role: 
+  // 1. If claims include is_admin=true or role='admin', use admin
+  // 2. If first user, make admin
+  // 3. Otherwise, use simple
+  let role = "simple";
+  if (claims["is_admin"] === true || claims["is_admin"] === "true" || claims["role"] === "admin") {
+    role = "admin";
+  } else if (isFirstUser) {
+    role = "admin";
+  }
+  
   await storage.upsertUser({
     id: claims["sub"],
     email: claims["email"],
     firstName: claims["first_name"],
     lastName: claims["last_name"],
     profileImageUrl: claims["profile_image_url"],
-    // First user becomes admin automatically
-    role: isFirstUser ? "admin" : "simple",
+    role,
   });
 }
 
