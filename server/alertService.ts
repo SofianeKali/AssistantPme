@@ -187,19 +187,15 @@ export class AlertService {
       }
 
       console.log(`[Alerts] Checking ${rules.length} custom alert rules`);
-      
-      // Fetch all existing unresolved alerts once
-      const existingAlerts = await this.storage.getAlerts();
-      const unresolvedAlerts = existingAlerts.filter(a => !a.isResolved);
 
       for (const rule of rules) {
         try {
           const ruleData = rule.ruleData as any;
           
           if (ruleData.entityType === 'email') {
-            await this.evaluateEmailRule(rule, ruleData, unresolvedAlerts, result);
+            await this.evaluateEmailRule(rule, ruleData, result);
           } else if (ruleData.entityType === 'appointment') {
-            await this.evaluateAppointmentRule(rule, ruleData, unresolvedAlerts, result);
+            await this.evaluateAppointmentRule(rule, ruleData, result);
           }
         } catch (error) {
           console.error(`[Alerts] Error evaluating rule ${rule.id}:`, error);
@@ -215,53 +211,39 @@ export class AlertService {
   private async evaluateEmailRule(
     rule: any,
     ruleData: any,
-    unresolvedAlerts: any[],
     result: { created: number; errors: number }
   ): Promise<void> {
-    // Get all emails (we'll filter in memory)
-    const allEmails = await this.storage.getAllEmails();
-    const now = new Date();
     const filters = ruleData.filters || {};
 
-    // Filter emails based on rule criteria
-    const matchingEmails = allEmails.filter(email => {
-      // Check category filter
-      if (filters.category && email.emailType !== filters.category) {
-        return false;
-      }
+    // Build database query filters
+    const emailFilters: any = {};
+    if (filters.category) {
+      emailFilters.type = filters.category;
+    }
+    if (filters.status) {
+      emailFilters.status = filters.status;
+    }
+    if (filters.priority) {
+      emailFilters.priority = filters.priority;
+    }
+    if (filters.ageInHours) {
+      emailFilters.olderThanHours = filters.ageInHours;
+    }
 
-      // Check status filter
-      if (filters.status && email.status !== filters.status) {
-        return false;
-      }
-
-      // Check priority filter
-      if (filters.priority && email.priority !== filters.priority) {
-        return false;
-      }
-
-      // Check age filter (ageInHours)
-      if (filters.ageInHours) {
-        const ageThreshold = new Date(now.getTime() - filters.ageInHours * 60 * 60 * 1000);
-        if (email.receivedAt >= ageThreshold) {
-          return false;
-        }
-      }
-
-      return true;
-    });
+    // Get matching emails using optimized database query
+    const matchingEmails = await this.storage.getAllEmails(emailFilters);
 
     // Create alerts for matching emails
     for (const email of matchingEmails) {
       // Check if unresolved alert already exists for this email and rule
-      const hasUnresolvedAlert = unresolvedAlerts.some(
-        alert =>
-          alert.relatedEntityType === 'email' &&
-          alert.relatedEntityId === email.id &&
-          alert.type === `custom_rule_${rule.id}`
-      );
+      const existingAlerts = await this.storage.getAlerts({
+        resolved: false,
+        type: `custom_rule_${rule.id}`,
+        relatedEntityType: 'email',
+        relatedEntityId: email.id,
+      });
 
-      if (!hasUnresolvedAlert) {
+      if (existingAlerts.length === 0) {
         const alertData: InsertAlert = {
           type: `custom_rule_${rule.id}`,
           severity: rule.severity,
@@ -281,10 +263,9 @@ export class AlertService {
   private async evaluateAppointmentRule(
     rule: any,
     ruleData: any,
-    unresolvedAlerts: any[],
     result: { created: number; errors: number }
   ): Promise<void> {
-    // Get all appointments
+    // Get all appointments (time-based filtering must be done in memory)
     const allAppointments = await this.storage.getAppointments();
     const now = new Date();
     const filters = ruleData.filters || {};
@@ -318,14 +299,14 @@ export class AlertService {
     // Create alerts for matching appointments
     for (const apt of matchingAppointments) {
       // Check if unresolved alert already exists for this appointment and rule
-      const hasUnresolvedAlert = unresolvedAlerts.some(
-        alert =>
-          alert.relatedEntityType === 'appointment' &&
-          alert.relatedEntityId === apt.id &&
-          alert.type === `custom_rule_${rule.id}`
-      );
+      const existingAlerts = await this.storage.getAlerts({
+        resolved: false,
+        type: `custom_rule_${rule.id}`,
+        relatedEntityType: 'appointment',
+        relatedEntityId: apt.id,
+      });
 
-      if (!hasUnresolvedAlert) {
+      if (existingAlerts.length === 0) {
         const alertData: InsertAlert = {
           type: `custom_rule_${rule.id}`,
           severity: rule.severity,

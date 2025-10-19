@@ -59,7 +59,7 @@ export interface IStorage {
   // Emails
   createEmail(email: InsertEmail): Promise<Email>;
   getEmails(userId: string, filters?: { type?: string; status?: string; search?: string; limit?: number }): Promise<Email[]>;
-  getAllEmails(filters?: { type?: string; status?: string; search?: string; limit?: number }): Promise<Email[]>; // For backend services
+  getAllEmails(filters?: { type?: string; status?: string; priority?: string; search?: string; olderThanHours?: number; limit?: number }): Promise<Email[]>; // For backend services
   getEmailById(id: string, userId: string): Promise<Email | undefined>;
   getEmailByMessageId(messageId: string): Promise<Email | undefined>;
   updateEmail(id: string, userId: string, data: Partial<Email>): Promise<Email>;
@@ -76,7 +76,7 @@ export interface IStorage {
   
   // Alerts
   createAlert(alert: InsertAlert): Promise<Alert>;
-  getAlerts(filters?: { resolved?: boolean; limit?: number }): Promise<Alert[]>;
+  getAlerts(filters?: { resolved?: boolean; type?: string; relatedEntityType?: string; relatedEntityId?: string; limit?: number }): Promise<Alert[]>;
   resolveAlert(id: string, userId: string): Promise<Alert>;
   
   // Tags
@@ -234,7 +234,7 @@ export class DatabaseStorage implements IStorage {
     return await query;
   }
 
-  async getAllEmails(filters?: { type?: string; status?: string; search?: string; limit?: number }): Promise<Email[]> {
+  async getAllEmails(filters?: { type?: string; status?: string; priority?: string; search?: string; olderThanHours?: number; limit?: number }): Promise<Email[]> {
     let query = db.select().from(emails);
     
     const conditions = [];
@@ -257,6 +257,13 @@ export class DatabaseStorage implements IStorage {
         // Individual status filter
         conditions.push(eq(emails.status, filters.status));
       }
+    }
+    if (filters?.priority) {
+      conditions.push(eq(emails.priority, filters.priority));
+    }
+    if (filters?.olderThanHours !== undefined) {
+      const ageThreshold = new Date(Date.now() - filters.olderThanHours * 60 * 60 * 1000);
+      conditions.push(lte(emails.receivedAt, ageThreshold));
     }
     if (filters?.search) {
       conditions.push(
@@ -377,11 +384,25 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async getAlerts(filters?: { resolved?: boolean; limit?: number }): Promise<Alert[]> {
+  async getAlerts(filters?: { resolved?: boolean; type?: string; relatedEntityType?: string; relatedEntityId?: string; limit?: number }): Promise<Alert[]> {
     let query = db.select().from(alerts);
     
+    const conditions = [];
     if (filters?.resolved !== undefined) {
-      query = query.where(eq(alerts.isResolved, filters.resolved)) as any;
+      conditions.push(eq(alerts.isResolved, filters.resolved));
+    }
+    if (filters?.type) {
+      conditions.push(eq(alerts.type, filters.type));
+    }
+    if (filters?.relatedEntityType) {
+      conditions.push(eq(alerts.relatedEntityType, filters.relatedEntityType));
+    }
+    if (filters?.relatedEntityId) {
+      conditions.push(eq(alerts.relatedEntityId, filters.relatedEntityId));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
     }
     
     query = query.orderBy(desc(alerts.createdAt)) as any;
