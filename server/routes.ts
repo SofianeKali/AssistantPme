@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupLocalAuth, hashPassword } from "./localAuth";
 import { isAdmin } from "./middleware";
 import { analyzeEmail, generateEmailResponse, generateAppointmentSuggestions } from "./openai";
 import { insertEmailAccountSchema, insertTagSchema, insertEmailSchema, insertAlertSchema, insertUserSchema } from "@shared/schema";
@@ -13,6 +14,7 @@ import { sendEmailResponse } from "./emailSender";
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
+  setupLocalAuth(app);
   
   // Initialize email scanner
   const emailScanner = new EmailScanner(storage);
@@ -1032,12 +1034,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate a temporary password for the new user
       const temporaryPassword = generateTemporaryPassword();
       
-      // Create the user (password will be set via Replit Auth on first login)
-      const user = await storage.upsertUser(validatedData);
+      // Hash the password for secure storage
+      const passwordHash = await hashPassword(temporaryPassword);
+      
+      // Create the user with hashed password
+      const user = await storage.upsertUser({
+        ...validatedData,
+        passwordHash,
+      });
       
       // Send welcome email with temporary password
-      // Note: In a real system, we'd hash and store this password
-      // For now, we're using Replit Auth which handles authentication differently
       try {
         await sendEmail({
           to: user.email!,
@@ -1045,13 +1051,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lastName: user.lastName || '',
           temporaryPassword,
         });
-        console.log(`[API] Welcome email sent to ${user.email}`);
+        console.log(`[API] Welcome email sent to ${user.email} with password for local authentication`);
       } catch (emailError) {
         console.error('[API] Failed to send welcome email:', emailError);
         // Don't fail the user creation if email sending fails
       }
       
-      res.json(user);
+      // Don't return passwordHash in response
+      const { passwordHash: _, ...userResponse } = user;
+      res.json(userResponse);
     } catch (error) {
       console.error("Error creating user:", error);
       res.status(400).json({ message: "Invalid user data" });
