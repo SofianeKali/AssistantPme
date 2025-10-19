@@ -1,10 +1,13 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle, FileText, Calendar, Mail, TrendingUp, TrendingDown, LucideIcon } from "lucide-react";
+import { AlertTriangle, FileText, Calendar, Mail, TrendingUp, TrendingDown, LucideIcon, RefreshCw } from "lucide-react";
 import * as LucideIcons from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 // Map icon names to Lucide components
 const getIconComponent = (iconName: string): LucideIcon => {
@@ -27,6 +30,7 @@ const getIconComponent = (iconName: string): LucideIcon => {
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
   
   const { data: stats, isLoading } = useQuery<any>({
     queryKey: ["/api/dashboard/stats"],
@@ -42,6 +46,36 @@ export default function Dashboard() {
 
   const { data: alerts, isLoading: alertsLoading } = useQuery<any>({
     queryKey: ["/api/alerts", { limit: 5, resolved: false }],
+  });
+
+  const generateAlertsMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/alerts/generate");
+      return await res.json();
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/alerts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      
+      if (data.created > 0) {
+        toast({
+          title: "Alertes générées",
+          description: `${data.created} nouvelle(s) alerte(s) créée(s)`,
+        });
+      } else {
+        toast({
+          title: "Vérification terminée",
+          description: "Aucune nouvelle alerte",
+        });
+      }
+    },
+    onError: () => {
+      toast({
+        title: "Erreur",
+        description: "Impossible de générer les alertes",
+        variant: "destructive",
+      });
+    },
   });
 
   if (isLoading) {
@@ -159,8 +193,18 @@ export default function Dashboard() {
 
         {/* Recent Alerts */}
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
             <CardTitle className="text-xl">Alertes récentes</CardTitle>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => generateAlertsMutation.mutate()}
+              disabled={generateAlertsMutation.isPending}
+              data-testid="button-generate-alerts"
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${generateAlertsMutation.isPending ? 'animate-spin' : ''}`} />
+              Vérifier
+            </Button>
           </CardHeader>
           <CardContent>
             {alertsLoading ? (
