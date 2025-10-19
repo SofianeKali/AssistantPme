@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Mail, Save, Trash2, RefreshCw, Info, Plus, Tag, AlertCircle } from "lucide-react";
+import { Mail, Save, Trash2, RefreshCw, Info, Plus, Tag, AlertCircle, Bell } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -65,6 +65,12 @@ export default function Settings() {
     icon: "Mail",
     isSystem: false,
     generateAutoResponse: true,
+  });
+
+  const [alertPrompt, setAlertPrompt] = useState("");
+
+  const { data: alertRules, isLoading: alertRulesLoading } = useQuery({
+    queryKey: ["/api/alert-rules"],
   });
 
   const addAccountMutation = useMutation({
@@ -210,6 +216,60 @@ export default function Settings() {
     },
   });
 
+  const createAlertRuleMutation = useMutation({
+    mutationFn: async (prompt: string) => {
+      return await apiRequest("POST", "/api/alert-rules", { prompt });
+    },
+    onSuccess: (data: any) => {
+      toast({ 
+        title: "Règle d'alerte créée", 
+        description: `"${data.name}" a été créée avec succès`
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/alert-rules"] });
+      setAlertPrompt("");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erreur lors de la création",
+        description: error.message || "Impossible de créer la règle d'alerte",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const toggleAlertRuleMutation = useMutation({
+    mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
+      return await apiRequest("PATCH", `/api/alert-rules/${id}`, { isActive });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/alert-rules"] });
+    },
+    onError: () => {
+      toast({
+        title: "Erreur",
+        description: "Impossible de modifier la règle d'alerte",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteAlertRuleMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await apiRequest("DELETE", `/api/alert-rules/${id}`, {});
+    },
+    onSuccess: () => {
+      toast({ title: "Règle d'alerte supprimée" });
+      queryClient.invalidateQueries({ queryKey: ["/api/alert-rules"] });
+    },
+    onError: () => {
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer la règle d'alerte",
+        variant: "destructive",
+      });
+    },
+  });
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -225,6 +285,7 @@ export default function Settings() {
           <TabsTrigger value="email" data-testid="tab-email">Comptes Email</TabsTrigger>
           <TabsTrigger value="categories" data-testid="tab-categories">Catégories</TabsTrigger>
           <TabsTrigger value="automation" data-testid="tab-automation">Automatisation</TabsTrigger>
+          <TabsTrigger value="alerts" data-testid="tab-alerts">Alertes</TabsTrigger>
           <TabsTrigger value="general" data-testid="tab-general">Général</TabsTrigger>
         </TabsList>
 
@@ -645,6 +706,130 @@ export default function Settings() {
                   data-testid="switch-auto-scheduling"
                 />
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Alerts Tab */}
+        <TabsContent value="alerts" className="space-y-6">
+          <Alert>
+            <Bell className="h-4 w-4" />
+            <AlertTitle>Règles d'alerte personnalisées (Administrateurs uniquement)</AlertTitle>
+            <AlertDescription>
+              Créez des règles d'alerte intelligentes en langage naturel. L'IA interprétera vos instructions et créera automatiquement des alertes basées sur vos critères.
+            </AlertDescription>
+          </Alert>
+
+          {/* Create New Alert Rule */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl">Créer une règle d'alerte</CardTitle>
+              <CardDescription>
+                Décrivez en français la règle d'alerte que vous souhaitez créer
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="alert-prompt">Prompt en langage naturel</Label>
+                <textarea
+                  id="alert-prompt"
+                  value={alertPrompt}
+                  onChange={(e) => setAlertPrompt(e.target.value)}
+                  placeholder="Exemple : Alertes pour emails de facture qui n'ont pas été traités depuis plus de 7 jours avec une priorité élevée"
+                  className="w-full min-h-[120px] p-3 rounded-md border border-input bg-background text-sm resize-none"
+                  data-testid="input-alert-prompt"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Exemples de prompts :
+                </p>
+                <ul className="text-xs text-muted-foreground list-disc list-inside space-y-1 ml-2">
+                  <li>Alerte pour emails urgents de type devis qui ne sont pas traités depuis plus de 24 heures</li>
+                  <li>Rappel pour rendez-vous confirmés qui commencent dans moins de 2 heures</li>
+                  <li>Alerte critique pour emails de facture reçus il y a plus de 10 jours et toujours en status nouveau</li>
+                </ul>
+              </div>
+              <Button 
+                onClick={() => alertPrompt.trim() && createAlertRuleMutation.mutate(alertPrompt.trim())}
+                disabled={createAlertRuleMutation.isPending || !alertPrompt.trim()}
+                data-testid="button-create-alert-rule"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                {createAlertRuleMutation.isPending ? "Création en cours..." : "Créer la règle"}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Existing Alert Rules */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl">Règles d'alerte existantes</CardTitle>
+              <CardDescription>
+                Gérez vos règles d'alerte personnalisées
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {alertRulesLoading ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-20 w-full" />
+                  <Skeleton className="h-20 w-full" />
+                </div>
+              ) : !alertRules || (alertRules as any[]).length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  Aucune règle d'alerte personnalisée. Créez-en une ci-dessus.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {(alertRules as any[]).map((rule: any) => (
+                    <div
+                      key={rule.id}
+                      className="p-4 border rounded-lg space-y-3"
+                      data-testid={`alert-rule-${rule.id}`}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 space-y-1">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-medium text-sm">{rule.name}</h4>
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${
+                              rule.severity === 'critical' 
+                                ? 'bg-destructive/10 text-destructive' 
+                                : rule.severity === 'warning'
+                                ? 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-500'
+                                : 'bg-blue-500/10 text-blue-600 dark:text-blue-500'
+                            }`}>
+                              {rule.severity === 'critical' ? 'Critique' : rule.severity === 'warning' ? 'Attention' : 'Info'}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground italic">
+                            "{rule.prompt}"
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            checked={rule.isActive}
+                            onCheckedChange={(checked) =>
+                              toggleAlertRuleMutation.mutate({ id: rule.id, isActive: checked })
+                            }
+                            disabled={toggleAlertRuleMutation.isPending}
+                            data-testid={`switch-rule-${rule.id}`}
+                          />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => deleteAlertRuleMutation.mutate(rule.id)}
+                            disabled={deleteAlertRuleMutation.isPending}
+                            data-testid={`button-delete-rule-${rule.id}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        <strong>Détails :</strong> {JSON.stringify(rule.ruleData, null, 2)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
