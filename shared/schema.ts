@@ -34,6 +34,9 @@ export const users = pgTable("users", {
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
   role: varchar("role").notNull().default("simple"), // admin, simple
+  // Password hash for local authentication (bcrypt)
+  // NULL for users who authenticate via OIDC only
+  passwordHash: text("password_hash"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
