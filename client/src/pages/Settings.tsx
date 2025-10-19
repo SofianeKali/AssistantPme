@@ -16,6 +16,11 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function Settings() {
   const { toast } = useToast();
+  
+  const { data: user } = useQuery({
+    queryKey: ["/api/auth/user"],
+  });
+
   const { data: emailAccounts, isLoading: emailAccountsLoading } = useQuery({
     queryKey: ["/api/email-accounts"],
   });
@@ -285,7 +290,9 @@ export default function Settings() {
           <TabsTrigger value="email" data-testid="tab-email">Comptes Email</TabsTrigger>
           <TabsTrigger value="categories" data-testid="tab-categories">Catégories</TabsTrigger>
           <TabsTrigger value="automation" data-testid="tab-automation">Automatisation</TabsTrigger>
-          <TabsTrigger value="alerts" data-testid="tab-alerts">Alertes</TabsTrigger>
+          {(user as any)?.role === 'admin' && (
+            <TabsTrigger value="alerts" data-testid="tab-alerts">Alertes</TabsTrigger>
+          )}
           <TabsTrigger value="general" data-testid="tab-general">Général</TabsTrigger>
         </TabsList>
 
