@@ -122,6 +122,11 @@ This project is an intelligent web application designed to automate administrati
   - "Alerte rouge sur les emails de factures non traitées depuis plus de 24 heures"
   - "Avertissement pour les devis urgents sans réponse depuis 48h"
   - "Rappel pour les rendez-vous confirmés qui commencent dans moins de 2 heures"
+- **Manual alert generation**:
+  - Dashboard includes a "Vérifier" button in the "Alertes récentes" card
+  - Triggers immediate alert evaluation via `POST /api/alerts/generate` endpoint
+  - Provides instant feedback via toast notifications
+  - Useful for testing new rules or checking alerts on-demand without waiting for the 60-minute scheduler cycle
 
 ## User Preferences
 I prefer detailed explanations.
