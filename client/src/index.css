@@ -40,7 +40,7 @@
 
   --sidebar-accent-foreground: 222 47% 11%;
 
-  --sidebar-ring: 180 100% 50%;
+  --sidebar-ring: 190 100% 50%;
 
   --popover: 220 14% 94%;
 
@@ -69,7 +69,8 @@
   --destructive-foreground: 210 40% 98%;
 
   --input: 214 32% 81%;
-  --ring: 180 100% 50%;
+  --ring: 190 100% 50%;
+  --cyan: 190 100% 50%;
   --chart-1: 211 61% 20%;
   --chart-2: 142 71% 45%;
   --chart-3: 38 92% 50%;
@@ -158,7 +159,7 @@
 
   --sidebar-accent-foreground: 210 40% 98%;
 
-  --sidebar-ring: 180 100% 50%;
+  --sidebar-ring: 190 100% 50%;
 
   --popover: 215 28% 26%;
 
@@ -187,7 +188,8 @@
   --destructive-foreground: 210 40% 98%;
 
   --input: 215 28% 35%;
-  --ring: 180 100% 50%;
+  --ring: 190 100% 50%;
+  --cyan: 190 100% 50%;
   --chart-1: 211 61% 35%;
   --chart-2: 142 71% 55%;
   --chart-3: 38 92% 60%;
