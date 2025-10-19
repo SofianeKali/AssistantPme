@@ -311,6 +311,31 @@ Générez un email de relance approprié.`
   }
 }
 
+// Zod schema for strict validation of alert rule structure
+const alertRuleFiltersSchema = z.object({
+  // Email filters
+  category: z.enum(["devis", "facture", "rdv", "autre"]).optional(),
+  status: z.enum(["nouveau", "en_cours", "traite", "archive"]).optional(),
+  priority: z.enum(["urgent", "high", "normal", "low"]).optional(),
+  ageInHours: z.number().positive().optional(),
+  // Appointment filters
+  appointmentStatus: z.enum(["planifie", "confirme", "annule", "termine"]).optional(),
+  timeUntilStartInHours: z.number().nonnegative().optional(),
+  timeAfterEndInHours: z.number().nonnegative().optional(),
+}).strict();
+
+const alertRuleDataSchema = z.object({
+  entityType: z.enum(["email", "appointment"]),
+  filters: alertRuleFiltersSchema,
+  message: z.string().min(1).max(500),
+}).strict();
+
+const interpretAlertPromptResponseSchema = z.object({
+  name: z.string().min(1).max(100),
+  ruleData: alertRuleDataSchema,
+  severity: z.enum(["critical", "warning", "info"]),
+}).strict();
+
 // Type definition for alert rule structure
 export interface AlertRuleData {
   entityType: "email" | "appointment";
@@ -444,18 +469,17 @@ Respond ONLY with valid JSON matching this exact structure:
       response_format: { type: "json_object" },
     });
 
-    const result = JSON.parse(response.choices[0].message.content || "{}");
+    const rawResult = JSON.parse(response.choices[0].message.content || "{}");
     
-    // Validate the result structure
-    if (!result.name || !result.ruleData || !result.severity) {
-      throw new Error("Invalid response structure from AI");
-    }
+    // Strict validation using Zod schema
+    const validationResult = interpretAlertPromptResponseSchema.safeParse(rawResult);
     
-    if (!result.ruleData.entityType || !result.ruleData.filters || !result.ruleData.message) {
-      throw new Error("Invalid ruleData structure from AI");
+    if (!validationResult.success) {
+      console.error("Invalid AI response structure:", validationResult.error.issues);
+      throw new Error("La structure de réponse de l'IA est invalide");
     }
 
-    return result;
+    return validationResult.data;
   } catch (error) {
     console.error("Error interpreting alert prompt:", error);
     throw new Error("Impossible d'interpréter le prompt d'alerte. Veuillez reformuler votre demande.");
