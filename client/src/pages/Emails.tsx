@@ -531,6 +531,11 @@ export default function Emails() {
                             </Badge>
                           )}
                         </div>
+                        {email.to && (
+                          <div className="text-xs text-muted-foreground mb-1">
+                            À: <span className="truncate max-w-[200px] md:max-w-none inline-block align-bottom">{email.to}</span>
+                          </div>
+                        )}
                         <div className="text-sm font-semibold line-clamp-1 md:line-clamp-none">{email.subject}</div>
                         <div className="flex items-center gap-1 md:gap-2 flex-wrap mt-1 md:hidden">
                           {email.emailType && (
@@ -600,12 +605,21 @@ export default function Emails() {
         <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto w-[95vw] md:w-full">
           <DialogHeader>
             <DialogTitle className="text-xl">{selectedEmail?.subject}</DialogTitle>
-            <DialogDescription className="flex items-center gap-2 text-sm">
-              <span>De: {selectedEmail?.from}</span>
+            <DialogDescription className="space-y-1">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-sm">
+                <span className="font-medium">De:</span>
+                <span className="truncate">{selectedEmail?.from}</span>
+              </div>
+              {selectedEmail?.to && (
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-sm">
+                  <span className="font-medium">À:</span>
+                  <span className="truncate">{selectedEmail?.to}</span>
+                </div>
+              )}
               {selectedEmail?.receivedAt && (
-                <span className="text-muted-foreground">
-                  • {format(new Date(selectedEmail.receivedAt), "dd MMMM yyyy à HH:mm", { locale: fr })}
-                </span>
+                <div className="text-sm text-muted-foreground">
+                  {format(new Date(selectedEmail.receivedAt), "dd MMMM yyyy à HH:mm", { locale: fr })}
+                </div>
               )}
             </DialogDescription>
           </DialogHeader>
