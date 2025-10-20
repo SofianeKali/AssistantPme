@@ -36,6 +36,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import logoUrl from "../assets/izyinbox-logo.png";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const mainMenuItems = [
   {
@@ -97,6 +98,7 @@ const configMenuItems = [
 export function AppSidebar() {
   const [location] = useLocation();
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   
   // Filter config menu items based on user role
   const filteredConfigMenuItems = configMenuItems.filter(item => {
@@ -117,6 +119,11 @@ export function AppSidebar() {
     if (user?.role === "admin") return "Administrateur";
     return "Utilisateur";
   };
+
+  // Don't render sidebar on mobile - use MobileBottomNav instead
+  if (isMobile) {
+    return null;
+  }
 
   return (
     <Sidebar>
