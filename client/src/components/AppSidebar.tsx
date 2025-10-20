@@ -66,6 +66,7 @@ const configMenuItems = [
     url: "/tags",
     icon: Tag,
     testId: "sidebar-tags",
+    adminOnly: true, // Only admins can manage tags
   },
   {
     title: "Utilisateurs",

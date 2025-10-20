@@ -857,7 +857,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Tags
-  app.get('/api/tags', isAuthenticated, isAdmin, async (req, res) => {
+  // GET is accessible to all authenticated users (tags are used throughout the app)
+  app.get('/api/tags', isAuthenticated, async (req, res) => {
     try {
       const tags = await storage.getAllTags();
       res.json(tags);
@@ -889,7 +890,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Email Categories
-  app.get('/api/email-categories', isAuthenticated, isAdmin, async (req, res) => {
+  // GET is accessible to all authenticated users (read-only)
+  app.get('/api/email-categories', isAuthenticated, async (req, res) => {
     try {
       const { emailAccountId } = req.query;
       
