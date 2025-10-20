@@ -347,6 +347,15 @@ export default function Emails() {
     return emailAddress.replace(/^"([^"]+)"\s*</, '$1 <');
   };
 
+  // Get initials from email address (after formatting)
+  const getEmailInitial = (emailAddress: string) => {
+    if (!emailAddress) return "?";
+    const formatted = formatEmailAddress(emailAddress);
+    // Try to get first letter of name before <email>
+    const match = formatted.match(/^([A-Za-z])/);
+    return match ? match[1].toUpperCase() : "?";
+  };
+
   return (
     <div className="p-4 md:p-6 space-y-4 md:space-y-6">
       {/* Header */}
@@ -518,7 +527,7 @@ export default function Emails() {
                 >
                   <Avatar className="h-8 w-8 md:h-10 md:w-10 flex-shrink-0">
                     <AvatarFallback className="text-xs">
-                      {email.from?.charAt(0)?.toUpperCase() || "?"}
+                      {getEmailInitial(email.from)}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
