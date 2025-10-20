@@ -79,6 +79,7 @@ const configMenuItems = [
     url: "/settings",
     icon: Settings,
     testId: "sidebar-settings",
+    adminOnly: true, // Only show to admin users
   },
 ];
 

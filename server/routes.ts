@@ -56,7 +56,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Email accounts
-  app.get('/api/email-accounts', isAuthenticated, async (req, res) => {
+  app.get('/api/email-accounts', isAuthenticated, isAdmin, async (req, res) => {
     try {
       const userId = (req.user as any).id;
       const accounts = await storage.getEmailAccounts(userId);
@@ -67,7 +67,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/email-accounts', isAuthenticated, async (req, res) => {
+  app.post('/api/email-accounts', isAuthenticated, isAdmin, async (req, res) => {
     try {
       const userId = (req.user as any).id;
       const validatedData = insertEmailAccountSchema.parse({ ...req.body, userId });
@@ -79,7 +79,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/email-accounts/:id', isAuthenticated, async (req, res) => {
+  app.delete('/api/email-accounts/:id', isAuthenticated, isAdmin, async (req, res) => {
     try {
       await storage.deleteEmailAccount(req.params.id);
       res.json({ success: true });
@@ -857,7 +857,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Tags
-  app.get('/api/tags', isAuthenticated, async (req, res) => {
+  app.get('/api/tags', isAuthenticated, isAdmin, async (req, res) => {
     try {
       const tags = await storage.getAllTags();
       res.json(tags);
@@ -867,7 +867,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/tags', isAuthenticated, async (req, res) => {
+  app.post('/api/tags', isAuthenticated, isAdmin, async (req, res) => {
     try {
       const validatedData = insertTagSchema.parse(req.body);
       const tag = await storage.createTag(validatedData);
@@ -878,7 +878,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/tags/:id', isAuthenticated, async (req, res) => {
+  app.delete('/api/tags/:id', isAuthenticated, isAdmin, async (req, res) => {
     try {
       await storage.deleteTag(req.params.id);
       res.json({ success: true });
@@ -889,7 +889,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Email Categories
-  app.get('/api/email-categories', isAuthenticated, async (req, res) => {
+  app.get('/api/email-categories', isAuthenticated, isAdmin, async (req, res) => {
     try {
       const { emailAccountId } = req.query;
       
@@ -945,7 +945,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Settings
-  app.get('/api/settings', isAuthenticated, async (req, res) => {
+  app.get('/api/settings', isAuthenticated, isAdmin, async (req, res) => {
     try {
       const settings = await storage.getAllSettings();
       res.json(settings);
@@ -955,7 +955,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/settings/:key', isAuthenticated, async (req, res) => {
+  app.put('/api/settings/:key', isAuthenticated, isAdmin, async (req, res) => {
     try {
       const { key } = req.params;
       const { value } = req.body;
