@@ -341,10 +341,10 @@ export default function Emails() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-semibold text-foreground mb-2">Emails</h1>
+        <h1 className="text-2xl md:text-3xl font-semibold text-foreground mb-2">Emails</h1>
         <p className="text-sm text-muted-foreground">
           Gestion et analyse intelligente de vos emails
         </p>
@@ -392,11 +392,11 @@ export default function Emails() {
 
       {/* Bulk Actions Bar */}
       {selectedEmailIds.length > 0 && (
-        <Card className="p-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
+        <Card className="p-3 md:p-4">
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-2">
               <span className="text-sm font-medium">
-                {selectedEmailIds.length} email(s) sélectionné(s)
+                {selectedEmailIds.length} email(s)
               </span>
               <Button
                 variant="outline"
@@ -405,15 +405,15 @@ export default function Emails() {
                 disabled={bulkUpdateStatusMutation.isPending}
                 data-testid="button-clear-selection"
               >
-                <X className="h-4 w-4 mr-2" />
-                Désélectionner
+                <X className="h-4 w-4 md:mr-2" />
+                <span className="hidden md:inline">Désélectionner</span>
               </Button>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {bulkUpdateStatusMutation.isPending ? (
-                <span className="text-sm text-muted-foreground">Mise à jour en cours...</span>
+                <span className="text-xs md:text-sm text-muted-foreground">Mise à jour...</span>
               ) : (
-                <span className="text-sm text-muted-foreground">Changer le statut :</span>
+                <span className="text-xs md:text-sm text-muted-foreground w-full md:w-auto">Changer le statut :</span>
               )}
               <Button
                 variant="outline"
@@ -421,9 +421,10 @@ export default function Emails() {
                 onClick={() => handleBulkUpdateStatus('nouveau')}
                 disabled={bulkUpdateStatusMutation.isPending}
                 data-testid="button-bulk-mark-nouveau"
+                className="flex-1 md:flex-none"
               >
-                <Mail className="h-4 w-4 mr-2" />
-                Nouveau
+                <Mail className="h-4 w-4 md:mr-2" />
+                <span className="hidden sm:inline">Nouveau</span>
               </Button>
               <Button
                 variant="outline"
@@ -431,8 +432,9 @@ export default function Emails() {
                 onClick={() => handleBulkUpdateStatus('en_cours')}
                 disabled={bulkUpdateStatusMutation.isPending}
                 data-testid="button-bulk-mark-en-cours"
+                className="flex-1 md:flex-none"
               >
-                En cours
+                <span className="text-xs sm:text-sm">En cours</span>
               </Button>
               <Button
                 variant="default"
@@ -440,9 +442,10 @@ export default function Emails() {
                 onClick={() => handleBulkUpdateStatus('traite')}
                 disabled={bulkUpdateStatusMutation.isPending}
                 data-testid="button-bulk-mark-traite"
+                className="flex-1 md:flex-none"
               >
-                <Check className="h-4 w-4 mr-2" />
-                Traité
+                <Check className="h-4 w-4 md:mr-2" />
+                <span className="hidden sm:inline">Traité</span>
               </Button>
               <Button
                 variant="outline"
@@ -450,8 +453,9 @@ export default function Emails() {
                 onClick={() => handleBulkUpdateStatus('archive')}
                 disabled={bulkUpdateStatusMutation.isPending}
                 data-testid="button-bulk-mark-archive"
+                className="flex-1 md:flex-none"
               >
-                Archivé
+                <span className="text-xs sm:text-sm">Archivé</span>
               </Button>
             </div>
           </div>
@@ -486,88 +490,99 @@ export default function Emails() {
           emails.map((email: any) => (
             <div
               key={email.id}
-              className={`p-4 hover-elevate ${
+              className={`p-3 md:p-4 hover-elevate ${
                 email.status === 'nouveau' 
                   ? 'border-l-4 border-l-primary bg-primary/5 dark:bg-primary/10' 
                   : ''
               }`}
               data-testid={`email-${email.id}`}
             >
-              <div className="flex items-start gap-4">
+              <div className="flex items-start gap-2 md:gap-4">
                 <Checkbox
                   checked={selectedEmailIds.includes(email.id)}
                   onCheckedChange={(checked) => handleSelectEmail(email.id, checked as boolean)}
                   onClick={(e) => e.stopPropagation()}
                   data-testid={`checkbox-email-${email.id}`}
-                  className="mt-3"
+                  className="mt-2 md:mt-3 flex-shrink-0"
                 />
                 <div 
-                  className="flex items-start gap-4 flex-1 cursor-pointer"
+                  className="flex items-start gap-2 md:gap-4 flex-1 min-w-0 cursor-pointer"
                   onClick={() => setSelectedEmail(email)}
                 >
-                  <Avatar className="h-10 w-10 flex-shrink-0">
+                  <Avatar className="h-8 w-8 md:h-10 md:w-10 flex-shrink-0">
                     <AvatarFallback className="text-xs">
                       {email.from?.charAt(0)?.toUpperCase() || "?"}
                     </AvatarFallback>
                   </Avatar>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2 mb-1">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-medium truncate">{email.from}</span>
-                        {email.respondedAt && (
-                          <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20" data-testid={`badge-responded-${email.id}`}>
-                            <Check className="h-3 w-3 mr-1" />
-                            Répondu
-                          </Badge>
-                        )}
-                        {email.status && (
-                          <Badge variant="outline" className={`text-xs ${getStatusColor(email.status)}`} data-testid={`badge-status-${email.id}`}>
-                            {getStatusLabel(email.status)}
-                          </Badge>
-                        )}
-                        {email.emailType && (
-                          <Badge variant="outline" className={`text-xs ${getEmailTypeColor(email.emailType)}`}>
-                            {email.emailType}
-                          </Badge>
-                        )}
-                        {email.priority && email.priority !== "normal" && (
-                          <Badge variant="outline" className={`text-xs ${getPriorityColor(email.priority)}`}>
-                            {email.priority}
-                          </Badge>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-2 mb-1">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1 md:gap-2 flex-wrap mb-1">
+                          <span className="text-sm font-medium truncate max-w-[150px] md:max-w-none">{email.from}</span>
+                          {email.respondedAt && (
+                            <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 flex-shrink-0" data-testid={`badge-responded-${email.id}`}>
+                              <Check className="h-3 w-3 mr-1" />
+                              <span className="hidden sm:inline">Répondu</span>
+                            </Badge>
+                          )}
+                          {email.status && (
+                            <Badge variant="outline" className={`text-xs flex-shrink-0 ${getStatusColor(email.status)}`} data-testid={`badge-status-${email.id}`}>
+                              {getStatusLabel(email.status)}
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="text-sm font-semibold line-clamp-1 md:line-clamp-none">{email.subject}</div>
+                        <div className="flex items-center gap-1 md:gap-2 flex-wrap mt-1 md:hidden">
+                          {email.emailType && (
+                            <Badge variant="outline" className={`text-xs flex-shrink-0 ${getEmailTypeColor(email.emailType)}`}>
+                              {email.emailType}
+                            </Badge>
+                          )}
+                          {email.priority && email.priority !== "normal" && (
+                            <Badge variant="outline" className={`text-xs flex-shrink-0 ${getPriorityColor(email.priority)}`}>
+                              {email.priority}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">
+                          {format(new Date(email.receivedAt), "dd MMM", { locale: fr })}
+                        </span>
+                        {email.status !== 'traite' && (
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 flex-shrink-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              markProcessedMutation.mutate(email.id);
+                            }}
+                            disabled={markProcessedMutation.isPending}
+                            data-testid={`button-mark-processed-${email.id}`}
+                            title="Marquer comme traité"
+                          >
+                            <MailCheck className="h-4 w-4" />
+                          </Button>
                         )}
                       </div>
-                      <div className="text-sm font-semibold mt-1">{email.subject}</div>
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="text-xs text-muted-foreground">
-                        {format(new Date(email.receivedAt), "dd MMM", { locale: fr })}
-                      </span>
-                      {email.status !== 'traite' && (
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            markProcessedMutation.mutate(email.id);
-                          }}
-                          disabled={markProcessedMutation.isPending}
-                          data-testid={`button-mark-processed-${email.id}`}
-                          title="Marquer comme traité"
-                        >
-                          <MailCheck className="h-4 w-4" />
-                        </Button>
+                    <div className="hidden md:flex items-center gap-2 flex-wrap mb-2">
+                      {email.emailType && (
+                        <Badge variant="outline" className={`text-xs ${getEmailTypeColor(email.emailType)}`}>
+                          {email.emailType}
+                        </Badge>
                       )}
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
+                      {email.priority && email.priority !== "normal" && (
+                        <Badge variant="outline" className={`text-xs ${getPriorityColor(email.priority)}`}>
+                          {email.priority}
+                        </Badge>
+                      )}
                     </div>
+                    <p className="text-sm text-muted-foreground line-clamp-2">
+                      {email.body?.substring(0, 150)}...
+                    </p>
                   </div>
-                  <p className="text-sm text-muted-foreground line-clamp-2">
-                    {email.body?.substring(0, 150)}...
-                  </p>
-                </div>
                 </div>
               </div>
             </div>
@@ -582,7 +597,7 @@ export default function Emails() {
 
       {/* Email Detail Dialog */}
       <Dialog open={!!selectedEmail} onOpenChange={(open) => !open && setSelectedEmail(null)}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto w-[95vw] md:w-full">
           <DialogHeader>
             <DialogTitle className="text-xl">{selectedEmail?.subject}</DialogTitle>
             <DialogDescription className="flex items-center gap-2 text-sm">
@@ -651,13 +666,14 @@ export default function Emails() {
                 <Button
                   onClick={() => setShowResponseDialog(true)}
                   data-testid="button-view-response"
+                  className="w-full"
                 >
                   <Sparkles className="h-4 w-4 mr-2" />
                   Voir / Modifier la réponse
                 </Button>
               ) : (
                 <div className="flex flex-col gap-2">
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Button
                       onClick={() => generateResponseMutation.mutate({ 
                         emailId: selectedEmail?.id,
@@ -668,7 +684,9 @@ export default function Emails() {
                       className="flex-1"
                     >
                       <Sparkles className="h-4 w-4 mr-2" />
-                      {generateResponseMutation.isPending ? "Génération..." : "Générer une réponse"}
+                      <span className="truncate">
+                        {generateResponseMutation.isPending ? "Génération..." : "Générer une réponse"}
+                      </span>
                     </Button>
                     <Button
                       variant="outline"
@@ -679,8 +697,11 @@ export default function Emails() {
                         }
                       }}
                       data-testid="button-toggle-custom-prompt"
+                      className="sm:w-auto"
                     >
-                      {showPromptInput ? "Masquer les instructions" : "Personnaliser"}
+                      <span className="truncate">
+                        {showPromptInput ? "Masquer" : "Personnaliser"}
+                      </span>
                     </Button>
                   </div>
                 </div>
@@ -691,6 +712,7 @@ export default function Emails() {
                   onClick={() => markProcessedMutation.mutate(selectedEmail?.id)}
                   disabled={markProcessedMutation.isPending}
                   data-testid="button-mark-processed"
+                  className="w-full"
                 >
                   <Check className="h-4 w-4 mr-2" />
                   {markProcessedMutation.isPending ? "En cours..." : "Marquer comme traité"}
@@ -703,7 +725,7 @@ export default function Emails() {
 
       {/* Response Dialog */}
       <Dialog open={showResponseDialog} onOpenChange={setShowResponseDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl w-[95vw] md:w-full">
           <DialogHeader>
             <DialogTitle>Réponse générée par IA</DialogTitle>
             <DialogDescription>
@@ -719,7 +741,7 @@ export default function Emails() {
               rows={8}
               data-testid="textarea-response"
             />
-            <div className="flex gap-2 justify-between">
+            <div className="flex flex-col sm:flex-row gap-2 sm:justify-between">
               <Button 
                 variant="outline" 
                 onClick={() => {
@@ -728,12 +750,19 @@ export default function Emails() {
                 }}
                 disabled={markProcessedMutation.isPending}
                 data-testid="button-mark-processed-dialog"
+                className="w-full sm:w-auto"
               >
                 <Check className="h-4 w-4 mr-2" />
-                {markProcessedMutation.isPending ? "En cours..." : "Marquer traité sans envoyer"}
+                <span className="truncate">
+                  {markProcessedMutation.isPending ? "En cours..." : "Marquer traité"}
+                </span>
               </Button>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setShowResponseDialog(false)}>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowResponseDialog(false)}
+                  className="flex-1 sm:flex-none"
+                >
                   Annuler
                 </Button>
                 <Button
@@ -745,8 +774,11 @@ export default function Emails() {
                   }
                   disabled={sendResponseMutation.isPending || !selectedEmail?.suggestedResponse}
                   data-testid="button-approve-response"
+                  className="flex-1 sm:flex-none"
                 >
-                  {sendResponseMutation.isPending ? "Envoi en cours..." : "Approuver et envoyer"}
+                  <span className="truncate">
+                    {sendResponseMutation.isPending ? "Envoi..." : "Envoyer"}
+                  </span>
                 </Button>
               </div>
             </div>
