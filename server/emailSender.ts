@@ -47,7 +47,10 @@ export async function sendEmailResponse(
         address: emailAccount.email,
       },
       to: params.to,
-      subject: params.subject.startsWith('Re:') ? params.subject : `Re: ${params.subject}`,
+      // Only add "Re:" prefix if this is a reply (has inReplyTo)
+      subject: params.inReplyTo 
+        ? (params.subject.startsWith('Re:') ? params.subject : `Re: ${params.subject}`)
+        : params.subject,
       text: params.body,
       html: params.body.replace(/\n/g, '<br>'), // Simple HTML conversion
     };

@@ -1037,15 +1037,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         passwordHash,
       });
       
-      // Send welcome email with temporary password
+      // Send welcome email with temporary password via admin's email account
       try {
-        await sendEmail({
-          to: user.email!,
-          firstName: user.firstName || 'Utilisateur',
-          lastName: user.lastName || '',
-          temporaryPassword,
-        });
-        console.log(`[API] Welcome email sent to ${user.email} with password for local authentication`);
+        // Get admin's active email account
+        const adminId = (req.user as any).id;
+        const adminEmailAccounts = await storage.getEmailAccounts(adminId);
+        const activeAccount = adminEmailAccounts.find(acc => acc.isActive);
+        
+        if (!activeAccount) {
+          console.warn('[API] No active email account found for admin - skipping welcome email');
+        } else {
+          await sendEmail({
+            to: user.email!,
+            firstName: user.firstName || 'Utilisateur',
+            lastName: user.lastName || '',
+            temporaryPassword,
+            adminEmailAccount: activeAccount,
+          });
+          console.log(`[API] Welcome email sent to ${user.email} via SMTP (${activeAccount.email})`);
+        }
       } catch (emailError) {
         console.error('[API] Failed to send welcome email:', emailError);
         // Don't fail the user creation if email sending fails

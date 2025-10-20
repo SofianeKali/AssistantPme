@@ -1,10 +1,12 @@
-import { getUncachableResendClient } from './resendClient';
+import { sendEmailResponse } from './emailSender';
+import type { EmailAccount } from '@shared/schema';
 
 interface SendWelcomeEmailParams {
   to: string;
   firstName: string;
   lastName: string;
   temporaryPassword: string;
+  adminEmailAccount: EmailAccount;
 }
 
 /**
@@ -12,13 +14,9 @@ interface SendWelcomeEmailParams {
  */
 export async function sendWelcomeEmail(params: SendWelcomeEmailParams): Promise<void> {
   try {
-    const { client, fromEmail } = await getUncachableResendClient();
+    const { adminEmailAccount } = params;
     
-    console.log(`[EmailService] Preparing to send welcome email to ${params.to} from ${fromEmail}`);
-    
-    if (!fromEmail) {
-      throw new Error('From email is not configured in Resend integration');
-    }
+    console.log(`[EmailService] Preparing to send welcome email to ${params.to} from ${adminEmailAccount.email} (SMTP)`);
 
     const htmlContent = `
       <!DOCTYPE html>
@@ -146,24 +144,19 @@ export async function sendWelcomeEmail(params: SendWelcomeEmailParams): Promise<
       </html>
     `;
 
-    const response = await client.emails.send({
-      from: fromEmail,
+    const sendResult = await sendEmailResponse(adminEmailAccount, {
       to: params.to,
       subject: '🎉 Bienvenue sur IzyInbox - Vos identifiants de connexion',
-      html: htmlContent,
+      body: htmlContent,
     });
 
-    console.log(`[EmailService] Welcome email sent to ${params.to}`);
-    console.log(`[EmailService] Resend response:`, JSON.stringify(response, null, 2));
-    
-    if (response.error) {
-      console.error('[EmailService] Resend returned an error:', response.error);
-      throw new Error(`Resend error: ${JSON.stringify(response.error)}`);
+    if (!sendResult.success) {
+      console.error('[EmailService] SMTP error sending welcome email:', sendResult.error);
+      throw new Error(`SMTP error: ${sendResult.error}`);
     }
-    
-    if (response.data?.id) {
-      console.log(`[EmailService] Email successfully queued with ID: ${response.data.id}`);
-    }
+
+    console.log(`[EmailService] Welcome email sent successfully to ${params.to}`);
+    console.log(`[EmailService] SMTP Message ID: ${sendResult.messageId}`);
   } catch (error) {
     console.error('[EmailService] Error sending welcome email:', error);
     console.error('[EmailService] Error details:', JSON.stringify(error, null, 2));
