@@ -1025,10 +1025,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const validatedData = insertUserSchema.parse(req.body);
       
+      // Normalize email: trim and lowercase
+      const normalizedEmail = validatedData.email?.trim().toLowerCase();
+      
       // Generate a temporary password for the new user
       const temporaryPassword = generateTemporaryPassword();
       
-      console.log(`[API] Generated temporary password for ${validatedData.email} (length: ${temporaryPassword.length})`);
+      console.log(`[API] Generated temporary password for ${normalizedEmail} (length: ${temporaryPassword.length})`);
       console.log(`[API] Password preview (first 4 chars): ${temporaryPassword.substring(0, 4)}...`);
       
       // Hash the password for secure storage
@@ -1036,9 +1039,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`[API] Password hashed successfully`);
       
-      // Create the user with hashed password
+      // Create the user with hashed password (using normalized email)
       const user = await storage.upsertUser({
         ...validatedData,
+        email: normalizedEmail,
         passwordHash,
       });
       

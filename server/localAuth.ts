@@ -13,11 +13,15 @@ export function setupLocalAuth(app: Express) {
     },
     async (email, password, done) => {
       try {
+        // Normalize email: trim and lowercase
+        const normalizedEmail = email.trim().toLowerCase();
+        
         console.log(`[LocalAuth] Login attempt for email: ${email}`);
+        console.log(`[LocalAuth] Normalized email: ${normalizedEmail}`);
         console.log(`[LocalAuth] Password length: ${password?.length || 0}`);
         
-        // Find user by email
-        const user = await storage.getUserByEmail(email);
+        // Find user by normalized email
+        const user = await storage.getUserByEmail(normalizedEmail);
         
         if (!user) {
           console.log(`[LocalAuth] User not found: ${email}`);
