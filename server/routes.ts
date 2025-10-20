@@ -90,11 +90,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Emails
+  // All authenticated users can see all emails (PME shared inbox)
   app.get('/api/emails', isAuthenticated, async (req, res) => {
     try {
-      const userId = (req.user as any).id;
       const { type, status, search } = req.query;
-      const emails = await storage.getEmails(userId, {
+      const emails = await storage.getAllEmails({
         type: type as string,
         status: status as string,
         search: search as string,
@@ -108,8 +108,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/emails/stats/by-category', isAuthenticated, async (req, res) => {
     try {
-      const userId = (req.user as any).id;
-      const categoryCounts = await storage.getEmailStatsByCategory(userId);
+      // All users see stats for all emails (PME shared inbox)
+      const categoryCounts = await storage.getEmailStatsByCategory();
       res.json(categoryCounts);
     } catch (error) {
       console.error("Error fetching email category stats:", error);

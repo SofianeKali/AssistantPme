@@ -115,7 +115,7 @@ export interface IStorage {
   // Dashboard stats
   getDashboardStats(): Promise<any>;
   getAdvancedKPIs(): Promise<any>;
-  getEmailStatsByCategory(userId: string): Promise<Record<string, number>>;
+  getEmailStatsByCategory(userId?: string): Promise<Record<string, number>>;
   
   // Email categories
   createEmailCategory(category: InsertEmailCategory): Promise<EmailCategory>;
@@ -930,21 +930,25 @@ export class DatabaseStorage implements IStorage {
 
   // Email stats by category (optimized with SQL aggregation, dynamic categories)
   // Only counts unprocessed emails (status = 'nouveau')
-  async getEmailStatsByCategory(userId: string): Promise<Record<string, number>> {
+  async getEmailStatsByCategory(userId?: string): Promise<Record<string, number>> {
     // Get all categories first to ensure all are represented in the result
     const categories = await this.getAllEmailCategories();
     
     // Get email counts grouped by type - only unprocessed emails
+    const conditions = [eq(emails.status, 'nouveau')];
+    
+    // If userId is provided, filter by user, otherwise show all emails
+    if (userId) {
+      conditions.push(eq(emails.userId, userId));
+    }
+    
     const results = await db
       .select({
         emailType: emails.emailType,
         count: sql<number>`count(*)`
       })
       .from(emails)
-      .where(and(
-        eq(emails.userId, userId),
-        eq(emails.status, 'nouveau') // Only count unprocessed emails
-      ))
+      .where(and(...conditions))
       .groupBy(emails.emailType);
     
     // Build a map with all categories (starting at 0)
