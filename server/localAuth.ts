@@ -13,22 +13,32 @@ export function setupLocalAuth(app: Express) {
     },
     async (email, password, done) => {
       try {
+        console.log(`[LocalAuth] Login attempt for email: ${email}`);
+        console.log(`[LocalAuth] Password length: ${password?.length || 0}`);
+        
         // Find user by email
         const user = await storage.getUserByEmail(email);
         
         if (!user) {
+          console.log(`[LocalAuth] User not found: ${email}`);
           return done(null, false, { message: 'Email ou mot de passe incorrect' });
         }
         
         // Check if user has a password hash (local auth enabled)
         if (!user.passwordHash) {
+          console.log(`[LocalAuth] User ${email} has no password hash`);
           return done(null, false, { message: 'Ce compte utilise une autre méthode de connexion' });
         }
+        
+        console.log(`[LocalAuth] Comparing password for user: ${email}`);
         
         // Verify password
         const isValidPassword = await bcrypt.compare(password, user.passwordHash);
         
+        console.log(`[LocalAuth] Password validation result: ${isValidPassword}`);
+        
         if (!isValidPassword) {
+          console.log(`[LocalAuth] Invalid password for user: ${email}`);
           return done(null, false, { message: 'Email ou mot de passe incorrect' });
         }
         

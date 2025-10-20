@@ -1028,8 +1028,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate a temporary password for the new user
       const temporaryPassword = generateTemporaryPassword();
       
+      console.log(`[API] Generated temporary password for ${validatedData.email} (length: ${temporaryPassword.length})`);
+      console.log(`[API] Password preview (first 4 chars): ${temporaryPassword.substring(0, 4)}...`);
+      
       // Hash the password for secure storage
       const passwordHash = await hashPassword(temporaryPassword);
+      
+      console.log(`[API] Password hashed successfully`);
       
       // Create the user with hashed password
       const user = await storage.upsertUser({

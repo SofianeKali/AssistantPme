@@ -5,6 +5,7 @@ export interface SendEmailParams {
   to: string;
   subject: string;
   body: string;
+  textBody?: string; // Plain text version (optional)
   inReplyTo?: string; // Original message ID for threading
   references?: string; // For email threading
 }
@@ -51,8 +52,10 @@ export async function sendEmailResponse(
       subject: params.inReplyTo 
         ? (params.subject.startsWith('Re:') ? params.subject : `Re: ${params.subject}`)
         : params.subject,
-      text: params.body,
-      html: params.body.replace(/\n/g, '<br>'), // Simple HTML conversion
+      // Use textBody if provided, otherwise convert body to text
+      text: params.textBody || params.body,
+      // If body looks like HTML, use it as is, otherwise convert newlines
+      html: params.body.includes('<html>') ? params.body : params.body.replace(/\n/g, '<br>'),
     };
 
     // Add email threading headers if provided

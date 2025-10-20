@@ -17,6 +17,41 @@ export async function sendWelcomeEmail(params: SendWelcomeEmailParams): Promise<
     const { adminEmailAccount } = params;
     
     console.log(`[EmailService] Preparing to send welcome email to ${params.to} from ${adminEmailAccount.email} (SMTP)`);
+    console.log(`[EmailService] Temporary password length: ${params.temporaryPassword.length}`);
+
+    // Create plain text version (no HTML encoding issues)
+    const textContent = `
+Bienvenue sur IzyInbox !
+========================
+
+Bonjour ${params.firstName} ${params.lastName},
+
+Votre compte utilisateur pour IzyInbox (Smart Automation for Busy Managers) a été créé par votre administrateur.
+
+Vos identifiants de connexion :
+
+📧 Email : ${params.to}
+🔑 Mot de passe temporaire : ${params.temporaryPassword}
+
+⚠️ IMPORTANT : Conservez ce mot de passe en lieu sûr. Vous pouvez le changer plus tard depuis votre profil.
+
+📋 Pour vous connecter :
+1. Rendez-vous sur ${process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000'}
+2. Entrez votre adresse email : ${params.to}
+3. Entrez le mot de passe temporaire ci-dessus
+4. Vous serez redirigé vers votre tableau de bord
+
+🎯 Prochaines étapes :
+- Configurez votre compte email (Gmail, Outlook ou Yahoo)
+- Explorez le tableau de bord et les fonctionnalités d'IA
+- Commencez à automatiser votre gestion administrative !
+
+Si vous avez des questions, n'hésitez pas à contacter votre administrateur.
+
+---
+IzyInbox - Smart Automation for Busy Managers
+Cet email a été envoyé automatiquement, merci de ne pas y répondre.
+    `.trim();
 
     const htmlContent = `
       <!DOCTYPE html>
@@ -148,6 +183,7 @@ export async function sendWelcomeEmail(params: SendWelcomeEmailParams): Promise<
       to: params.to,
       subject: '🎉 Bienvenue sur IzyInbox - Vos identifiants de connexion',
       body: htmlContent,
+      textBody: textContent, // Include plain text version to avoid HTML encoding issues
     });
 
     if (!sendResult.success) {
