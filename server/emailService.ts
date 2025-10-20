@@ -13,6 +13,12 @@ interface SendWelcomeEmailParams {
 export async function sendWelcomeEmail(params: SendWelcomeEmailParams): Promise<void> {
   try {
     const { client, fromEmail } = await getUncachableResendClient();
+    
+    console.log(`[EmailService] Preparing to send welcome email to ${params.to} from ${fromEmail}`);
+    
+    if (!fromEmail) {
+      throw new Error('From email is not configured in Resend integration');
+    }
 
     const htmlContent = `
       <!DOCTYPE html>
@@ -140,7 +146,7 @@ export async function sendWelcomeEmail(params: SendWelcomeEmailParams): Promise<
       </html>
     `;
 
-    await client.emails.send({
+    const response = await client.emails.send({
       from: fromEmail,
       to: params.to,
       subject: '🎉 Bienvenue sur IzyInbox - Vos identifiants de connexion',
@@ -148,8 +154,19 @@ export async function sendWelcomeEmail(params: SendWelcomeEmailParams): Promise<
     });
 
     console.log(`[EmailService] Welcome email sent to ${params.to}`);
+    console.log(`[EmailService] Resend response:`, JSON.stringify(response, null, 2));
+    
+    if (response.error) {
+      console.error('[EmailService] Resend returned an error:', response.error);
+      throw new Error(`Resend error: ${JSON.stringify(response.error)}`);
+    }
+    
+    if (response.data?.id) {
+      console.log(`[EmailService] Email successfully queued with ID: ${response.data.id}`);
+    }
   } catch (error) {
     console.error('[EmailService] Error sending welcome email:', error);
+    console.error('[EmailService] Error details:', JSON.stringify(error, null, 2));
     throw error;
   }
 }
