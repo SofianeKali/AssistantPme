@@ -340,6 +340,13 @@ export default function Emails() {
     }
   };
 
+  // Format email address by removing quotes
+  const formatEmailAddress = (emailAddress: string) => {
+    if (!emailAddress) return "";
+    // Remove quotes around display name: "Name" <email> -> Name <email>
+    return emailAddress.replace(/^"([^"]+)"\s*</, '$1 <');
+  };
+
   return (
     <div className="p-4 md:p-6 space-y-4 md:space-y-6">
       {/* Header */}
@@ -518,7 +525,7 @@ export default function Emails() {
                     <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-2 mb-1">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1 md:gap-2 flex-wrap mb-1">
-                          <span className="text-sm font-medium truncate max-w-[150px] md:max-w-none">{email.from}</span>
+                          <span className="text-sm font-medium truncate max-w-[150px] md:max-w-none">{formatEmailAddress(email.from)}</span>
                           {email.respondedAt && (
                             <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 flex-shrink-0" data-testid={`badge-responded-${email.id}`}>
                               <Check className="h-3 w-3 mr-1" />
@@ -533,7 +540,7 @@ export default function Emails() {
                         </div>
                         {email.to && (
                           <div className="text-xs text-muted-foreground mb-1">
-                            À: <span className="truncate max-w-[200px] md:max-w-none inline-block align-bottom">{email.to}</span>
+                            À: <span className="truncate max-w-[200px] md:max-w-none inline-block align-bottom">{formatEmailAddress(email.to)}</span>
                           </div>
                         )}
                         <div className="text-sm font-semibold line-clamp-1 md:line-clamp-none">{email.subject}</div>
@@ -605,23 +612,23 @@ export default function Emails() {
         <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto w-[95vw] md:w-full">
           <DialogHeader>
             <DialogTitle className="text-xl">{selectedEmail?.subject}</DialogTitle>
-            <DialogDescription className="space-y-1">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-sm">
-                <span className="font-medium">De:</span>
-                <span className="truncate">{selectedEmail?.from}</span>
+            <div className="space-y-1 text-sm text-muted-foreground">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                <span className="font-medium text-foreground">De:</span>
+                <span className="truncate">{formatEmailAddress(selectedEmail?.from || "")}</span>
               </div>
               {selectedEmail?.to && (
-                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-sm">
-                  <span className="font-medium">À:</span>
-                  <span className="truncate">{selectedEmail?.to}</span>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                  <span className="font-medium text-foreground">À:</span>
+                  <span className="truncate">{formatEmailAddress(selectedEmail?.to)}</span>
                 </div>
               )}
               {selectedEmail?.receivedAt && (
-                <div className="text-sm text-muted-foreground">
+                <div>
                   {format(new Date(selectedEmail.receivedAt), "dd MMMM yyyy à HH:mm", { locale: fr })}
                 </div>
               )}
-            </DialogDescription>
+            </div>
           </DialogHeader>
           <div className="space-y-4">
             {/* AI Analysis */}
