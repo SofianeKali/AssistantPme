@@ -160,8 +160,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/emails/:id/generate-response', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = (req.user as any).id;
-      const email = await storage.getEmailById(req.params.id, userId);
+      const email = await storage.getEmailById(req.params.id);
       if (!email) {
         return res.status(404).json({ message: "Email not found" });
       }
@@ -175,7 +174,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Update the email with the suggested response
-      const updatedEmail = await storage.updateEmail(email.id, userId, {
+      const updatedEmail = await storage.updateEmail(email.id, undefined, {
         suggestedResponse: responseBody,
       });
       
@@ -188,7 +187,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/emails/:id/send-response', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = (req.user as any).id;
       const { responseText } = req.body;
 
       // Validate response text
@@ -196,8 +194,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Response text is required" });
       }
 
-      // Get email and verify ownership
-      const email = await storage.getEmailById(req.params.id, userId);
+      // Get email (shared inbox - no ownership check)
+      const email = await storage.getEmailById(req.params.id);
       if (!email) {
         return res.status(404).json({ message: "Email not found" });
       }
@@ -225,7 +223,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Update email record
-      const updatedEmail = await storage.updateEmail(email.id, userId, {
+      const updatedEmail = await storage.updateEmail(email.id, undefined, {
         sentResponse: responseText,
         respondedAt: new Date(),
         status: "traite",
@@ -245,7 +243,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Bulk update status - generic route for any status change
   app.patch('/api/emails/bulk/update-status', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = (req.user as any).id;
       const { emailIds, status } = req.body;
 
       // Validate request
@@ -265,14 +262,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Update all emails - verify ownership for each
+      // Update all emails (shared inbox - no ownership check)
       const updateResults = await Promise.allSettled(
         emailIds.map(async (emailId: string, index: number) => {
-          const email = await storage.getEmailById(emailId, userId);
+          const email = await storage.getEmailById(emailId);
           if (!email) {
             throw new Error(`Email ${emailId} not found`);
           }
-          await storage.updateEmail(emailId, userId, { status });
+          await storage.updateEmail(emailId, undefined, { status });
           return { emailId, index };
         })
       );
@@ -304,7 +301,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Bulk route MUST come before the parameterized :id route to avoid conflicts
   app.patch('/api/emails/bulk/mark-processed', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = (req.user as any).id;
       const { emailIds } = req.body;
 
       // Validate request
@@ -312,15 +308,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Email IDs array is required" });
       }
 
-      // Update all emails - verify ownership for each
+      // Update all emails (shared inbox - no ownership check)
       // Map with index to track which email failed
       const updateResults = await Promise.allSettled(
         emailIds.map(async (emailId: string, index: number) => {
-          const email = await storage.getEmailById(emailId, userId);
+          const email = await storage.getEmailById(emailId);
           if (!email) {
             throw new Error(`Email ${emailId} not found`);
           }
-          await storage.updateEmail(emailId, userId, { status: "traite" });
+          await storage.updateEmail(emailId, undefined, { status: "traite" });
           return { emailId, index };
         })
       );
@@ -350,16 +346,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch('/api/emails/:id/mark-processed', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = (req.user as any).id;
-
-      // Get email and verify ownership
-      const email = await storage.getEmailById(req.params.id, userId);
+      // Get email (shared inbox - no ownership check)
+      const email = await storage.getEmailById(req.params.id);
       if (!email) {
         return res.status(404).json({ message: "Email not found" });
       }
 
       // Update email status to processed without sending a response
-      const updatedEmail = await storage.updateEmail(email.id, userId, {
+      const updatedEmail = await storage.updateEmail(email.id, undefined, {
         status: "traite",
       });
 
@@ -591,14 +585,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Document not found" });
       }
 
-      // Check document ownership - verify user has access to this document via the email
-      const userId = (req.user as any).id;
+      // Verify document is associated with an email (shared inbox - no ownership check)
       if (!document.emailId) {
         return res.status(400).json({ message: "Document not associated with any email" });
       }
-      const email = await storage.getEmailById(document.emailId, userId);
+      const email = await storage.getEmailById(document.emailId);
       if (!email) {
-        return res.status(403).json({ message: "Unauthorized access to document" });
+        return res.status(404).json({ message: "Associated email not found" });
       }
 
       if (!document.driveFileId) {

@@ -61,9 +61,9 @@ export interface IStorage {
   createEmail(email: InsertEmail): Promise<Email>;
   getEmails(userId: string, filters?: { type?: string; status?: string; search?: string; limit?: number }): Promise<Email[]>;
   getAllEmails(filters?: { type?: string; status?: string; priority?: string; search?: string; olderThanHours?: number; limit?: number }): Promise<Email[]>; // For backend services
-  getEmailById(id: string, userId: string): Promise<Email | undefined>;
+  getEmailById(id: string, userId?: string): Promise<Email | undefined>;
   getEmailByMessageId(messageId: string): Promise<Email | undefined>;
-  updateEmail(id: string, userId: string, data: Partial<Email>): Promise<Email>;
+  updateEmail(id: string, userId: string | undefined, data: Partial<Email>): Promise<Email>;
   
   // Documents
   createDocument(doc: InsertDocument): Promise<Document>;
@@ -294,8 +294,14 @@ export class DatabaseStorage implements IStorage {
     return await query;
   }
 
-  async getEmailById(id: string, userId: string): Promise<Email | undefined> {
-    const [email] = await db.select().from(emails).where(and(eq(emails.id, id), eq(emails.userId, userId)));
+  async getEmailById(id: string, userId?: string): Promise<Email | undefined> {
+    // If userId is provided, filter by it (legacy behavior)
+    // Otherwise, return email regardless of owner (shared inbox)
+    const conditions = [eq(emails.id, id)];
+    if (userId) {
+      conditions.push(eq(emails.userId, userId));
+    }
+    const [email] = await db.select().from(emails).where(and(...conditions));
     return email;
   }
 
@@ -304,11 +310,17 @@ export class DatabaseStorage implements IStorage {
     return email;
   }
 
-  async updateEmail(id: string, userId: string, data: Partial<Email>): Promise<Email> {
+  async updateEmail(id: string, userId: string | undefined, data: Partial<Email>): Promise<Email> {
+    // If userId is provided, filter by it (legacy behavior)
+    // Otherwise, update email regardless of owner (shared inbox)
+    const conditions = [eq(emails.id, id)];
+    if (userId) {
+      conditions.push(eq(emails.userId, userId));
+    }
     const [updated] = await db
       .update(emails)
       .set({ ...data, updatedAt: new Date() })
-      .where(and(eq(emails.id, id), eq(emails.userId, userId)))
+      .where(and(...conditions))
       .returning();
     return updated;
   }
