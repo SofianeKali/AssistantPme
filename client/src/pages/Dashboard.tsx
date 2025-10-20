@@ -131,7 +131,7 @@ export default function Dashboard() {
                   <Card
                     key={category.key}
                     className="hover-elevate cursor-pointer"
-                    onClick={() => setLocation(`/emails?category=${category.key}`)}
+                    onClick={() => setLocation(`/emails?category=${category.key}&status=nouveau`)}
                     data-testid={`category-block-${category.key}`}
                   >
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

@@ -46,12 +46,16 @@ export default function Emails() {
     queryKey: ["/api/email-categories"],
   });
   
-  // Read category from URL query parameters
+  // Read category and status from URL query parameters
   useEffect(() => {
-    const params = new URLSearchParams(location.split('?')[1]);
+    const params = new URLSearchParams(window.location.search);
     const category = params.get('category');
+    const status = params.get('status');
     if (category) {
       setTypeFilter(category);
+    }
+    if (status) {
+      setStatusFilter(status);
     }
   }, [location]);
 
