@@ -221,9 +221,13 @@ export default function Calendar() {
   };
 
   const getAppointmentsForDate = (date: Date) => {
-    return appointments.filter((apt: any) =>
-      isSameDay(new Date(apt.startTime), date)
-    );
+    return appointments.filter((apt: any) => {
+      const aptDate = new Date(apt.startTime);
+      // Compare using local date strings to avoid timezone issues
+      const aptDateStr = format(aptDate, "yyyy-MM-dd");
+      const targetDateStr = format(date, "yyyy-MM-dd");
+      return aptDateStr === targetDateStr;
+    });
   };
 
   const getTagColor = (tag: string) => {
