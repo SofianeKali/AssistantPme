@@ -31,6 +31,7 @@ export default function Settings() {
 
   const [selectedAccountId, setSelectedAccountId] = useState<string>("");
   const [activeTab, setActiveTab] = useState<string>("email");
+  const [scanningAccountId, setScanningAccountId] = useState<string | null>(null);
 
   // Auto-select first account when accounts load
   useEffect(() => {
@@ -189,9 +190,11 @@ export default function Settings() {
 
   const scanAccountMutation = useMutation({
     mutationFn: async (accountId: string) => {
+      setScanningAccountId(accountId);
       return await apiRequest("POST", `/api/email-accounts/${accountId}/scan`, {});
     },
     onSuccess: (data: any) => {
+      setScanningAccountId(null);
       toast({ 
         title: "Scan terminé", 
         description: data.message || `${data.created || 0} nouveau(x) email(s) importé(s)`,
@@ -201,6 +204,7 @@ export default function Settings() {
       queryClient.invalidateQueries({ queryKey: ["/api/emails/stats/by-category"] });
     },
     onError: (error: any) => {
+      setScanningAccountId(null);
       let errorMessage = "Impossible de scanner les emails";
       
       if (error?.message?.includes("Invalid credentials") || error?.message?.includes("AUTHENTICATIONFAILED")) {
@@ -445,10 +449,10 @@ export default function Settings() {
                         <Button
                           variant="outline"
                           onClick={() => scanAccountMutation.mutate(account.id)}
-                          disabled={scanAccountMutation.isPending}
+                          disabled={scanningAccountId === account.id}
                           data-testid={`button-scan-${account.id}`}
                         >
-                          {scanAccountMutation.isPending ? (
+                          {scanningAccountId === account.id ? (
                             <>
                               <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
                               Scan...
