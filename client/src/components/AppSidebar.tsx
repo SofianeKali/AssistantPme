@@ -35,7 +35,7 @@ import { useLocation, Link } from "wouter";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import logoUrl from "../assets/izyinbox-logo.png";
+import logoUrl from "../assets/logo.png";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const mainMenuItems = [
