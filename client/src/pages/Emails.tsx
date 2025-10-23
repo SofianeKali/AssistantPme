@@ -357,7 +357,7 @@ export default function Emails() {
   };
 
   return (
-    <div className="p-4 md:p-6 space-y-4 md:space-y-6">
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6 overflow-x-hidden">
       {/* Header */}
       <div>
         <h1 className="text-2xl md:text-3xl font-semibold text-foreground mb-2">Emails</h1>
@@ -618,7 +618,7 @@ export default function Emails() {
 
       {/* Email Detail Dialog */}
       <Dialog open={!!selectedEmail} onOpenChange={(open) => !open && setSelectedEmail(null)}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto w-[95vw] md:w-full">
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto w-full md:w-auto">
           <DialogHeader>
             <DialogTitle className="text-xl">{selectedEmail?.subject}</DialogTitle>
             <div className="space-y-1 text-sm text-muted-foreground">
@@ -667,7 +667,7 @@ export default function Emails() {
             )}
 
             {/* Email Body */}
-            <div className="prose prose-sm max-w-none">
+            <div className="prose prose-sm max-w-none break-words">
               <div className="text-sm whitespace-pre-wrap">{selectedEmail?.body}</div>
             </div>
 
@@ -755,7 +755,7 @@ export default function Emails() {
 
       {/* Response Dialog */}
       <Dialog open={showResponseDialog} onOpenChange={setShowResponseDialog}>
-        <DialogContent className="max-w-2xl w-[95vw] md:w-full">
+        <DialogContent className="max-w-2xl w-full md:w-auto">
           <DialogHeader>
             <DialogTitle>Réponse générée par IA</DialogTitle>
             <DialogDescription>
