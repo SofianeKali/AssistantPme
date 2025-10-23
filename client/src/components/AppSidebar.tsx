@@ -52,6 +52,12 @@ const mainMenuItems = [
     testId: "sidebar-emails",
   },
   {
+    title: "Alertes",
+    url: "/alerts",
+    icon: Bell,
+    testId: "sidebar-alerts",
+  },
+  {
     title: "Calendrier",
     url: "/calendar",
     icon: Calendar,
@@ -62,12 +68,6 @@ const mainMenuItems = [
     url: "/documents",
     icon: FileText,
     testId: "sidebar-documents",
-  },
-  {
-    title: "Alertes",
-    url: "/alerts",
-    icon: Bell,
-    testId: "sidebar-alerts",
   },
 ];
 
@@ -136,7 +136,7 @@ export function AppSidebar() {
           />
           <div className="flex flex-col">
             <span className="text-sm font-semibold">IzyInbox</span>
-            <span className="text-xs text-muted-foreground">Automatisation Intelligente</span>
+            <span className="text-xs text-muted-foreground">Automatisation Intelligentes</span>
           </div>
         </div>
       </SidebarHeader>
