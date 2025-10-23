@@ -1,9 +1,12 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, MapPin, Sparkles } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, MapPin, Sparkles, Pencil, Trash2 } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,22 +17,140 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 
 export default function Calendar() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [editForm, setEditForm] = useState({
+    title: "",
+    description: "",
+    location: "",
+    startTime: "",
+    endTime: "",
+  });
+  const { toast } = useToast();
 
-  const { data: appointments, isLoading } = useQuery({
+  const { data: appointments = [], isLoading } = useQuery({
     queryKey: ["/api/appointments", {
       start: startOfMonth(currentMonth).toISOString(),
       end: endOfMonth(currentMonth).toISOString(),
     }],
   });
 
+  const updateAppointmentMutation = useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: any }) => {
+      const response = await apiRequest(`/api/appointments/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify(updates),
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/appointments"] });
+      setIsEditing(false);
+      setSelectedAppointment(null);
+      toast({
+        title: "Rendez-vous modifié",
+        description: "Le rendez-vous a été mis à jour avec succès",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erreur",
+        description: "Impossible de modifier le rendez-vous",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteAppointmentMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await apiRequest(`/api/appointments/${id}`, {
+        method: "DELETE",
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/appointments"] });
+      setShowDeleteDialog(false);
+      setSelectedAppointment(null);
+      toast({
+        title: "Rendez-vous annulé",
+        description: "Le rendez-vous a été annulé avec succès",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erreur",
+        description: "Impossible d'annuler le rendez-vous",
+        variant: "destructive",
+      });
+    },
+  });
+
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
+
+  const handleEdit = () => {
+    if (selectedAppointment) {
+      setEditForm({
+        title: selectedAppointment.title,
+        description: selectedAppointment.description || "",
+        location: selectedAppointment.location || "",
+        startTime: format(new Date(selectedAppointment.startTime), "yyyy-MM-dd'T'HH:mm"),
+        endTime: format(new Date(selectedAppointment.endTime), "yyyy-MM-dd'T'HH:mm"),
+      });
+      setIsEditing(true);
+    }
+  };
+
+  const handleSaveEdit = () => {
+    if (selectedAppointment) {
+      updateAppointmentMutation.mutate({
+        id: selectedAppointment.id,
+        updates: {
+          title: editForm.title,
+          description: editForm.description,
+          location: editForm.location,
+          startTime: new Date(editForm.startTime).toISOString(),
+          endTime: new Date(editForm.endTime).toISOString(),
+        },
+      });
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditForm({
+      title: "",
+      description: "",
+      location: "",
+      startTime: "",
+      endTime: "",
+    });
+  };
+
+  const handleDelete = () => {
+    if (selectedAppointment) {
+      deleteAppointmentMutation.mutate(selectedAppointment.id);
+    }
+  };
 
   const getAppointmentsForDate = (date: Date) => {
     if (!appointments) return [];
@@ -211,51 +332,195 @@ export default function Calendar() {
       </Card>
 
       {/* Appointment Detail Dialog */}
-      <Dialog open={!!selectedAppointment} onOpenChange={(open) => !open && setSelectedAppointment(null)}>
+      <Dialog open={!!selectedAppointment} onOpenChange={(open) => {
+        if (!open) {
+          setSelectedAppointment(null);
+          setIsEditing(false);
+        }
+      }}>
         <DialogContent className="max-w-2xl w-[95vw] md:w-full max-h-[90vh] overflow-y-auto overflow-x-hidden">
           <DialogHeader>
-            <DialogTitle className="text-base sm:text-xl break-words pr-8">{selectedAppointment?.title}</DialogTitle>
-            <DialogDescription className="break-words">
-              {selectedAppointment?.startTime &&
-                format(new Date(selectedAppointment.startTime), "dd MMMM yyyy à HH:mm", { locale: fr })}
-            </DialogDescription>
+            <DialogTitle className="text-base sm:text-xl break-words pr-8">
+              {isEditing ? "Modifier le rendez-vous" : selectedAppointment?.title}
+            </DialogTitle>
+            {!isEditing && (
+              <DialogDescription className="break-words">
+                {selectedAppointment?.startTime &&
+                  format(new Date(selectedAppointment.startTime), "dd MMMM yyyy à HH:mm", { locale: fr })}
+              </DialogDescription>
+            )}
           </DialogHeader>
           <div className="space-y-4 overflow-x-hidden">
-            {selectedAppointment?.description && (
-              <div>
-                <h3 className="text-sm font-medium mb-2">Description</h3>
-                <p className="text-sm text-muted-foreground break-words whitespace-pre-wrap">{selectedAppointment.description}</p>
-              </div>
-            )}
-
-            {selectedAppointment?.location && (
-              <div>
-                <h3 className="text-sm font-medium mb-2">Lieu</h3>
-                <p className="text-sm text-muted-foreground break-words">{selectedAppointment.location}</p>
-              </div>
-            )}
-
-            {selectedAppointment?.aiSuggestions && (
-              <div className="p-4 rounded-md bg-primary/5 border border-primary/20">
-                <div className="flex items-center gap-2 mb-2">
-                  <Sparkles className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-medium">Suggestions de préparation</span>
+            {isEditing ? (
+              /* Edit Form */
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-title">Titre *</Label>
+                  <Input
+                    id="edit-title"
+                    value={editForm.title}
+                    onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                    placeholder="Titre du rendez-vous"
+                    data-testid="input-edit-title"
+                  />
                 </div>
-                <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                  {selectedAppointment.aiSuggestions.prepTasks?.map((task: string, i: number) => (
-                    <li key={i} className="break-words">{task}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
 
-            <div className="flex flex-col sm:flex-row gap-2 pt-4 border-t">
-              <Button variant="outline" className="w-full sm:w-auto">Modifier</Button>
-              <Button variant="destructive" className="w-full sm:w-auto">Annuler le RDV</Button>
-            </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-start">Début *</Label>
+                    <Input
+                      id="edit-start"
+                      type="datetime-local"
+                      value={editForm.startTime}
+                      onChange={(e) => setEditForm({ ...editForm, startTime: e.target.value })}
+                      data-testid="input-edit-start"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-end">Fin *</Label>
+                    <Input
+                      id="edit-end"
+                      type="datetime-local"
+                      value={editForm.endTime}
+                      onChange={(e) => setEditForm({ ...editForm, endTime: e.target.value })}
+                      data-testid="input-edit-end"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-location">Lieu</Label>
+                  <Input
+                    id="edit-location"
+                    value={editForm.location}
+                    onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
+                    placeholder="Adresse ou lieu du rendez-vous"
+                    data-testid="input-edit-location"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="edit-description">Description</Label>
+                  <Textarea
+                    id="edit-description"
+                    value={editForm.description}
+                    onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                    placeholder="Détails du rendez-vous"
+                    rows={4}
+                    data-testid="textarea-edit-description"
+                  />
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-2 pt-4 border-t">
+                  <Button
+                    onClick={handleSaveEdit}
+                    disabled={updateAppointmentMutation.isPending || !editForm.title}
+                    data-testid="button-save-edit"
+                    className="w-full sm:w-auto"
+                  >
+                    <Pencil className="h-4 w-4 mr-2" />
+                    {updateAppointmentMutation.isPending ? "Enregistrement..." : "Enregistrer"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleCancelEdit}
+                    disabled={updateAppointmentMutation.isPending}
+                    data-testid="button-cancel-edit"
+                    className="w-full sm:w-auto"
+                  >
+                    Annuler
+                  </Button>
+                </div>
+              </>
+            ) : (
+              /* View Mode */
+              <>
+                {selectedAppointment?.description && (
+                  <div>
+                    <h3 className="text-sm font-medium mb-2">Description</h3>
+                    <p className="text-sm text-muted-foreground break-words whitespace-pre-wrap">
+                      {selectedAppointment.description}
+                    </p>
+                  </div>
+                )}
+
+                {selectedAppointment?.location && (
+                  <div>
+                    <h3 className="text-sm font-medium mb-2">Lieu</h3>
+                    <p className="text-sm text-muted-foreground break-words">
+                      {selectedAppointment.location}
+                    </p>
+                  </div>
+                )}
+
+                {selectedAppointment?.aiSuggestions && (
+                  <div className="p-4 rounded-md bg-primary/5 border border-primary/20">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Sparkles className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-medium">Suggestions de préparation</span>
+                    </div>
+                    <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                      {selectedAppointment.aiSuggestions.prepTasks?.map((task: string, i: number) => (
+                        <li key={i} className="break-words">{task}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <div className="flex flex-col sm:flex-row gap-2 pt-4 border-t">
+                  <Button
+                    variant="outline"
+                    onClick={handleEdit}
+                    data-testid="button-edit"
+                    className="w-full sm:w-auto"
+                  >
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Modifier
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => setShowDeleteDialog(true)}
+                    data-testid="button-delete"
+                    className="w-full sm:w-auto"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Annuler le RDV
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent className="w-[95vw] md:w-full">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer l'annulation</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de vouloir annuler ce rendez-vous ? Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel
+              disabled={deleteAppointmentMutation.isPending}
+              data-testid="button-cancel-delete"
+              className="w-full sm:w-auto"
+            >
+              Annuler
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleteAppointmentMutation.isPending}
+              data-testid="button-confirm-delete"
+              className="w-full sm:w-auto bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteAppointmentMutation.isPending ? "Suppression..." : "Confirmer"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
