@@ -618,18 +618,18 @@ export default function Emails() {
 
       {/* Email Detail Dialog */}
       <Dialog open={!!selectedEmail} onOpenChange={(open) => !open && setSelectedEmail(null)}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto w-full md:w-auto">
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto overflow-x-hidden w-[95vw] md:w-full">
           <DialogHeader>
-            <DialogTitle className="text-xl">{selectedEmail?.subject}</DialogTitle>
+            <DialogTitle className="text-base sm:text-xl break-words pr-8">{selectedEmail?.subject}</DialogTitle>
             <div className="space-y-1 text-sm text-muted-foreground">
               <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
                 <span className="font-medium text-foreground">De:</span>
-                <span className="truncate">{formatEmailAddress(selectedEmail?.from || "")}</span>
+                <span className="break-all">{formatEmailAddress(selectedEmail?.from || "")}</span>
               </div>
               {selectedEmail?.to && (
                 <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
                   <span className="font-medium text-foreground">À:</span>
-                  <span className="truncate">{formatEmailAddress(selectedEmail?.to)}</span>
+                  <span className="break-all">{formatEmailAddress(selectedEmail?.to)}</span>
                 </div>
               )}
               {selectedEmail?.receivedAt && (
@@ -639,7 +639,7 @@ export default function Emails() {
               )}
             </div>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 overflow-x-hidden">
             {/* AI Analysis */}
             {selectedEmail?.aiAnalysis && (
               <div className="p-4 rounded-md bg-primary/5 border border-primary/20">
@@ -647,7 +647,7 @@ export default function Emails() {
                   <Sparkles className="h-4 w-4 text-primary" />
                   <span className="text-sm font-medium">Analyse IA</span>
                 </div>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground break-words">
                   {selectedEmail.aiAnalysis.summary || "Analyse en cours..."}
                 </p>
               </div>
@@ -660,15 +660,15 @@ export default function Emails() {
                   <Sparkles className="h-4 w-4 text-chart-2" />
                   <span className="text-sm font-medium">Réponse suggérée par IA</span>
                 </div>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">
                   {selectedEmail.suggestedResponse}
                 </p>
               </div>
             )}
 
             {/* Email Body */}
-            <div className="prose prose-sm max-w-none break-words">
-              <div className="text-sm whitespace-pre-wrap">{selectedEmail?.body}</div>
+            <div className="prose prose-sm max-w-none">
+              <div className="text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere">{selectedEmail?.body}</div>
             </div>
 
             {/* Custom Prompt Input */}
