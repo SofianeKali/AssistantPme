@@ -188,8 +188,8 @@ export default function Settings() {
   });
 
   const scanEmailsMutation = useMutation({
-    mutationFn: async () => {
-      return await apiRequest("POST", "/api/email-scan", {});
+    mutationFn: async (id: string) => {
+      return await apiRequest("POST", "/api/email-scan/${id}", {});
     },
     onSuccess: (data: any) => {
       if (data.summary.totalErrors > 0) {
@@ -422,23 +422,6 @@ export default function Settings() {
               <div className="flex-1">
                 <CardTitle className="text-xl">Comptes configurés</CardTitle>
               </div>
-              <Button
-                onClick={() => scanEmailsMutation.mutate()}
-                disabled={scanEmailsMutation.isPending || !emailAccounts || emailAccounts.length === 0}
-                data-testid="button-scan-emails"
-              >
-                {scanEmailsMutation.isPending ? (
-                  <>
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    Scan en cours...
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Scanner les emails
-                  </>
-                )}
-              </Button>
             </CardHeader>
             <CardContent>
               {emailAccountsLoading ? (
@@ -461,6 +444,23 @@ export default function Settings() {
                           {account.provider} • Scan: {account.scanFrequency}min
                         </div>
                       </div>
+                      <Button
+                        onClick={() => scanEmailsMutation.mutate(account.id)}
+                        disabled={scanEmailsMutation.isPending || !emailAccounts || emailAccounts.length === 0}
+                        data-testid="button-scan-emails"
+                      >
+                        {scanEmailsMutation.isPending ? (
+                          <>
+                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                            Scan en cours...
+                          </>
+                        ) : (
+                          <>
+                            <RefreshCw className="h-4 w-4 mr-2" />
+                            Scanner les emails
+                          </>
+                        )}
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"
