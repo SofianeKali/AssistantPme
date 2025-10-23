@@ -195,9 +195,11 @@ export default function Settings() {
     },
     onSuccess: (data: any) => {
       setScanningAccountId(null);
+      console.log('[Scan Success] Response data:', data);
+      console.log('[Scan Success] Created:', data.created, 'Scanned:', data.scanned);
       toast({ 
         title: "Scan terminé", 
-        description: data.message || `${data.created || 0} nouveau(x) email(s) importé(s)`,
+        description: `${data.created || 0} nouveau(x) email(s) importé(s)`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/emails"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
