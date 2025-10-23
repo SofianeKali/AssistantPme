@@ -3,6 +3,16 @@
 ## Overview
 IzyInbox is an intelligent web application designed to automate administrative tasks for SMEs. It leverages AI for email analysis and automates the management of quotes, invoices, appointments, and documents. The core purpose is to streamline administrative workflows, enhance efficiency, and provide actionable insights for small and medium-sized businesses. The project aims to become a leading solution for smart automation for busy managers, with ambitions for broad market adoption.
 
+## Recent Changes (October 23, 2025)
+- **Individual Email Account Scanning**: Added POST /api/email-accounts/:id/scan endpoint and "Scanner maintenant" button in Settings page for manual scanning of specific email accounts
+- **Authentication Bug Fixes**: 
+  - Updated isAdmin middleware to accept both 'admin' and 'administrator' roles for backward compatibility
+  - Fixed role preservation: upsertUser now maintains existing user roles instead of overwriting them during OIDC login
+- **Email Formatting Improvements**: 
+  - Removed quotation marks from display names using improved formatEmailAddress()
+  - Fixed avatar initials to correctly extract first alphabetic character from email addresses
+- **Gmail Integration**: Successfully configured and tested Gmail IMAP connection for sofiane.kali@gmail.com
+
 ## User Preferences
 I prefer detailed explanations.
 I want to be asked before major changes are made to the codebase.
