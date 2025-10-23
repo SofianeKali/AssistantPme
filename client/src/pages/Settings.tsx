@@ -277,24 +277,34 @@ export default function Settings() {
   });
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-semibold text-foreground mb-2">Configuration</h1>
+        <h1 className="text-2xl md:text-3xl font-semibold text-foreground mb-2">Configuration</h1>
         <p className="text-sm text-muted-foreground">
           Gérez vos comptes email et paramètres de l'application
         </p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="email" data-testid="tab-email">Comptes Email</TabsTrigger>
-          <TabsTrigger value="categories" data-testid="tab-categories">Catégories</TabsTrigger>
-          <TabsTrigger value="automation" data-testid="tab-automation">Automatisation</TabsTrigger>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 md:space-y-6">
+        <TabsList className="w-full grid grid-cols-2 sm:grid-cols-3 md:flex md:w-auto h-auto gap-1">
+          <TabsTrigger value="email" data-testid="tab-email" className="text-xs sm:text-sm">
+            Comptes Email
+          </TabsTrigger>
+          <TabsTrigger value="categories" data-testid="tab-categories" className="text-xs sm:text-sm">
+            Catégories
+          </TabsTrigger>
+          <TabsTrigger value="automation" data-testid="tab-automation" className="text-xs sm:text-sm">
+            Automatisation
+          </TabsTrigger>
           {(user as any)?.role === 'admin' && (
-            <TabsTrigger value="alerts" data-testid="tab-alerts">Alertes</TabsTrigger>
+            <TabsTrigger value="alerts" data-testid="tab-alerts" className="text-xs sm:text-sm">
+              Alertes
+            </TabsTrigger>
           )}
-          <TabsTrigger value="general" data-testid="tab-general">Général</TabsTrigger>
+          <TabsTrigger value="general" data-testid="tab-general" className="text-xs sm:text-sm">
+            Général
+          </TabsTrigger>
         </TabsList>
 
         {/* Email Accounts Tab */}
@@ -436,32 +446,33 @@ export default function Settings() {
                   {emailAccounts.map((account: any) => (
                     <div
                       key={account.id}
-                      className="flex items-center p-4 border border-border rounded-md"
+                      className="flex flex-col sm:flex-row sm:items-center p-4 border border-border rounded-md gap-3"
                       data-testid={`account-${account.id}`}
                     >
-                      <div>
-                        <div className="font-medium">{account.email}</div>
+                      <div className="flex-1">
+                        <div className="font-medium break-all">{account.email}</div>
                         <div className="text-sm text-muted-foreground">
                           {account.provider} • Scan: {account.scanFrequency}min
                         </div>
                       </div>
 
-                      <div className="ml-auto flex items-center gap-2">
+                      <div className="flex items-center gap-2 sm:ml-auto">
                         <Button
                           variant="outline"
                           onClick={() => scanAccountMutation.mutate(account.id)}
                           disabled={scanningAccountId === account.id}
                           data-testid={`button-scan-${account.id}`}
+                          className="flex-1 sm:flex-none"
                         >
                           {scanningAccountId === account.id ? (
                             <>
-                              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                              Scan...
+                              <RefreshCw className="h-4 w-4 sm:mr-2 animate-spin" />
+                              <span className="hidden sm:inline">Scan...</span>
                             </>
                           ) : (
                             <>
-                              <RefreshCw className="h-4 w-4 mr-2" />
-                              Scanner
+                              <RefreshCw className="h-4 w-4 sm:mr-2" />
+                              <span className="hidden sm:inline">Scanner</span>
                             </>
                           )}
                         </Button>
