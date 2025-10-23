@@ -74,6 +74,9 @@ export interface IStorage {
   // Appointments
   createAppointment(apt: InsertAppointment): Promise<Appointment>;
   getAppointments(filters?: { start?: string; end?: string }): Promise<Appointment[]>;
+  getAppointmentById(id: string): Promise<Appointment | undefined>;
+  updateAppointment(id: string, updates: Partial<InsertAppointment>): Promise<Appointment | undefined>;
+  deleteAppointment(id: string): Promise<boolean>;
   
   // Alerts
   createAlert(alert: InsertAlert): Promise<Alert>;
@@ -394,6 +397,25 @@ export class DatabaseStorage implements IStorage {
     query = query.orderBy(appointments.startTime) as any;
     
     return await query;
+  }
+
+  async getAppointmentById(id: string): Promise<Appointment | undefined> {
+    const [result] = await db.select().from(appointments).where(eq(appointments.id, id));
+    return result;
+  }
+
+  async updateAppointment(id: string, updates: Partial<InsertAppointment>): Promise<Appointment | undefined> {
+    const [result] = await db
+      .update(appointments)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(appointments.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteAppointment(id: string): Promise<boolean> {
+    const result = await db.delete(appointments).where(eq(appointments.id, id)).returning();
+    return result.length > 0;
   }
 
   // Alerts

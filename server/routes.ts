@@ -735,6 +735,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch('/api/appointments/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      
+      // Regenerate AI suggestions if title or description changed
+      if (updates.title || updates.description) {
+        const appointment = await storage.getAppointmentById(id);
+        if (appointment) {
+          const suggestions = await generateAppointmentSuggestions({
+            title: updates.title || appointment.title,
+            description: updates.description || appointment.description,
+            attendees: updates.attendees || appointment.attendees,
+          });
+          updates.aiSuggestions = suggestions;
+        }
+      }
+      
+      const updatedAppointment = await storage.updateAppointment(id, updates);
+      if (!updatedAppointment) {
+        return res.status(404).json({ message: "Rendez-vous introuvable" });
+      }
+      res.json(updatedAppointment);
+    } catch (error) {
+      console.error("Error updating appointment:", error);
+      res.status(400).json({ message: "Erreur lors de la modification du rendez-vous" });
+    }
+  });
+
+  app.delete('/api/appointments/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const deleted = await storage.deleteAppointment(id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Rendez-vous introuvable" });
+      }
+      res.json({ message: "Rendez-vous annulé avec succès" });
+    } catch (error) {
+      console.error("Error deleting appointment:", error);
+      res.status(500).json({ message: "Erreur lors de l'annulation du rendez-vous" });
+    }
+  });
+
   // Alerts
   app.get('/api/alerts', isAuthenticated, async (req, res) => {
     try {
