@@ -8,6 +8,21 @@ import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { 
+  LineChart, 
+  Line, 
+  BarChart, 
+  Bar, 
+  PieChart, 
+  Pie, 
+  Cell, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend, 
+  ResponsiveContainer 
+} from "recharts";
 
 // Map icon names to Lucide components
 const getIconComponent = (iconName: string): LucideIcon => {
@@ -25,8 +40,24 @@ const getIconComponent = (iconName: string): LucideIcon => {
     AlertCircle: LucideIcons.AlertCircle,
   };
   
-  return iconMap[iconName] || LucideIcons.Mail; // Default to Mail if icon not found
+  return iconMap[iconName] || LucideIcons.Mail;
 };
+
+const COLORS = {
+  primary: "hsl(var(--primary))",
+  chart1: "hsl(var(--chart-1))",
+  chart2: "hsl(var(--chart-2))",
+  chart3: "hsl(var(--chart-3))",
+  chart4: "hsl(var(--chart-4))",
+  chart5: "hsl(var(--chart-5))",
+};
+
+const CHART_COLORS = [
+  COLORS.chart1,
+  COLORS.chart2,
+  COLORS.chart3,
+  COLORS.chart4,
+];
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
@@ -34,6 +65,10 @@ export default function Dashboard() {
   
   const { data: stats, isLoading } = useQuery<any>({
     queryKey: ["/api/dashboard/stats"],
+  });
+
+  const { data: charts, isLoading: chartsLoading } = useQuery<any>({
+    queryKey: ["/api/dashboard/charts"],
   });
 
   const { data: categoryStats, isLoading: categoryStatsLoading } = useQuery<any>({
@@ -78,7 +113,7 @@ export default function Dashboard() {
     },
   });
 
-  if (isLoading) {
+  if (isLoading || chartsLoading) {
     return (
       <div className="p-6 space-y-6">
         <div>
@@ -95,13 +130,50 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 max-w-[1400px] mx-auto">
       {/* Header */}
       <div>
         <h1 className="text-3xl font-semibold text-foreground mb-2">Tableau de bord</h1>
         <p className="text-sm text-muted-foreground">
           Vue d'ensemble de votre activité administrative
         </p>
+      </div>
+
+      {/* Top KPIs - Devis et Factures */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card 
+          className="hover-elevate cursor-pointer"
+          onClick={() => setLocation('/emails?category=devis&status=nouveau')}
+          data-testid="kpi-devis"
+        >
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Devis</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-semibold">{stats?.quotesNoResponse || 0}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Non traités
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card 
+          className="hover-elevate cursor-pointer"
+          onClick={() => setLocation('/emails?category=facture&status=nouveau')}
+          data-testid="kpi-factures"
+        >
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Factures</CardTitle>
+            <LucideIcons.Receipt className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-semibold">{stats?.unpaidInvoices || 0}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Non traités
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Email Categories */}
@@ -112,13 +184,11 @@ export default function Dashboard() {
             [...Array(4)].map((_, i) => <Skeleton key={i} className="h-32" />)
           ) : (
             emailCategories && (() => {
-              // Deduplicate categories by key (prioritize system categories)
               const uniqueCategories = emailCategories.reduce((acc: any[], category: any) => {
                 const existing = acc.find(c => c.key === category.key);
                 if (!existing) {
                   acc.push(category);
                 } else if (category.isSystem && !existing.isSystem) {
-                  // Replace with system category if found
                   const index = acc.indexOf(existing);
                   acc[index] = category;
                 }
@@ -157,37 +227,197 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Monthly Summary */}
+      {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Évolution des emails traités */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-xl">Récapitulatif mensuel</CardTitle>
+            <CardTitle>Évolution des emails traités</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={charts?.emailEvolution || []}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis 
+                  dataKey="day" 
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                />
+                <YAxis 
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                />
+                <Tooltip 
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "6px",
+                  }}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="count" 
+                  stroke={COLORS.primary} 
+                  strokeWidth={2}
+                  dot={{ fill: COLORS.primary }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Répartition des emails reçus */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Répartition des emails reçus</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={250}>
+              <PieChart>
+                <Pie
+                  data={charts?.emailDistribution || []}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={80}
+                  paddingAngle={2}
+                  dataKey="value"
+                  label={(entry) => `${entry.name}`}
+                >
+                  {charts?.emailDistribution?.map((entry: any, index: number) => (
+                    <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "6px",
+                  }}
+                />
+                <Legend 
+                  verticalAlign="bottom" 
+                  height={36}
+                  iconType="circle"
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Charts Row 2 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* RDV planifiés par semaine */}
+        <Card>
+          <CardHeader>
+            <CardTitle>RDV planifiés par semaine</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={charts?.appointmentsByWeek || []}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis 
+                  dataKey="week" 
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                />
+                <YAxis 
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                />
+                <Tooltip 
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "6px",
+                  }}
+                />
+                <Bar 
+                  dataKey="count" 
+                  fill={COLORS.chart2}
+                  radius={[4, 4, 0, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Taux de traitement par catégorie */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Taux de traitement par catégorie</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart 
+                data={charts?.categoryProcessing || []}
+                layout="vertical"
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis 
+                  type="number"
+                  domain={[0, 100]}
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                  unit="%"
+                />
+                <YAxis 
+                  type="category"
+                  dataKey="category" 
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                  width={80}
+                />
+                <Tooltip 
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "6px",
+                  }}
+                  formatter={(value: any) => [`${value}%`, "Taux"]}
+                />
+                <Bar 
+                  dataKey="rate" 
+                  fill={COLORS.chart3}
+                  radius={[0, 4, 4, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Bottom Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Funnel de traitement */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Traitement des emails</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <SummaryItem
-              label="Emails traités"
-              value={stats?.monthlyEmailsProcessed || 0}
-              trend="up"
-              change="+12%"
-            />
-            <SummaryItem
-              label="RDV planifiés"
-              value={stats?.monthlyAppointments || 0}
-              trend="up"
-              change="+8%"
-            />
-            <SummaryItem
-              label="Documents extraits"
-              value={stats?.monthlyDocuments || 0}
-              trend="up"
-              change="+15%"
-            />
-            <SummaryItem
-              label="Alertes actives"
-              value={stats?.activeAlerts || 0}
-              trend="down"
-              change="-5%"
-            />
+            {charts?.emailFunnel?.map((stage: any, index: number) => {
+              const maxCount = charts.emailFunnel[0]?.count || 1;
+              const percentage = Math.round((stage.count / maxCount) * 100);
+              
+              return (
+                <div key={index} className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">{stage.name}</span>
+                    <span className="font-semibold">{stage.count}</span>
+                  </div>
+                  <div className="w-full bg-muted rounded-full h-2">
+                    <div
+                      className="h-2 rounded-full transition-all"
+                      style={{
+                        width: `${percentage}%`,
+                        backgroundColor: CHART_COLORS[index % CHART_COLORS.length],
+                      }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
           </CardContent>
         </Card>
 
@@ -260,39 +490,6 @@ export default function Dashboard() {
             )}
           </CardContent>
         </Card>
-      </div>
-    </div>
-  );
-}
-
-function SummaryItem({
-  label,
-  value,
-  trend,
-  change,
-}: {
-  label: string;
-  value: number;
-  trend: "up" | "down";
-  change: string;
-}) {
-  return (
-    <div className="flex items-center justify-between">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      <div className="flex items-center gap-2">
-        <span className="text-base font-semibold">{value}</span>
-        <div
-          className={`flex items-center gap-1 text-xs ${
-            trend === "up" ? "text-chart-2" : "text-chart-3"
-          }`}
-        >
-          {trend === "up" ? (
-            <TrendingUp className="h-3 w-3" />
-          ) : (
-            <TrendingDown className="h-3 w-3" />
-          )}
-          <span>{change}</span>
-        </div>
       </div>
     </div>
   );

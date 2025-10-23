@@ -873,7 +873,7 @@ export class DatabaseStorage implements IStorage {
     const [assigned] = await db
       .select({ count: sql<number>`count(*)` })
       .from(emails)
-      .where(ne(emails.assignedToId, null));
+      .where(sql`${emails.assignedToId} IS NOT NULL`);
     
     const [processed] = await db
       .select({ count: sql<number>`count(*)` })
