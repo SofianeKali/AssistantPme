@@ -435,7 +435,7 @@ export default function Settings() {
                   {emailAccounts.map((account: any) => (
                     <div
                       key={account.id}
-                      className="flex items-center justify-between p-4 border border-border rounded-md"
+                      className="flex items-center p-4 border border-border rounded-md"
                       data-testid={`account-${account.id}`}
                     >
                       <div>
@@ -444,31 +444,34 @@ export default function Settings() {
                           {account.provider} • Scan: {account.scanFrequency}min
                         </div>
                       </div>
-                      <Button
-                        onClick={() => scanEmailsMutation.mutate(account.id)}
-                        disabled={scanEmailsMutation.isPending || !emailAccounts || emailAccounts.length === 0}
-                        data-testid="button-scan-emails"
-                      >
-                        {scanEmailsMutation.isPending ? (
-                          <>
-                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                            Scan en cours...
-                          </>
-                        ) : (
-                          <>
-                            <RefreshCw className="h-4 w-4 mr-2" />
-                            Scanner les emails
-                          </>
-                        )}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => deleteAccountMutation.mutate(account.id)}
-                        data-testid={`button-delete-${account.id}`}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+
+                      <div className="ml-auto flex items-center gap-2">
+                        <Button
+                          onClick={() => scanEmailsMutation.mutate(account.id)}
+                          disabled={scanEmailsMutation.isPending || !emailAccounts || emailAccounts.length === 0}
+                          data-testid="button-scan-emails"
+                        >
+                          {scanEmailsMutation.isPending ? (
+                            <>
+                              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                              Scan en cours...
+                            </>
+                          ) : (
+                            <>
+                              <RefreshCw className="h-4 w-4 mr-2" />
+                              Scanner les emails
+                            </>
+                          )}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => deleteAccountMutation.mutate(account.id)}
+                          data-testid={`button-delete-${account.id}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
