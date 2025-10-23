@@ -447,7 +447,7 @@ export default function Settings() {
 
                       <div className="ml-auto flex items-center gap-2">
                         <Button
-                          onClick={() => scanEmailsMutation.mutate(account.id)}
+                          onClick={() => scanEmailsMutation.mutate(account.email)}
                           disabled={scanEmailsMutation.isPending || !emailAccounts || emailAccounts.length === 0}
                           data-testid="button-scan-emails"
                         >
