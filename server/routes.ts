@@ -89,6 +89,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Manual scan for a specific email account
+  app.post('/api/email-accounts/:id/scan', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const accountId = req.params.id;
+      const account = await storage.getEmailAccountById(accountId);
+      
+      if (!account) {
+        return res.status(404).json({ message: "Compte email introuvable" });
+      }
+
+      console.log(`[Manual Scan] Starting scan for account: ${account.email}`);
+      const result = await emailScanner.scanAccount(account);
+      
+      console.log(`[Manual Scan] Scan complete - Scanned: ${result.scanned}, Created: ${result.created}, Errors: ${result.errors}`);
+      
+      res.json({
+        success: true,
+        scanned: result.scanned,
+        created: result.created,
+        errors: result.errors,
+        message: `Scan terminé : ${result.created} nouveau(x) email(s) importé(s)`
+      });
+    } catch (error: any) {
+      console.error("Error scanning email account:", error);
+      res.status(500).json({ 
+        message: "Erreur lors du scan",
+        details: error.message 
+      });
+    }
+  });
+
   // Emails
   // All authenticated users can see all emails (PME shared inbox)
   app.get('/api/emails', isAuthenticated, async (req, res) => {
