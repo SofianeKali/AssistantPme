@@ -36,12 +36,21 @@ export default function Calendar() {
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editForm, setEditForm] = useState({
     title: "",
     description: "",
     location: "",
     startTime: "",
     endTime: "",
+  });
+  const [createForm, setCreateForm] = useState({
+    title: "",
+    description: "",
+    location: "",
+    startTime: "",
+    endTime: "",
+    tag: "client",
   });
   const { toast } = useToast();
 
@@ -96,6 +105,35 @@ export default function Calendar() {
     },
   });
 
+  const createAppointmentMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return await apiRequest("POST", "/api/appointments", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/appointments"] });
+      setShowCreateDialog(false);
+      setCreateForm({
+        title: "",
+        description: "",
+        location: "",
+        startTime: "",
+        endTime: "",
+        tag: "client",
+      });
+      toast({
+        title: "Rendez-vous créé",
+        description: "Le nouveau rendez-vous a été créé avec succès",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erreur",
+        description: "Impossible de créer le rendez-vous",
+        variant: "destructive",
+      });
+    },
+  });
+
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
   const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
@@ -145,6 +183,43 @@ export default function Calendar() {
     }
   };
 
+  const handleCreateAppointment = () => {
+    if (!createForm.title || !createForm.startTime || !createForm.endTime) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez remplir tous les champs requis",
+        variant: "destructive",
+      });
+      return;
+    }
+    createAppointmentMutation.mutate({
+      title: createForm.title,
+      description: createForm.description,
+      location: createForm.location,
+      startTime: new Date(createForm.startTime).toISOString(),
+      endTime: new Date(createForm.endTime).toISOString(),
+      tag: createForm.tag,
+    });
+  };
+
+  const handleOpenCreateDialog = (date?: Date) => {
+    const baseDate = date || new Date();
+    const defaultStart = new Date(baseDate);
+    defaultStart.setHours(10, 0, 0, 0);
+    const defaultEnd = new Date(baseDate);
+    defaultEnd.setHours(11, 0, 0, 0);
+    
+    setCreateForm({
+      title: "",
+      description: "",
+      location: "",
+      startTime: format(defaultStart, "yyyy-MM-dd'T'HH:mm"),
+      endTime: format(defaultEnd, "yyyy-MM-dd'T'HH:mm"),
+      tag: "client",
+    });
+    setShowCreateDialog(true);
+  };
+
   const getAppointmentsForDate = (date: Date) => {
     return appointments.filter((apt: any) =>
       isSameDay(new Date(apt.startTime), date)
@@ -170,7 +245,7 @@ export default function Calendar() {
             Vue d'ensemble de vos rendez-vous
           </p>
         </div>
-        <Button data-testid="button-add-appointment">
+        <Button data-testid="button-add-appointment" onClick={() => handleOpenCreateDialog()}>
           <CalendarIcon className="h-4 w-4 mr-2" />
           Nouveau RDV
         </Button>
@@ -322,6 +397,93 @@ export default function Calendar() {
           </div>
         )}
       </Card>
+
+      {/* Create Appointment Dialog */}
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent className="max-w-2xl w-[95vw] md:w-full max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Créer un nouveau rendez-vous</DialogTitle>
+            <DialogDescription>
+              Remplissez les informations du rendez-vous
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="create-title">Titre *</Label>
+              <Input
+                id="create-title"
+                value={createForm.title}
+                onChange={(e) => setCreateForm({ ...createForm, title: e.target.value })}
+                placeholder="Titre du rendez-vous"
+                data-testid="input-create-title"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="create-start">Date et heure de début *</Label>
+                <Input
+                  id="create-start"
+                  type="datetime-local"
+                  value={createForm.startTime}
+                  onChange={(e) => setCreateForm({ ...createForm, startTime: e.target.value })}
+                  data-testid="input-create-start"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="create-end">Date et heure de fin *</Label>
+                <Input
+                  id="create-end"
+                  type="datetime-local"
+                  value={createForm.endTime}
+                  onChange={(e) => setCreateForm({ ...createForm, endTime: e.target.value })}
+                  data-testid="input-create-end"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="create-location">Lieu</Label>
+              <Input
+                id="create-location"
+                value={createForm.location}
+                onChange={(e) => setCreateForm({ ...createForm, location: e.target.value })}
+                placeholder="Lieu du rendez-vous"
+                data-testid="input-create-location"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="create-description">Description</Label>
+              <Textarea
+                id="create-description"
+                value={createForm.description}
+                onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
+                placeholder="Description du rendez-vous"
+                rows={4}
+                data-testid="input-create-description"
+              />
+            </div>
+
+            <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setShowCreateDialog(false)}
+                data-testid="button-cancel-create"
+              >
+                Annuler
+              </Button>
+              <Button
+                onClick={handleCreateAppointment}
+                disabled={createAppointmentMutation.isPending}
+                data-testid="button-save-create"
+              >
+                {createAppointmentMutation.isPending ? "Création..." : "Créer le rendez-vous"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Appointment Detail Dialog */}
       <Dialog open={!!selectedAppointment} onOpenChange={(open) => {

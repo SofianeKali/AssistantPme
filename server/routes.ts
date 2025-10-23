@@ -717,6 +717,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = (req.user as any).id;
       const aptData = { ...req.body, createdById: userId };
       
+      // Convert and validate ISO date strings to Date objects
+      if (aptData.startTime) {
+        aptData.startTime = new Date(aptData.startTime);
+        if (isNaN(aptData.startTime.getTime())) {
+          return res.status(400).json({ message: "Invalid start time" });
+        }
+      }
+      if (aptData.endTime) {
+        aptData.endTime = new Date(aptData.endTime);
+        if (isNaN(aptData.endTime.getTime())) {
+          return res.status(400).json({ message: "Invalid end time" });
+        }
+      }
+      
       // Generate AI suggestions
       if (aptData.title) {
         const suggestions = await generateAppointmentSuggestions({
@@ -739,6 +753,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const updates = req.body;
+      
+      // Convert and validate ISO date strings to Date objects
+      if (updates.startTime) {
+        updates.startTime = new Date(updates.startTime);
+        if (isNaN(updates.startTime.getTime())) {
+          return res.status(400).json({ message: "Invalid start time" });
+        }
+      }
+      if (updates.endTime) {
+        updates.endTime = new Date(updates.endTime);
+        if (isNaN(updates.endTime.getTime())) {
+          return res.status(400).json({ message: "Invalid end time" });
+        }
+      }
       
       // Regenerate AI suggestions if title or description changed
       if (updates.title || updates.description) {
