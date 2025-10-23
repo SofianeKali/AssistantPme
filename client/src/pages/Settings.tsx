@@ -187,30 +187,26 @@ export default function Settings() {
     },
   });
 
-  const scanEmailsMutation = useMutation({
-    mutationFn: async (id: string) => {
-      return await apiRequest("POST", "/api/email-scan/${id}", {});
+  const scanAccountMutation = useMutation({
+    mutationFn: async (accountId: string) => {
+      return await apiRequest("POST", `/api/email-accounts/${accountId}/scan`, {});
     },
     onSuccess: (data: any) => {
-      if (data.summary.totalErrors > 0) {
-        toast({ 
-          title: "Scan terminé avec des erreurs", 
-          description: `${data.summary.totalCreated} emails importés, ${data.summary.totalErrors} erreur(s). Vérifiez les identifiants de vos comptes.`,
-          variant: "destructive",
-        });
-      } else {
-        toast({ 
-          title: "Scan terminé", 
-          description: `${data.summary.totalCreated} nouveaux emails importés` 
-        });
-      }
+      toast({ 
+        title: "Scan terminé", 
+        description: data.message || `${data.created || 0} nouveau(x) email(s) importé(s)`,
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/emails"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/emails/stats/by-category"] });
     },
     onError: (error: any) => {
       let errorMessage = "Impossible de scanner les emails";
       
       if (error?.message?.includes("Invalid credentials") || error?.message?.includes("AUTHENTICATIONFAILED")) {
         errorMessage = "Erreur d'authentification. Vérifiez vos App Passwords Gmail/Yahoo";
+      } else if (error?.details) {
+        errorMessage = error.details;
       }
       
       toast({
@@ -447,19 +443,20 @@ export default function Settings() {
 
                       <div className="ml-auto flex items-center gap-2">
                         <Button
-                          onClick={() => scanEmailsMutation.mutate(account.email)}
-                          disabled={scanEmailsMutation.isPending || !emailAccounts || emailAccounts.length === 0}
-                          data-testid="button-scan-emails"
+                          variant="outline"
+                          onClick={() => scanAccountMutation.mutate(account.id)}
+                          disabled={scanAccountMutation.isPending}
+                          data-testid={`button-scan-${account.id}`}
                         >
-                          {scanEmailsMutation.isPending ? (
+                          {scanAccountMutation.isPending ? (
                             <>
                               <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                              Scan en cours...
+                              Scan...
                             </>
                           ) : (
                             <>
                               <RefreshCw className="h-4 w-4 mr-2" />
-                              Scanner les emails
+                              Scanner
                             </>
                           )}
                         </Button>
@@ -467,6 +464,7 @@ export default function Settings() {
                           variant="ghost"
                           size="icon"
                           onClick={() => deleteAccountMutation.mutate(account.id)}
+                          disabled={deleteAccountMutation.isPending}
                           data-testid={`button-delete-${account.id}`}
                         >
                           <Trash2 className="h-4 w-4" />
