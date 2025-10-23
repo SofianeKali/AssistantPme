@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button";
 import { Mail, Zap, BarChart3, Calendar, FileText, Shield } from "lucide-react";
-import logoUrl from "@/assets/izyinbox-logo.png";
 
 export default function Landing() {
   return (
@@ -10,12 +9,12 @@ export default function Landing() {
         <div className="container mx-auto px-6 py-20">
           <div className="max-w-3xl mx-auto text-center">
             <div className="flex justify-center mb-6">
-              <img
-                src={logoUrl}
-                alt="IzyInbox"
-                className="h-24 w-24 rounded-md"
+              <div 
+                className="h-24 w-24 rounded-md bg-primary/10 flex items-center justify-center"
                 data-testid="img-logo"
-              />
+              >
+                <Mail className="h-12 w-12 text-primary" />
+              </div>
             </div>
             <h1 className="text-4xl font-semibold text-foreground mb-4">
               IzyInbox

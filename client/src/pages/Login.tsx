@@ -8,7 +8,6 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Mail, Lock, LogIn } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import logoUrl from "@/assets/izyinbox-logo.png";
 
 const loginSchema = z.object({
   email: z.string().email("Adresse email invalide"),
@@ -74,12 +73,12 @@ export default function Login() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
-            <img
-              src={logoUrl}
-              alt="IzyInbox"
-              className="h-16 w-16 rounded-md"
+            <div 
+              className="h-16 w-16 rounded-md bg-primary/10 flex items-center justify-center"
               data-testid="img-logo"
-            />
+            >
+              <Mail className="h-8 w-8 text-primary" />
+            </div>
           </div>
           <CardTitle className="text-2xl font-semibold">Bienvenue sur IzyInbox</CardTitle>
           <CardDescription>
