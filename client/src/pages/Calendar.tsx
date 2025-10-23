@@ -212,26 +212,26 @@ export default function Calendar() {
 
       {/* Appointment Detail Dialog */}
       <Dialog open={!!selectedAppointment} onOpenChange={(open) => !open && setSelectedAppointment(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl w-[95vw] md:w-full max-h-[90vh] overflow-y-auto overflow-x-hidden">
           <DialogHeader>
-            <DialogTitle className="text-xl">{selectedAppointment?.title}</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-base sm:text-xl break-words pr-8">{selectedAppointment?.title}</DialogTitle>
+            <DialogDescription className="break-words">
               {selectedAppointment?.startTime &&
                 format(new Date(selectedAppointment.startTime), "dd MMMM yyyy à HH:mm", { locale: fr })}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 overflow-x-hidden">
             {selectedAppointment?.description && (
               <div>
                 <h3 className="text-sm font-medium mb-2">Description</h3>
-                <p className="text-sm text-muted-foreground">{selectedAppointment.description}</p>
+                <p className="text-sm text-muted-foreground break-words whitespace-pre-wrap">{selectedAppointment.description}</p>
               </div>
             )}
 
             {selectedAppointment?.location && (
               <div>
                 <h3 className="text-sm font-medium mb-2">Lieu</h3>
-                <p className="text-sm text-muted-foreground">{selectedAppointment.location}</p>
+                <p className="text-sm text-muted-foreground break-words">{selectedAppointment.location}</p>
               </div>
             )}
 
@@ -243,15 +243,15 @@ export default function Calendar() {
                 </div>
                 <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
                   {selectedAppointment.aiSuggestions.prepTasks?.map((task: string, i: number) => (
-                    <li key={i}>{task}</li>
+                    <li key={i} className="break-words">{task}</li>
                   ))}
                 </ul>
               </div>
             )}
 
-            <div className="flex gap-2 pt-4 border-t">
-              <Button variant="outline">Modifier</Button>
-              <Button variant="destructive">Annuler le RDV</Button>
+            <div className="flex flex-col sm:flex-row gap-2 pt-4 border-t">
+              <Button variant="outline" className="w-full sm:w-auto">Modifier</Button>
+              <Button variant="destructive" className="w-full sm:w-auto">Annuler le RDV</Button>
             </div>
           </div>
         </DialogContent>
