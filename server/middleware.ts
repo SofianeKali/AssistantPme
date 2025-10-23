@@ -10,8 +10,9 @@ export function isAdmin(req: Request, res: Response, next: NextFunction) {
     return res.status(401).json({ message: 'Non authentifié' });
   }
 
-  // Check if user has admin role
-  if (req.user.role !== 'admin') {
+  // Check if user has admin role (accept both 'admin' and 'administrator' for backwards compatibility)
+  const userRole = (req.user as any).role;
+  if (userRole !== 'admin' && userRole !== 'administrator') {
     return res.status(403).json({ message: 'Accès interdit : rôle administrateur requis' });
   }
 

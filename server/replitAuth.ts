@@ -55,16 +55,23 @@ function updateUserSession(
 }
 
 async function upsertUser(claims: any) {
+  // Check if user already exists
+  const existingUser = await storage.getUser(claims["sub"]);
+  
   // Check if this is the first user in the system
   const allUsers = await storage.getAllUsers();
   const isFirstUser = allUsers.length === 0;
   
   // Determine role: 
-  // 1. If claims include is_admin=true or role='admin', use admin
-  // 2. If first user, make admin
-  // 3. Otherwise, use simple
+  // 1. If user exists, keep their existing role (don't overwrite)
+  // 2. If claims include is_admin=true or role='admin', use admin
+  // 3. If first user, make admin
+  // 4. Otherwise, use simple
   let role = "simple";
-  if (claims["is_admin"] === true || claims["is_admin"] === "true" || claims["role"] === "admin") {
+  if (existingUser) {
+    // Preserve existing user's role
+    role = existingUser.role;
+  } else if (claims["is_admin"] === true || claims["is_admin"] === "true" || claims["role"] === "admin") {
     role = "admin";
   } else if (isFirstUser) {
     role = "admin";
