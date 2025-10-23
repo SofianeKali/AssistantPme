@@ -191,12 +191,11 @@ export default function Settings() {
   const scanAccountMutation = useMutation({
     mutationFn: async (accountId: string) => {
       setScanningAccountId(accountId);
-      return await apiRequest("POST", `/api/email-accounts/${accountId}/scan`, {});
+      const response = await apiRequest("POST", `/api/email-accounts/${accountId}/scan`, {});
+      return await response.json();
     },
     onSuccess: (data: any) => {
       setScanningAccountId(null);
-      console.log('[Scan Success] Response data:', data);
-      console.log('[Scan Success] Created:', data.created, 'Scanned:', data.scanned);
       toast({ 
         title: "Scan terminé", 
         description: `${data.created || 0} nouveau(x) email(s) importé(s)`,
