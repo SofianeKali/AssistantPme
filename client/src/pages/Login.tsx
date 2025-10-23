@@ -179,7 +179,7 @@ export default function Login() {
           </Button>
 
           <p className="text-xs text-center text-muted-foreground">
-            Smart Automation for Busy Managers
+            L'IA au service de votre productivité.
           </p>
         </CardFooter>
       </Card>
