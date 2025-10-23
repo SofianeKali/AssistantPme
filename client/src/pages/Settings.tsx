@@ -194,7 +194,7 @@ export default function Settings() {
     onSuccess: (data: any) => {
       toast({ 
         title: "Scan terminé", 
-        description: data.message || `${data.scanned || 0} nouveau(x) email(s) importé(s)`,
+        description: data.message || `${data.created || 0} nouveau(x) email(s) importé(s)`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/emails"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
