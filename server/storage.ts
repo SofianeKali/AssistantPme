@@ -40,7 +40,7 @@ import {
   type InsertEmailCategory,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, gte, lte, like, or, isNull, sql } from "drizzle-orm";
+import { eq, and, desc, gte, lte, like, or, isNull, sql, ne } from "drizzle-orm";
 
 export interface IStorage {
   // User operations (required for Replit Auth)
@@ -117,6 +117,7 @@ export interface IStorage {
   
   // Dashboard stats
   getDashboardStats(): Promise<any>;
+  getDashboardCharts(): Promise<any>;
   getAdvancedKPIs(): Promise<any>;
   getEmailStatsByCategory(userId?: string): Promise<Record<string, number>>;
   
@@ -757,6 +758,147 @@ export class DatabaseStorage implements IStorage {
         priority: item.priority || 'normal',
         count: Number(item.count),
       })),
+    };
+  }
+
+  // Dashboard charts data
+  async getDashboardCharts(): Promise<any> {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    // Evolution des emails traités (last 7 days)
+    const emailEvolution = [];
+    for (let i = 6; i >= 0; i--) {
+      const dayStart = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+      dayStart.setHours(0, 0, 0, 0);
+      const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+      
+      const [processed] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(emails)
+        .where(
+          and(
+            gte(emails.receivedAt, dayStart),
+            lte(emails.receivedAt, dayEnd),
+            or(
+              eq(emails.status, 'traite'),
+              eq(emails.status, 'archive')
+            )
+          )
+        );
+      
+      const dayNames = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
+      emailEvolution.push({
+        day: dayNames[dayStart.getDay()],
+        count: Number(processed?.count || 0)
+      });
+    }
+    
+    // RDV planifiés par semaine (last 4 weeks)
+    const appointmentsByWeek = [];
+    for (let i = 3; i >= 0; i--) {
+      const weekStart = new Date(now.getTime() - (i + 1) * 7 * 24 * 60 * 60 * 1000);
+      weekStart.setHours(0, 0, 0, 0);
+      const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+      
+      const [count] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(appointments)
+        .where(
+          and(
+            gte(appointments.startTime, weekStart),
+            lte(appointments.startTime, weekEnd)
+          )
+        );
+      
+      appointmentsByWeek.push({
+        week: `${4 - i}`,
+        count: Number(count?.count || 0)
+      });
+    }
+    
+    // Répartition des emails reçus par type
+    const emailDistribution = await db
+      .select({
+        type: emails.emailType,
+        count: sql<number>`count(*)`,
+      })
+      .from(emails)
+      .where(gte(emails.receivedAt, startOfMonth))
+      .groupBy(emails.emailType);
+    
+    // Taux de traitement par catégorie
+    const categoryProcessing = [];
+    const categories = ['devis', 'facture', 'rdv', 'autre'];
+    
+    for (const category of categories) {
+      const [total] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(emails)
+        .where(eq(emails.emailType, category));
+      
+      const [processed] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(emails)
+        .where(
+          and(
+            eq(emails.emailType, category),
+            or(
+              eq(emails.status, 'traite'),
+              eq(emails.status, 'archive')
+            )
+          )
+        );
+      
+      const totalCount = Number(total?.count || 0);
+      const processedCount = Number(processed?.count || 0);
+      const rate = totalCount > 0 ? Math.round((processedCount / totalCount) * 100) : 0;
+      
+      categoryProcessing.push({
+        category: category.charAt(0).toUpperCase() + category.slice(1),
+        rate
+      });
+    }
+    
+    // Funnel de traitement des emails
+    const [received] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(emails);
+    
+    const [sorted] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(emails)
+      .where(ne(emails.status, 'nouveau'));
+    
+    const [assigned] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(emails)
+      .where(ne(emails.assignedToId, null));
+    
+    const [processed] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(emails)
+      .where(
+        or(
+          eq(emails.status, 'traite'),
+          eq(emails.status, 'archive')
+        )
+      );
+    
+    return {
+      emailEvolution,
+      appointmentsByWeek,
+      emailDistribution: emailDistribution.map(item => ({
+        name: (item.type || 'Autre').charAt(0).toUpperCase() + (item.type || 'autre').slice(1),
+        value: Number(item.count)
+      })),
+      categoryProcessing,
+      emailFunnel: [
+        { name: 'Reçus', count: Number(received?.count || 0) },
+        { name: 'Triés', count: Number(sorted?.count || 0) },
+        { name: 'Assignés', count: Number(assigned?.count || 0) },
+        { name: 'Traités', count: Number(processed?.count || 0) }
+      ]
     };
   }
 

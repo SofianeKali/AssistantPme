@@ -44,6 +44,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Dashboard charts
+  app.get('/api/dashboard/charts', isAuthenticated, async (req, res) => {
+    try {
+      const charts = await storage.getDashboardCharts();
+      res.json(charts);
+    } catch (error) {
+      console.error("Error fetching dashboard charts:", error);
+      res.status(500).json({ message: "Failed to fetch charts data" });
+    }
+  });
+
   // Advanced KPIs
   app.get('/api/dashboard/kpis', isAuthenticated, async (req, res) => {
     try {
