@@ -45,7 +45,7 @@ export default function Calendar() {
   });
   const { toast } = useToast();
 
-  const { data: appointments = [], isLoading } = useQuery({
+  const { data: appointments = [], isLoading } = useQuery<any[]>({
     queryKey: ["/api/appointments", {
       start: startOfMonth(currentMonth).toISOString(),
       end: endOfMonth(currentMonth).toISOString(),
@@ -54,11 +54,7 @@ export default function Calendar() {
 
   const updateAppointmentMutation = useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: any }) => {
-      const response = await apiRequest(`/api/appointments/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify(updates),
-      });
-      return response.json();
+      return await apiRequest("PATCH", `/api/appointments/${id}`, updates);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/appointments"] });
@@ -80,10 +76,7 @@ export default function Calendar() {
 
   const deleteAppointmentMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await apiRequest(`/api/appointments/${id}`, {
-        method: "DELETE",
-      });
-      return response.json();
+      return await apiRequest("DELETE", `/api/appointments/${id}`, {});
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/appointments"] });
@@ -153,7 +146,6 @@ export default function Calendar() {
   };
 
   const getAppointmentsForDate = (date: Date) => {
-    if (!appointments) return [];
     return appointments.filter((apt: any) =>
       isSameDay(new Date(apt.startTime), date)
     );
@@ -286,7 +278,7 @@ export default function Calendar() {
               <Skeleton key={i} className="h-20" />
             ))}
           </div>
-        ) : appointments && appointments.slice(0, 5).length > 0 ? (
+        ) : appointments && Array.isArray(appointments) && appointments.slice(0, 5).length > 0 ? (
           <div className="space-y-3">
             {appointments.slice(0, 5).map((apt: any) => (
               <div
