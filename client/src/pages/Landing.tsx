@@ -20,7 +20,7 @@ export default function Landing() {
               IzyInbox
             </h1>
             <p className="text-lg text-muted-foreground mb-2">
-              Smart Automation for Busy Managers
+              Smart Automation
             </p>
             <p className="text-base text-muted-foreground mb-8">
               Automatisez la gestion de vos emails, devis, factures et rendez-vous grâce à l'intelligence artificielle

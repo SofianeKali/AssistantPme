@@ -136,7 +136,7 @@ export function AppSidebar() {
           />
           <div className="flex flex-col">
             <span className="text-sm font-semibold">IzyInbox</span>
-            <span className="text-xs text-muted-foreground">Smart Automation</span>
+            <span className="text-xs text-muted-foreground">Automatisation Intelligente</span>
           </div>
         </div>
       </SidebarHeader>

@@ -26,7 +26,7 @@ Bienvenue sur IzyInbox !
 
 Bonjour ${params.firstName} ${params.lastName},
 
-Votre compte utilisateur pour IzyInbox (Smart Automation for Busy Managers) a été créé par votre administrateur.
+Votre compte utilisateur pour IzyInbox a été créé par votre administrateur.
 
 Vos identifiants de connexion :
 
@@ -49,7 +49,7 @@ Vos identifiants de connexion :
 Si vous avez des questions, n'hésitez pas à contacter votre administrateur.
 
 ---
-IzyInbox - Smart Automation for Busy Managers
+IzyInbox
 Cet email a été envoyé automatiquement, merci de ne pas y répondre.
     `.trim();
 
@@ -129,7 +129,7 @@ Cet email a été envoyé automatiquement, merci de ne pas y répondre.
           <div class="content">
             <p>Bonjour ${params.firstName} ${params.lastName},</p>
             
-            <p>Votre compte utilisateur pour <strong>IzyInbox</strong> (Smart Automation for Busy Managers) a été créé par votre administrateur.</p>
+            <p>Votre compte utilisateur pour <strong>IzyInbox</strong> a été créé par votre administrateur.</p>
             
             <p>Voici vos identifiants de connexion :</p>
             
@@ -171,7 +171,7 @@ Cet email a été envoyé automatiquement, merci de ne pas y répondre.
             <p>Si vous avez des questions, n'hésitez pas à contacter votre administrateur.</p>
             
             <div class="footer">
-              <p><strong>IzyInbox</strong> - Smart Automation for Busy Managers</p>
+              <p><strong>IzyInbox</strong></p>
               <p style="font-size: 12px; color: #9ca3af;">Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
             </div>
           </div>
