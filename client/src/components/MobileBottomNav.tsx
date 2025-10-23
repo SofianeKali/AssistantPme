@@ -41,10 +41,10 @@ const mainNavItems = [
     testId: "mobile-nav-calendar",
   },
   {
-    title: "Documents",
-    url: "/documents",
-    icon: FileText,
-    testId: "mobile-nav-documents",
+    title: "Alertes",
+    url: "/alerts",
+    icon: Bell,
+    testId: "mobile-menu-alerts",
   },
   {
     title: "Plus",
@@ -57,10 +57,10 @@ const mainNavItems = [
 
 const moreMenuItems = [
   {
-    title: "Alertes",
-    url: "/alerts",
-    icon: Bell,
-    testId: "mobile-menu-alerts",
+    title: "Documents",
+    url: "/documents",
+    icon: FileText,
+    testId: "mobile-nav-documents",
   },
   {
     title: "Configuration",
