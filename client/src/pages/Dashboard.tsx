@@ -229,6 +229,76 @@ export default function Dashboard() {
 
       {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+               {/* Recent Alerts */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+            <CardTitle className="text-xl">Alertes récentes</CardTitle>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => generateAlertsMutation.mutate()}
+              disabled={generateAlertsMutation.isPending}
+              data-testid="button-generate-alerts"
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${generateAlertsMutation.isPending ? 'animate-spin' : ''}`} />
+              Vérifier
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {alertsLoading ? (
+              <div className="space-y-3">
+                {[...Array(3)].map((_, i) => (
+                  <Skeleton key={i} className="h-16" />
+                ))}
+              </div>
+            ) : alerts && alerts.length > 0 ? (
+              <div className="space-y-3">
+                {alerts.slice(0, 5).map((alert: any) => (
+                  <div
+                    key={alert.id}
+                    className="flex items-start gap-3 p-3 rounded-md border border-border hover-elevate"
+                    data-testid={`alert-${alert.id}`}
+                  >
+                    <AlertTriangle
+                      className={`h-5 w-5 mt-0.5 ${
+                        alert.severity === "critical"
+                          ? "text-destructive"
+                          : alert.severity === "warning"
+                            ? "text-chart-3"
+                            : "text-primary"
+                      }`}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium">{alert.title}</div>
+                      <div className="text-xs text-muted-foreground mt-1">{alert.message}</div>
+                    </div>
+                    <Badge
+                      variant={
+                        alert.severity === "critical"
+                          ? "destructive"
+                          : alert.severity === "warning"
+                            ? "default"
+                            : "secondary"
+                      }
+                      className="text-xs"
+                    >
+                      {alert.severity === "critical"
+                        ? "Critique"
+                        : alert.severity === "warning"
+                          ? "Attention"
+                          : "Info"}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-sm text-muted-foreground">
+                Aucune alerte active
+              </div>
+            )}
+          </CardContent>
+        </Card>
+        
         {/* Évolution des emails traités */}
         <Card>
           <CardHeader>
@@ -418,76 +488,6 @@ export default function Dashboard() {
                 </div>
               );
             })}
-          </CardContent>
-        </Card>
-
-        {/* Recent Alerts */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-            <CardTitle className="text-xl">Alertes récentes</CardTitle>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => generateAlertsMutation.mutate()}
-              disabled={generateAlertsMutation.isPending}
-              data-testid="button-generate-alerts"
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${generateAlertsMutation.isPending ? 'animate-spin' : ''}`} />
-              Vérifier
-            </Button>
-          </CardHeader>
-          <CardContent>
-            {alertsLoading ? (
-              <div className="space-y-3">
-                {[...Array(3)].map((_, i) => (
-                  <Skeleton key={i} className="h-16" />
-                ))}
-              </div>
-            ) : alerts && alerts.length > 0 ? (
-              <div className="space-y-3">
-                {alerts.slice(0, 5).map((alert: any) => (
-                  <div
-                    key={alert.id}
-                    className="flex items-start gap-3 p-3 rounded-md border border-border hover-elevate"
-                    data-testid={`alert-${alert.id}`}
-                  >
-                    <AlertTriangle
-                      className={`h-5 w-5 mt-0.5 ${
-                        alert.severity === "critical"
-                          ? "text-destructive"
-                          : alert.severity === "warning"
-                            ? "text-chart-3"
-                            : "text-primary"
-                      }`}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium">{alert.title}</div>
-                      <div className="text-xs text-muted-foreground mt-1">{alert.message}</div>
-                    </div>
-                    <Badge
-                      variant={
-                        alert.severity === "critical"
-                          ? "destructive"
-                          : alert.severity === "warning"
-                            ? "default"
-                            : "secondary"
-                      }
-                      className="text-xs"
-                    >
-                      {alert.severity === "critical"
-                        ? "Critique"
-                        : alert.severity === "warning"
-                          ? "Attention"
-                          : "Info"}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-sm text-muted-foreground">
-                Aucune alerte active
-              </div>
-            )}
           </CardContent>
         </Card>
       </div>
