@@ -52,9 +52,10 @@ export default function Settings() {
     queryKey: ["/api/auth/user"],
   });
 
-  const { data: emailAccounts, isLoading: emailAccountsLoading } = useQuery<any>({
-    queryKey: ["/api/email-accounts"],
-  });
+  const { data: emailAccounts, isLoading: emailAccountsLoading } =
+    useQuery<any>({
+      queryKey: ["/api/email-accounts"],
+    });
 
   const { data: settings, isLoading: settingsLoading } = useQuery<any>({
     queryKey: ["/api/settings"],
@@ -732,7 +733,7 @@ export default function Settings() {
                             </>
                           ) : (
                             <>
-                              <RefreshCw className="h-4 w-4 sm:mr-2" />
+                              <RefreshCw className="h-4 w-4 sm:mr-2 " />
                               <span className="hidden sm:inline">Scanner</span>
                             </>
                           )}
@@ -746,7 +747,7 @@ export default function Settings() {
                           disabled={deleteAccountMutation.isPending}
                           data-testid={`button-delete-${account.id}`}
                         >
-                          <Trash2 className="h-4 w-4 text-red-600" />
+                          <Trash2 className="h-4 w-4 text-red-500" />
                         </Button>
                       </div>
                     </div>
@@ -1009,7 +1010,7 @@ export default function Settings() {
                           }
                           data-testid={`button-delete-category-${category.key}`}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-4 w-4 text-red-500" />
                         </Button>
                       </div>
                     ))
