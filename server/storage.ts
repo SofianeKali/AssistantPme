@@ -128,6 +128,11 @@ export interface IStorage {
   getEmailCategoryByKey(key: string, emailAccountId?: string | null): Promise<EmailCategory | undefined>;
   updateEmailCategory(id: string, data: Partial<EmailCategory>): Promise<EmailCategory>;
   deleteEmailCategory(id: string): Promise<void>;
+  
+  // Email account categories (junction table operations)
+  assignCategoriesToAccount(emailAccountId: string, categoryIds: string[]): Promise<void>;
+  getAccountCategories(emailAccountId: string): Promise<EmailCategory[]>;
+  removeAccountCategory(emailAccountId: string, categoryId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1209,6 +1214,59 @@ export class DatabaseStorage implements IStorage {
 
   async deleteEmailCategory(id: string): Promise<void> {
     await db.delete(emailCategories).where(eq(emailCategories.id, id));
+  }
+  
+  // Email account categories (junction table operations)
+  async assignCategoriesToAccount(emailAccountId: string, categoryIds: string[]): Promise<void> {
+    const { emailAccountCategories } = await import("@shared/schema");
+    
+    // First, remove all existing associations
+    await db.delete(emailAccountCategories).where(eq(emailAccountCategories.emailAccountId, emailAccountId));
+    
+    // Then add the new ones
+    if (categoryIds.length > 0) {
+      const values = categoryIds.map(categoryId => ({
+        emailAccountId,
+        categoryId,
+      }));
+      await db.insert(emailAccountCategories).values(values);
+    }
+  }
+  
+  async getAccountCategories(emailAccountId: string): Promise<EmailCategory[]> {
+    const { emailAccountCategories } = await import("@shared/schema");
+    
+    const results = await db
+      .select({
+        id: emailCategories.id,
+        emailAccountId: emailCategories.emailAccountId,
+        key: emailCategories.key,
+        label: emailCategories.label,
+        color: emailCategories.color,
+        icon: emailCategories.icon,
+        isSystem: emailCategories.isSystem,
+        generateAutoResponse: emailCategories.generateAutoResponse,
+        createdAt: emailCategories.createdAt,
+        updatedAt: emailCategories.updatedAt,
+      })
+      .from(emailAccountCategories)
+      .innerJoin(emailCategories, eq(emailAccountCategories.categoryId, emailCategories.id))
+      .where(eq(emailAccountCategories.emailAccountId, emailAccountId));
+    
+    return results;
+  }
+  
+  async removeAccountCategory(emailAccountId: string, categoryId: string): Promise<void> {
+    const { emailAccountCategories } = await import("@shared/schema");
+    
+    await db
+      .delete(emailAccountCategories)
+      .where(
+        and(
+          eq(emailAccountCategories.emailAccountId, emailAccountId),
+          eq(emailAccountCategories.categoryId, categoryId)
+        )
+      );
   }
 }
 

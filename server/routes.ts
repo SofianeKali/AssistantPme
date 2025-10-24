@@ -131,6 +131,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get categories for a specific email account
+  app.get('/api/email-accounts/:id/categories', isAuthenticated, async (req, res) => {
+    try {
+      const categories = await storage.getAccountCategories(req.params.id);
+      res.json(categories);
+    } catch (error) {
+      console.error("Error fetching account categories:", error);
+      res.status(500).json({ message: "Failed to fetch account categories" });
+    }
+  });
+
+  // Update categories for a specific email account
+  app.put('/api/email-accounts/:id/categories', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const { categoryIds } = req.body;
+      if (!Array.isArray(categoryIds)) {
+        return res.status(400).json({ message: "categoryIds must be an array" });
+      }
+      await storage.assignCategoriesToAccount(req.params.id, categoryIds);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error updating account categories:", error);
+      res.status(500).json({ message: "Failed to update account categories" });
+    }
+  });
+
   // Emails
   // All authenticated users can see all emails (PME shared inbox)
   app.get('/api/emails', isAuthenticated, async (req, res) => {

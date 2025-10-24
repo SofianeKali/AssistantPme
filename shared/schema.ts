@@ -123,6 +123,22 @@ export const insertEmailCategorySchema = createInsertSchema(emailCategories).omi
 export type InsertEmailCategory = z.infer<typeof insertEmailCategorySchema>;
 export type EmailCategory = typeof emailCategories.$inferSelect;
 
+// Email Account Categories junction table - Associates categories with email accounts
+export const emailAccountCategories = pgTable("email_account_categories", {
+  emailAccountId: varchar("email_account_id").notNull().references(() => emailAccounts.id, { onDelete: "cascade" }),
+  categoryId: varchar("category_id").notNull().references(() => emailCategories.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  pk: { columns: [table.emailAccountId, table.categoryId] }
+}));
+
+export const insertEmailAccountCategorySchema = createInsertSchema(emailAccountCategories).omit({
+  createdAt: true,
+});
+
+export type InsertEmailAccountCategory = z.infer<typeof insertEmailAccountCategorySchema>;
+export type EmailAccountCategory = typeof emailAccountCategories.$inferSelect;
+
 // Emails table
 export const emails = pgTable("emails", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
