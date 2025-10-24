@@ -37,6 +37,8 @@ export default function Calendar() {
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showDayAppointmentsDialog, setShowDayAppointmentsDialog] = useState(false);
+  const [dayAppointmentsList, setDayAppointmentsList] = useState<any[]>([]);
   const [editForm, setEditForm] = useState({
     title: "",
     description: "",
@@ -313,6 +315,9 @@ export default function Calendar() {
                     setSelectedDate(day);
                     if (dayAppointments.length === 1) {
                       setSelectedAppointment(dayAppointments[0]);
+                    } else if (dayAppointments.length > 1) {
+                      setDayAppointmentsList(dayAppointments);
+                      setShowDayAppointmentsDialog(true);
                     }
                   }}
                   className={`
@@ -401,6 +406,58 @@ export default function Calendar() {
           </div>
         )}
       </Card>
+
+      {/* Day Appointments Selection Dialog */}
+      <Dialog open={showDayAppointmentsDialog} onOpenChange={setShowDayAppointmentsDialog}>
+        <DialogContent className="max-w-lg w-[95vw] md:w-full max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Rendez-vous du {selectedDate && format(selectedDate, "dd MMMM yyyy", { locale: fr })}</DialogTitle>
+            <DialogDescription>
+              Sélectionnez un rendez-vous pour voir les détails
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            {dayAppointmentsList.map((apt: any) => (
+              <div
+                key={apt.id}
+                className="p-4 rounded-md border border-border hover-elevate cursor-pointer"
+                onClick={() => {
+                  setSelectedAppointment(apt);
+                  setShowDayAppointmentsDialog(false);
+                }}
+                data-testid={`day-appointment-${apt.id}`}
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="text-sm font-semibold">{apt.title}</h3>
+                      {apt.status && (
+                        <Badge variant="outline" className="text-xs">
+                          {apt.status}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-1 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-3 w-3" />
+                        <span>
+                          {format(new Date(apt.startTime), "HH:mm")} - {format(new Date(apt.endTime), "HH:mm")}
+                        </span>
+                      </div>
+                      {apt.location && (
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-3 w-3" />
+                          <span>{apt.location}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Create Appointment Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
