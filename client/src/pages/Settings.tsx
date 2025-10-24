@@ -9,10 +9,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Mail, Save, Trash2, RefreshCw, Info, Plus, Tag, AlertCircle, Bell } from "lucide-react";
+import { Mail, Save, Trash2, RefreshCw, Info, Plus, Tag, AlertCircle, Bell, Settings as SettingsIcon } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 export default function Settings() {
   const { toast } = useToast();
@@ -29,28 +37,14 @@ export default function Settings() {
     queryKey: ["/api/settings"],
   });
 
-  const [selectedAccountId, setSelectedAccountId] = useState<string>("");
   const [activeTab, setActiveTab] = useState<string>("email");
   const [scanningAccountId, setScanningAccountId] = useState<string | null>(null);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
+  const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
 
-  // Auto-select first account when accounts load
-  useEffect(() => {
-    if (emailAccounts && (emailAccounts as any[]).length > 0 && !selectedAccountId) {
-      setSelectedAccountId((emailAccounts as any[])[0].id);
-    }
-  }, [emailAccounts, selectedAccountId]);
-
+  // Fetch all system categories (categories not linked to specific accounts)
   const { data: emailCategories, isLoading: categoriesLoading } = useQuery<any>({
-    queryKey: ["/api/email-categories", selectedAccountId],
-    queryFn: async () => {
-      const url = selectedAccountId 
-        ? `/api/email-categories?emailAccountId=${selectedAccountId}`
-        : '/api/email-categories';
-      const res = await fetch(url, { credentials: 'include' });
-      if (!res.ok) throw new Error('Failed to fetch categories');
-      return res.json();
-    },
-    enabled: !!selectedAccountId, // Only fetch when an account is selected
+    queryKey: ["/api/email-categories"],
   });
 
   const [newAccount, setNewAccount] = useState({
@@ -81,9 +75,17 @@ export default function Settings() {
 
   const addAccountMutation = useMutation({
     mutationFn: async (data: any) => {
-      return await apiRequest("POST", "/api/email-accounts", data);
+      const response = await apiRequest("POST", "/api/email-accounts", data);
+      return await response.json();
     },
-    onSuccess: () => {
+    onSuccess: async (account: any) => {
+      // If categories were selected, assign them to the new account
+      if (selectedCategoryIds.length > 0) {
+        await apiRequest("PUT", `/api/email-accounts/${account.id}/categories`, { 
+          categoryIds: selectedCategoryIds 
+        });
+      }
+      
       toast({ title: "Compte email ajouté avec succès" });
       queryClient.invalidateQueries({ queryKey: ["/api/email-accounts"] });
       setNewAccount({
@@ -96,6 +98,7 @@ export default function Settings() {
         username: "",
         password: "",
       });
+      setSelectedCategoryIds([]);
     },
     onError: (error: any) => {
       let errorMessage = "Impossible d'ajouter le compte email";
@@ -143,16 +146,17 @@ export default function Settings() {
 
   const addCategoryMutation = useMutation({
     mutationFn: async (data: any) => {
-      // Include emailAccountId when creating a custom category
+      // Create a system category (not linked to specific account)
       const categoryData = {
         ...data,
-        emailAccountId: selectedAccountId,
+        emailAccountId: null,
+        isSystem: true,
       };
       return await apiRequest("POST", "/api/email-categories", categoryData);
     },
     onSuccess: () => {
       toast({ title: "Catégorie ajoutée avec succès" });
-      queryClient.invalidateQueries({ queryKey: ["/api/email-categories", selectedAccountId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/email-categories"] });
       setNewCategory({
         key: "",
         label: "",
@@ -177,7 +181,7 @@ export default function Settings() {
     },
     onSuccess: () => {
       toast({ title: "Catégorie supprimée" });
-      queryClient.invalidateQueries({ queryKey: ["/api/email-categories", selectedAccountId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/email-categories"] });
     },
     onError: () => {
       toast({
@@ -271,6 +275,26 @@ export default function Settings() {
       toast({
         title: "Erreur",
         description: "Impossible de supprimer la règle d'alerte",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutations for managing account categories
+  const updateAccountCategoriesMutation = useMutation({
+    mutationFn: async ({ accountId, categoryIds }: { accountId: string; categoryIds: string[] }) => {
+      return await apiRequest("PUT", `/api/email-accounts/${accountId}/categories`, { categoryIds });
+    },
+    onSuccess: () => {
+      toast({ title: "Catégories mises à jour" });
+      queryClient.invalidateQueries({ queryKey: ["/api/email-accounts"] });
+      setEditingAccountId(null);
+      setSelectedCategoryIds([]);
+    },
+    onError: () => {
+      toast({
+        title: "Erreur",
+        description: "Impossible de mettre à jour les catégories",
         variant: "destructive",
       });
     },
@@ -411,6 +435,52 @@ export default function Settings() {
                   />
                 </div>
               </div>
+
+              {/* Category Selection */}
+              <div className="space-y-2">
+                <Label>Catégories actives pour ce compte</Label>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Sélectionnez les catégories que ce compte pourra utiliser pour classifier les emails
+                </p>
+                {categoriesLoading ? (
+                  <Skeleton className="h-20 w-full" />
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 border border-border rounded-md max-h-48 overflow-y-auto">
+                    {emailCategories && emailCategories.length > 0 ? (
+                      emailCategories.map((category: any) => (
+                        <div key={category.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`new-cat-${category.id}`}
+                            checked={selectedCategoryIds.includes(category.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedCategoryIds([...selectedCategoryIds, category.id]);
+                              } else {
+                                setSelectedCategoryIds(selectedCategoryIds.filter(id => id !== category.id));
+                              }
+                            }}
+                            data-testid={`checkbox-category-${category.key}`}
+                          />
+                          <Label 
+                            htmlFor={`new-cat-${category.id}`} 
+                            className="text-sm cursor-pointer flex items-center gap-2"
+                          >
+                            <span
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: category.color }}
+                            />
+                            {category.label}
+                          </Label>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground col-span-2">
+                        Aucune catégorie disponible. Créez-en dans l'onglet Catégories.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
               
               <Button
                 onClick={() => addAccountMutation.mutate({
@@ -456,13 +526,30 @@ export default function Settings() {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 sm:ml-auto">
+                      <div className="flex items-center gap-2 sm:ml-auto flex-wrap">
                         <Button
                           variant="outline"
+                          size="sm"
+                          onClick={async () => {
+                            // Fetch current categories for this account
+                            const response = await fetch(`/api/email-accounts/${account.id}/categories`, {
+                              credentials: 'include'
+                            });
+                            const categories = await response.json();
+                            setSelectedCategoryIds(categories.map((c: any) => c.id));
+                            setEditingAccountId(account.id);
+                          }}
+                          data-testid={`button-manage-categories-${account.id}`}
+                        >
+                          <Tag className="h-4 w-4 sm:mr-2" />
+                          <span className="hidden sm:inline">Catégories</span>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => scanAccountMutation.mutate(account.id)}
                           disabled={scanningAccountId === account.id}
                           data-testid={`button-scan-${account.id}`}
-                          className="flex-1 sm:flex-none"
                         >
                           {scanningAccountId === account.id ? (
                             <>
@@ -496,53 +583,94 @@ export default function Settings() {
               )}
             </CardContent>
           </Card>
+
+          {/* Dialog for managing account categories */}
+          <Dialog open={editingAccountId !== null} onOpenChange={(open) => {
+            if (!open) {
+              setEditingAccountId(null);
+              setSelectedCategoryIds([]);
+            }
+          }}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Gérer les catégories du compte</DialogTitle>
+                <DialogDescription>
+                  Sélectionnez les catégories que ce compte pourra utiliser
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {categoriesLoading ? (
+                  <Skeleton className="h-40 w-full" />
+                ) : (
+                  <div className="grid grid-cols-1 gap-2 p-3 border border-border rounded-md">
+                    {emailCategories && emailCategories.length > 0 ? (
+                      emailCategories.map((category: any) => (
+                        <div key={category.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`edit-cat-${category.id}`}
+                            checked={selectedCategoryIds.includes(category.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedCategoryIds([...selectedCategoryIds, category.id]);
+                              } else {
+                                setSelectedCategoryIds(selectedCategoryIds.filter(id => id !== category.id));
+                              }
+                            }}
+                            data-testid={`checkbox-edit-category-${category.key}`}
+                          />
+                          <Label 
+                            htmlFor={`edit-cat-${category.id}`} 
+                            className="text-sm cursor-pointer flex items-center gap-2"
+                          >
+                            <span
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: category.color }}
+                            />
+                            {category.label}
+                          </Label>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        Aucune catégorie disponible
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setEditingAccountId(null);
+                    setSelectedCategoryIds([]);
+                  }}
+                >
+                  Annuler
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (editingAccountId) {
+                      updateAccountCategoriesMutation.mutate({
+                        accountId: editingAccountId,
+                        categoryIds: selectedCategoryIds,
+                      });
+                    }
+                  }}
+                  disabled={updateAccountCategoriesMutation.isPending}
+                  data-testid="button-save-categories"
+                >
+                  {updateAccountCategoriesMutation.isPending ? "Enregistrement..." : "Enregistrer"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </TabsContent>
 
         {/* Categories Tab */}
         <TabsContent value="categories" className="space-y-6">
-          {/* Account Selector */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-xl">Sélectionner un compte email</CardTitle>
-              <CardDescription>
-                Les catégories personnalisées sont liées à un compte email spécifique
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {emailAccountsLoading ? (
-                <Skeleton className="h-10 w-full" />
-              ) : (!emailAccounts || emailAccounts.length === 0) ? (
-                <Alert data-testid="alert-no-email-accounts">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription className="flex items-center justify-between gap-4">
-                    <span>Aucun compte email configuré. Configurez d'abord un compte email pour gérer les catégories.</span>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => setActiveTab("email")}
-                      data-testid="button-go-to-email-tab"
-                    >
-                      Configurer un compte
-                    </Button>
-                  </AlertDescription>
-                </Alert>
-              ) : (
-                <Select value={selectedAccountId} onValueChange={setSelectedAccountId}>
-                  <SelectTrigger data-testid="select-email-account">
-                    <SelectValue placeholder="Choisir un compte email" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(emailAccounts as any[] || []).map((account: any) => (
-                      <SelectItem key={account.id} value={account.id}>
-                        {account.email} ({account.provider})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </CardContent>
-          </Card>
-
           {/* Add New Category */}
           <Card>
             <CardHeader>
@@ -609,7 +737,7 @@ export default function Settings() {
               </div>
               <Button
                 onClick={() => addCategoryMutation.mutate(newCategory)}
-                disabled={addCategoryMutation.isPending || !newCategory.key || !newCategory.label || !selectedAccountId}
+                disabled={addCategoryMutation.isPending || !newCategory.key || !newCategory.label}
                 data-testid="button-add-category"
               >
                 <Plus className="h-4 w-4 mr-2" />
