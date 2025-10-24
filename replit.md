@@ -3,7 +3,18 @@
 ## Overview
 IzyInbox is an intelligent web application designed to automate administrative tasks for SMEs. It leverages AI for email analysis and automates the management of quotes, invoices, appointments, and documents. The core purpose is to streamline administrative workflows, enhance efficiency, and provide actionable insights for small and medium-sized businesses. The project aims to become a leading solution for smart automation for busy managers, with ambitions for broad market adoption.
 
-## Recent Changes (October 23, 2025)
+## Recent Changes (October 24, 2025)
+- **Global Category System with Flexible Assignment**: 
+  - Refactored categories to be global (removed account-specific association from emailCategories table)
+  - Created emailAccountCategories junction table for many-to-many relationship between accounts and categories
+  - Categories can now be assigned to multiple accounts, and accounts can have multiple categories
+  - Updated API routes: GET/PUT /api/email-accounts/:id/categories for category management
+  - Enhanced UI in Settings page:
+    - Category selection checkboxes in account creation form
+    - "Catégories" button on existing accounts opens dialog for category management
+  - Categories tab now creates global categories without account selection requirement
+
+## Previous Changes (October 23, 2025)
 - **Individual Email Account Scanning**: Added POST /api/email-accounts/:id/scan endpoint and "Scanner maintenant" button in Settings page for manual scanning of specific email accounts
 - **Authentication Bug Fixes**: 
   - Updated isAdmin middleware to accept both 'admin' and 'administrator' roles for backward compatibility
