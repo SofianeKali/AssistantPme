@@ -1159,48 +1159,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getEmailCategoriesForAccount(emailAccountId: string): Promise<EmailCategory[]> {
-    // Return system categories (emailAccountId IS NULL) + custom categories for this account
-    return await db
-      .select()
-      .from(emailCategories)
-      .where(
-        or(
-          isNull(emailCategories.emailAccountId),
-          eq(emailCategories.emailAccountId, emailAccountId)
-        )
-      )
-      .orderBy(emailCategories.isSystem, emailCategories.createdAt);
+    // Since categories are now global, this method returns all categories
+    // It's kept for backward compatibility but could be replaced with getAllEmailCategories
+    return await db.select().from(emailCategories).orderBy(emailCategories.isSystem, emailCategories.createdAt);
   }
 
   async getEmailCategoryByKey(key: string, emailAccountId?: string | null): Promise<EmailCategory | undefined> {
-    // If emailAccountId is provided, look for account-specific or system category
-    // If not provided, look for system category only
-    if (emailAccountId) {
-      const [category] = await db
-        .select()
-        .from(emailCategories)
-        .where(
-          and(
-            eq(emailCategories.key, key),
-            or(
-              isNull(emailCategories.emailAccountId),
-              eq(emailCategories.emailAccountId, emailAccountId)
-            )
-          )
-        );
-      return category;
-    } else {
-      const [category] = await db
-        .select()
-        .from(emailCategories)
-        .where(
-          and(
-            eq(emailCategories.key, key),
-            isNull(emailCategories.emailAccountId)
-          )
-        );
-      return category;
-    }
+    // Categories are now global, so we just search by key
+    const [category] = await db
+      .select()
+      .from(emailCategories)
+      .where(eq(emailCategories.key, key));
+    return category;
   }
 
   async updateEmailCategory(id: string, data: Partial<EmailCategory>): Promise<EmailCategory> {
@@ -1239,7 +1209,6 @@ export class DatabaseStorage implements IStorage {
     const results = await db
       .select({
         id: emailCategories.id,
-        emailAccountId: emailCategories.emailAccountId,
         key: emailCategories.key,
         label: emailCategories.label,
         color: emailCategories.color,
