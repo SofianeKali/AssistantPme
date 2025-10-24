@@ -1,15 +1,38 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Mail, Save, Trash2, RefreshCw, Info, Plus, Tag, AlertCircle, Bell, Settings as SettingsIcon } from "lucide-react";
+import {
+  Mail,
+  Save,
+  Trash2,
+  RefreshCw,
+  Info,
+  Plus,
+  Tag,
+  AlertCircle,
+  Bell,
+  Settings as SettingsIcon,
+} from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -24,28 +47,32 @@ import {
 
 export default function Settings() {
   const { toast } = useToast();
-  
+
   const { data: user } = useQuery({
     queryKey: ["/api/auth/user"],
   });
 
-  const { data: emailAccounts, isLoading: emailAccountsLoading } = useQuery({
+  const { data: emailAccounts, isLoading: emailAccountsLoading } = useQuery<any>({
     queryKey: ["/api/email-accounts"],
   });
 
-  const { data: settings, isLoading: settingsLoading} = useQuery({
+  const { data: settings, isLoading: settingsLoading } = useQuery<any>({
     queryKey: ["/api/settings"],
   });
 
   const [activeTab, setActiveTab] = useState<string>("email");
-  const [scanningAccountId, setScanningAccountId] = useState<string | null>(null);
+  const [scanningAccountId, setScanningAccountId] = useState<string | null>(
+    null,
+  );
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
 
   // Fetch all system categories (categories not linked to specific accounts)
-  const { data: emailCategories, isLoading: categoriesLoading } = useQuery<any>({
-    queryKey: ["/api/email-categories"],
-  });
+  const { data: emailCategories, isLoading: categoriesLoading } = useQuery<any>(
+    {
+      queryKey: ["/api/email-categories"],
+    },
+  );
 
   const [newAccount, setNewAccount] = useState({
     provider: "gmail",
@@ -81,11 +108,15 @@ export default function Settings() {
     onSuccess: async (account: any) => {
       // If categories were selected, assign them to the new account
       if (selectedCategoryIds.length > 0) {
-        await apiRequest("PUT", `/api/email-accounts/${account.id}/categories`, { 
-          categoryIds: selectedCategoryIds 
-        });
+        await apiRequest(
+          "PUT",
+          `/api/email-accounts/${account.id}/categories`,
+          {
+            categoryIds: selectedCategoryIds,
+          },
+        );
       }
-      
+
       toast({ title: "Compte email ajouté avec succès" });
       queryClient.invalidateQueries({ queryKey: ["/api/email-accounts"] });
       setNewAccount({
@@ -102,20 +133,30 @@ export default function Settings() {
     },
     onError: (error: any) => {
       let errorMessage = "Impossible d'ajouter le compte email";
-      
+
       // Provide helpful error messages based on error type
-      if (error?.message?.includes("Invalid credentials") || error?.message?.includes("AUTHENTICATIONFAILED")) {
+      if (
+        error?.message?.includes("Invalid credentials") ||
+        error?.message?.includes("AUTHENTICATIONFAILED")
+      ) {
         if (newAccount.provider === "gmail") {
-          errorMessage = "Authentification échouée. Pour Gmail, utilisez un App Password (voir le guide ci-dessus)";
+          errorMessage =
+            "Authentification échouée. Pour Gmail, utilisez un App Password (voir le guide ci-dessus)";
         } else if (newAccount.provider === "yahoo") {
-          errorMessage = "Authentification échouée. Pour Yahoo, utilisez un App Password (voir le guide ci-dessus)";
+          errorMessage =
+            "Authentification échouée. Pour Yahoo, utilisez un App Password (voir le guide ci-dessus)";
         } else {
-          errorMessage = "Identifiants incorrects. Vérifiez votre nom d'utilisateur et mot de passe";
+          errorMessage =
+            "Identifiants incorrects. Vérifiez votre nom d'utilisateur et mot de passe";
         }
-      } else if (error?.message?.includes("ENOTFOUND") || error?.message?.includes("ECONNREFUSED")) {
-        errorMessage = "Impossible de se connecter au serveur email. Vérifiez les paramètres IMAP/SMTP";
+      } else if (
+        error?.message?.includes("ENOTFOUND") ||
+        error?.message?.includes("ECONNREFUSED")
+      ) {
+        errorMessage =
+          "Impossible de se connecter au serveur email. Vérifiez les paramètres IMAP/SMTP";
       }
-      
+
       toast({
         title: "Erreur d'ajout du compte",
         description: errorMessage,
@@ -126,7 +167,9 @@ export default function Settings() {
 
   const updateSettingMutation = useMutation({
     mutationFn: async (data: { key: string; value: any }) => {
-      return await apiRequest("PUT", `/api/settings/${data.key}`, { value: data.value });
+      return await apiRequest("PUT", `/api/settings/${data.key}`, {
+        value: data.value,
+      });
     },
     onSuccess: () => {
       toast({ title: "Paramètres mis à jour" });
@@ -195,29 +238,39 @@ export default function Settings() {
   const scanAccountMutation = useMutation({
     mutationFn: async (accountId: string) => {
       setScanningAccountId(accountId);
-      const response = await apiRequest("POST", `/api/email-accounts/${accountId}/scan`, {});
+      const response = await apiRequest(
+        "POST",
+        `/api/email-accounts/${accountId}/scan`,
+        {},
+      );
       return await response.json();
     },
     onSuccess: (data: any) => {
       setScanningAccountId(null);
-      toast({ 
-        title: "Scan terminé", 
+      toast({
+        title: "Scan terminé",
         description: `${data.created || 0} nouveau(x) email(s) importé(s)`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/emails"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/emails/stats/by-category"] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/emails/stats/by-category"],
+      });
     },
     onError: (error: any) => {
       setScanningAccountId(null);
       let errorMessage = "Impossible de scanner les emails";
-      
-      if (error?.message?.includes("Invalid credentials") || error?.message?.includes("AUTHENTICATIONFAILED")) {
-        errorMessage = "Erreur d'authentification. Vérifiez vos App Passwords Gmail/Yahoo";
+
+      if (
+        error?.message?.includes("Invalid credentials") ||
+        error?.message?.includes("AUTHENTICATIONFAILED")
+      ) {
+        errorMessage =
+          "Erreur d'authentification. Vérifiez vos App Passwords Gmail/Yahoo";
       } else if (error?.details) {
         errorMessage = error.details;
       }
-      
+
       toast({
         title: "Erreur de scan",
         description: errorMessage,
@@ -231,9 +284,9 @@ export default function Settings() {
       return await apiRequest("POST", "/api/alert-rules", { prompt });
     },
     onSuccess: (data: any) => {
-      toast({ 
-        title: "Règle d'alerte créée", 
-        description: `"${data.name}" a été créée avec succès`
+      toast({
+        title: "Règle d'alerte créée",
+        description: `"${data.name}" a été créée avec succès`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/alert-rules"] });
       setAlertPrompt("");
@@ -282,8 +335,18 @@ export default function Settings() {
 
   // Mutations for managing account categories
   const updateAccountCategoriesMutation = useMutation({
-    mutationFn: async ({ accountId, categoryIds }: { accountId: string; categoryIds: string[] }) => {
-      return await apiRequest("PUT", `/api/email-accounts/${accountId}/categories`, { categoryIds });
+    mutationFn: async ({
+      accountId,
+      categoryIds,
+    }: {
+      accountId: string;
+      categoryIds: string[];
+    }) => {
+      return await apiRequest(
+        "PUT",
+        `/api/email-accounts/${accountId}/categories`,
+        { categoryIds },
+      );
     },
     onSuccess: () => {
       toast({ title: "Catégories mises à jour" });
@@ -304,29 +367,55 @@ export default function Settings() {
     <div className="p-4 md:p-6 space-y-4 md:space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl md:text-3xl font-semibold text-foreground mb-2">Configuration</h1>
+        <h1 className="text-2xl md:text-3xl font-semibold text-foreground mb-2">
+          Configuration
+        </h1>
         <p className="text-sm text-muted-foreground">
           Gérez vos comptes email et paramètres de l'application
         </p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 md:space-y-6">
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="space-y-4 md:space-y-6"
+      >
         <TabsList className="w-full grid grid-cols-2 sm:grid-cols-3 md:flex md:w-auto h-auto gap-1">
-          <TabsTrigger value="email" data-testid="tab-email" className="text-xs sm:text-sm">
+          <TabsTrigger
+            value="email"
+            data-testid="tab-email"
+            className="text-xs sm:text-sm"
+          >
             Comptes Email
           </TabsTrigger>
-          <TabsTrigger value="categories" data-testid="tab-categories" className="text-xs sm:text-sm">
+          <TabsTrigger
+            value="categories"
+            data-testid="tab-categories"
+            className="text-xs sm:text-sm"
+          >
             Catégories
           </TabsTrigger>
-          <TabsTrigger value="automation" data-testid="tab-automation" className="text-xs sm:text-sm">
+          <TabsTrigger
+            value="automation"
+            data-testid="tab-automation"
+            className="text-xs sm:text-sm"
+          >
             Automatisation
           </TabsTrigger>
-          {(user as any)?.role === 'admin' && (
-            <TabsTrigger value="alerts" data-testid="tab-alerts" className="text-xs sm:text-sm">
+          {(user as any)?.role === "admin" && (
+            <TabsTrigger
+              value="alerts"
+              data-testid="tab-alerts"
+              className="text-xs sm:text-sm"
+            >
               Alertes
             </TabsTrigger>
           )}
-          <TabsTrigger value="general" data-testid="tab-general" className="text-xs sm:text-sm">
+          <TabsTrigger
+            value="general"
+            data-testid="tab-general"
+            className="text-xs sm:text-sm"
+          >
             Général
           </TabsTrigger>
         </TabsList>
@@ -348,13 +437,31 @@ export default function Settings() {
                   <AlertTitle>Gmail nécessite un App Password</AlertTitle>
                   <AlertDescription className="space-y-2">
                     <p className="text-sm">
-                      Pour vous connecter à Gmail, vous devez utiliser un <strong>mot de passe d'application</strong> au lieu de votre mot de passe habituel.
+                      Pour vous connecter à Gmail, vous devez utiliser un{" "}
+                      <strong>mot de passe d'application</strong> au lieu de
+                      votre mot de passe habituel.
                     </p>
                     <ol className="text-sm list-decimal list-inside space-y-1 ml-2">
-                      <li>Activez la validation en deux étapes sur votre compte Google</li>
-                      <li>Allez sur <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener noreferrer" className="text-primary underline hover:no-underline">myaccount.google.com/apppasswords</a></li>
+                      <li>
+                        Activez la validation en deux étapes sur votre compte
+                        Google
+                      </li>
+                      <li>
+                        Allez sur{" "}
+                        <a
+                          href="https://myaccount.google.com/apppasswords"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary underline hover:no-underline"
+                        >
+                          myaccount.google.com/apppasswords
+                        </a>
+                      </li>
                       <li>Créez un mot de passe pour "Mail"</li>
-                      <li>Copiez le mot de passe de 16 caractères et utilisez-le ci-dessous</li>
+                      <li>
+                        Copiez le mot de passe de 16 caractères et utilisez-le
+                        ci-dessous
+                      </li>
                     </ol>
                   </AlertDescription>
                 </Alert>
@@ -365,12 +472,28 @@ export default function Settings() {
                   <AlertTitle>Yahoo nécessite un App Password</AlertTitle>
                   <AlertDescription className="space-y-2">
                     <p className="text-sm">
-                      Pour vous connecter à Yahoo, vous devez générer un <strong>mot de passe d'application</strong>.
+                      Pour vous connecter à Yahoo, vous devez générer un{" "}
+                      <strong>mot de passe d'application</strong>.
                     </p>
                     <ol className="text-sm list-decimal list-inside space-y-1 ml-2">
-                      <li>Allez sur <a href="https://login.yahoo.com/account/security" target="_blank" rel="noopener noreferrer" className="text-primary underline hover:no-underline">login.yahoo.com/account/security</a></li>
-                      <li>Cliquez sur "Générer un mot de passe d'application"</li>
-                      <li>Sélectionnez "Autre application" et nommez-le (ex: "PME Assistant")</li>
+                      <li>
+                        Allez sur{" "}
+                        <a
+                          href="https://login.yahoo.com/account/security"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary underline hover:no-underline"
+                        >
+                          login.yahoo.com/account/security
+                        </a>
+                      </li>
+                      <li>
+                        Cliquez sur "Générer un mot de passe d'application"
+                      </li>
+                      <li>
+                        Sélectionnez "Autre application" et nommez-le (ex: "PME
+                        Assistant")
+                      </li>
                       <li>Utilisez le mot de passe généré ci-dessous</li>
                     </ol>
                   </AlertDescription>
@@ -384,15 +507,39 @@ export default function Settings() {
                     onValueChange={(value) => {
                       let config;
                       if (value === "gmail") {
-                        config = { imapHost: "imap.gmail.com", imapPort: "993", smtpHost: "smtp.gmail.com", smtpPort: "587" };
+                        config = {
+                          imapHost: "imap.gmail.com",
+                          imapPort: "993",
+                          smtpHost: "smtp.gmail.com",
+                          smtpPort: "587",
+                        };
                       } else if (value === "outlook") {
-                        config = { imapHost: "outlook.office365.com", imapPort: "993", smtpHost: "smtp.office365.com", smtpPort: "587" };
+                        config = {
+                          imapHost: "outlook.office365.com",
+                          imapPort: "993",
+                          smtpHost: "smtp.office365.com",
+                          smtpPort: "587",
+                        };
                       } else if (value === "yahoo") {
-                        config = { imapHost: "imap.mail.yahoo.com", imapPort: "993", smtpHost: "smtp.mail.yahoo.com", smtpPort: "465" };
+                        config = {
+                          imapHost: "imap.mail.yahoo.com",
+                          imapPort: "993",
+                          smtpHost: "smtp.mail.yahoo.com",
+                          smtpPort: "465",
+                        };
                       } else {
-                        config = { imapHost: "", imapPort: "993", smtpHost: "", smtpPort: "587" };
+                        config = {
+                          imapHost: "",
+                          imapPort: "993",
+                          smtpHost: "",
+                          smtpPort: "587",
+                        };
                       }
-                      setNewAccount({ ...newAccount, provider: value, ...config });
+                      setNewAccount({
+                        ...newAccount,
+                        provider: value,
+                        ...config,
+                      });
                     }}
                   >
                     <SelectTrigger data-testid="select-provider">
@@ -411,7 +558,9 @@ export default function Settings() {
                     id="email"
                     type="email"
                     value={newAccount.email}
-                    onChange={(e) => setNewAccount({ ...newAccount, email: e.target.value })}
+                    onChange={(e) =>
+                      setNewAccount({ ...newAccount, email: e.target.value })
+                    }
                     data-testid="input-email"
                   />
                 </div>
@@ -420,7 +569,9 @@ export default function Settings() {
                   <Input
                     id="username"
                     value={newAccount.username}
-                    onChange={(e) => setNewAccount({ ...newAccount, username: e.target.value })}
+                    onChange={(e) =>
+                      setNewAccount({ ...newAccount, username: e.target.value })
+                    }
                     data-testid="input-username"
                   />
                 </div>
@@ -430,7 +581,9 @@ export default function Settings() {
                     id="password"
                     type="password"
                     value={newAccount.password}
-                    onChange={(e) => setNewAccount({ ...newAccount, password: e.target.value })}
+                    onChange={(e) =>
+                      setNewAccount({ ...newAccount, password: e.target.value })
+                    }
                     data-testid="input-password"
                   />
                 </div>
@@ -440,7 +593,8 @@ export default function Settings() {
               <div className="space-y-2">
                 <Label>Catégories actives pour ce compte</Label>
                 <p className="text-sm text-muted-foreground mb-2">
-                  Sélectionnez les catégories que ce compte pourra utiliser pour classifier les emails
+                  Sélectionnez les catégories que ce compte pourra utiliser pour
+                  classifier les emails
                 </p>
                 {categoriesLoading ? (
                   <Skeleton className="h-20 w-full" />
@@ -448,21 +602,31 @@ export default function Settings() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 border border-border rounded-md max-h-48 overflow-y-auto">
                     {emailCategories && emailCategories.length > 0 ? (
                       emailCategories.map((category: any) => (
-                        <div key={category.id} className="flex items-center space-x-2">
+                        <div
+                          key={category.id}
+                          className="flex items-center space-x-2"
+                        >
                           <Checkbox
                             id={`new-cat-${category.id}`}
                             checked={selectedCategoryIds.includes(category.id)}
                             onCheckedChange={(checked) => {
                               if (checked) {
-                                setSelectedCategoryIds([...selectedCategoryIds, category.id]);
+                                setSelectedCategoryIds([
+                                  ...selectedCategoryIds,
+                                  category.id,
+                                ]);
                               } else {
-                                setSelectedCategoryIds(selectedCategoryIds.filter(id => id !== category.id));
+                                setSelectedCategoryIds(
+                                  selectedCategoryIds.filter(
+                                    (id) => id !== category.id,
+                                  ),
+                                );
                               }
                             }}
                             data-testid={`checkbox-category-${category.key}`}
                           />
-                          <Label 
-                            htmlFor={`new-cat-${category.id}`} 
+                          <Label
+                            htmlFor={`new-cat-${category.id}`}
                             className="text-sm cursor-pointer flex items-center gap-2"
                           >
                             <span
@@ -475,19 +639,22 @@ export default function Settings() {
                       ))
                     ) : (
                       <p className="text-sm text-muted-foreground col-span-2">
-                        Aucune catégorie disponible. Créez-en dans l'onglet Catégories.
+                        Aucune catégorie disponible. Créez-en dans l'onglet
+                        Catégories.
                       </p>
                     )}
                   </div>
                 )}
               </div>
-              
+
               <Button
-                onClick={() => addAccountMutation.mutate({
-                  ...newAccount,
-                  imapPort: parseInt(newAccount.imapPort),
-                  smtpPort: parseInt(newAccount.smtpPort),
-                })}
+                onClick={() =>
+                  addAccountMutation.mutate({
+                    ...newAccount,
+                    imapPort: parseInt(newAccount.imapPort),
+                    smtpPort: parseInt(newAccount.smtpPort),
+                  })
+                }
                 disabled={addAccountMutation.isPending || !newAccount.email}
                 data-testid="button-add-account"
               >
@@ -520,7 +687,9 @@ export default function Settings() {
                       data-testid={`account-${account.id}`}
                     >
                       <div className="flex-1">
-                        <div className="font-medium break-all">{account.email}</div>
+                        <div className="font-medium break-all">
+                          {account.email}
+                        </div>
                         <div className="text-sm text-muted-foreground">
                           {account.provider} • Scan: {account.scanFrequency}min
                         </div>
@@ -532,11 +701,16 @@ export default function Settings() {
                           size="sm"
                           onClick={async () => {
                             // Fetch current categories for this account
-                            const response = await fetch(`/api/email-accounts/${account.id}/categories`, {
-                              credentials: 'include'
-                            });
+                            const response = await fetch(
+                              `/api/email-accounts/${account.id}/categories`,
+                              {
+                                credentials: "include",
+                              },
+                            );
                             const categories = await response.json();
-                            setSelectedCategoryIds(categories.map((c: any) => c.id));
+                            setSelectedCategoryIds(
+                              categories.map((c: any) => c.id),
+                            );
                             setEditingAccountId(account.id);
                           }}
                           data-testid={`button-manage-categories-${account.id}`}
@@ -566,11 +740,13 @@ export default function Settings() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => deleteAccountMutation.mutate(account.id)}
+                          onClick={() =>
+                            deleteAccountMutation.mutate(account.id)
+                          }
                           disabled={deleteAccountMutation.isPending}
                           data-testid={`button-delete-${account.id}`}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-4 w-4 text-red-600" />
                         </Button>
                       </div>
                     </div>
@@ -585,12 +761,15 @@ export default function Settings() {
           </Card>
 
           {/* Dialog for managing account categories */}
-          <Dialog open={editingAccountId !== null} onOpenChange={(open) => {
-            if (!open) {
-              setEditingAccountId(null);
-              setSelectedCategoryIds([]);
-            }
-          }}>
+          <Dialog
+            open={editingAccountId !== null}
+            onOpenChange={(open) => {
+              if (!open) {
+                setEditingAccountId(null);
+                setSelectedCategoryIds([]);
+              }
+            }}
+          >
             <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle>Gérer les catégories du compte</DialogTitle>
@@ -598,7 +777,7 @@ export default function Settings() {
                   Sélectionnez les catégories que ce compte pourra utiliser
                 </DialogDescription>
               </DialogHeader>
-              
+
               <div className="space-y-2 max-h-96 overflow-y-auto">
                 {categoriesLoading ? (
                   <Skeleton className="h-40 w-full" />
@@ -606,21 +785,31 @@ export default function Settings() {
                   <div className="grid grid-cols-1 gap-2 p-3 border border-border rounded-md">
                     {emailCategories && emailCategories.length > 0 ? (
                       emailCategories.map((category: any) => (
-                        <div key={category.id} className="flex items-center space-x-2">
+                        <div
+                          key={category.id}
+                          className="flex items-center space-x-2"
+                        >
                           <Checkbox
                             id={`edit-cat-${category.id}`}
                             checked={selectedCategoryIds.includes(category.id)}
                             onCheckedChange={(checked) => {
                               if (checked) {
-                                setSelectedCategoryIds([...selectedCategoryIds, category.id]);
+                                setSelectedCategoryIds([
+                                  ...selectedCategoryIds,
+                                  category.id,
+                                ]);
                               } else {
-                                setSelectedCategoryIds(selectedCategoryIds.filter(id => id !== category.id));
+                                setSelectedCategoryIds(
+                                  selectedCategoryIds.filter(
+                                    (id) => id !== category.id,
+                                  ),
+                                );
                               }
                             }}
                             data-testid={`checkbox-edit-category-${category.key}`}
                           />
-                          <Label 
-                            htmlFor={`edit-cat-${category.id}`} 
+                          <Label
+                            htmlFor={`edit-cat-${category.id}`}
                             className="text-sm cursor-pointer flex items-center gap-2"
                           >
                             <span
@@ -662,7 +851,9 @@ export default function Settings() {
                   disabled={updateAccountCategoriesMutation.isPending}
                   data-testid="button-save-categories"
                 >
-                  {updateAccountCategoriesMutation.isPending ? "Enregistrement..." : "Enregistrer"}
+                  {updateAccountCategoriesMutation.isPending
+                    ? "Enregistrement..."
+                    : "Enregistrer"}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -674,7 +865,9 @@ export default function Settings() {
           {/* Add New Category */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-xl">Ajouter une catégorie personnalisée</CardTitle>
+              <CardTitle className="text-xl">
+                Ajouter une catégorie personnalisée
+              </CardTitle>
               <CardDescription>
                 Créez des catégories pour classifier vos emails
               </CardDescription>
@@ -687,7 +880,9 @@ export default function Settings() {
                     id="category-key"
                     placeholder="ex: contrat"
                     value={newCategory.key}
-                    onChange={(e) => setNewCategory({ ...newCategory, key: e.target.value })}
+                    onChange={(e) =>
+                      setNewCategory({ ...newCategory, key: e.target.value })
+                    }
                     data-testid="input-category-key"
                   />
                 </div>
@@ -697,7 +892,9 @@ export default function Settings() {
                     id="category-label"
                     placeholder="ex: Contrats"
                     value={newCategory.label}
-                    onChange={(e) => setNewCategory({ ...newCategory, label: e.target.value })}
+                    onChange={(e) =>
+                      setNewCategory({ ...newCategory, label: e.target.value })
+                    }
                     data-testid="input-category-label"
                   />
                 </div>
@@ -709,7 +906,9 @@ export default function Settings() {
                     id="category-color"
                     placeholder="#6366f1"
                     value={newCategory.color}
-                    onChange={(e) => setNewCategory({ ...newCategory, color: e.target.value })}
+                    onChange={(e) =>
+                      setNewCategory({ ...newCategory, color: e.target.value })
+                    }
                     data-testid="input-category-color"
                   />
                 </div>
@@ -719,7 +918,9 @@ export default function Settings() {
                     id="category-icon"
                     placeholder="Mail"
                     value={newCategory.icon}
-                    onChange={(e) => setNewCategory({ ...newCategory, icon: e.target.value })}
+                    onChange={(e) =>
+                      setNewCategory({ ...newCategory, icon: e.target.value })
+                    }
                     data-testid="input-category-icon"
                   />
                 </div>
@@ -728,16 +929,28 @@ export default function Settings() {
                 <Checkbox
                   id="generate-auto-response"
                   checked={newCategory.generateAutoResponse}
-                  onCheckedChange={(checked) => setNewCategory({ ...newCategory, generateAutoResponse: checked as boolean })}
+                  onCheckedChange={(checked) =>
+                    setNewCategory({
+                      ...newCategory,
+                      generateAutoResponse: checked as boolean,
+                    })
+                  }
                   data-testid="checkbox-generate-auto-response"
                 />
-                <Label htmlFor="generate-auto-response" className="text-sm font-normal">
+                <Label
+                  htmlFor="generate-auto-response"
+                  className="text-sm font-normal"
+                >
                   Générer une réponse automatique pour cette catégorie
                 </Label>
               </div>
               <Button
                 onClick={() => addCategoryMutation.mutate(newCategory)}
-                disabled={addCategoryMutation.isPending || !newCategory.key || !newCategory.label}
+                disabled={
+                  addCategoryMutation.isPending ||
+                  !newCategory.key ||
+                  !newCategory.label
+                }
                 data-testid="button-add-category"
               >
                 <Plus className="h-4 w-4 mr-2" />
@@ -777,15 +990,23 @@ export default function Settings() {
                           <div>
                             <div className="font-medium">{category.label}</div>
                             <div className="text-sm text-muted-foreground">
-                              Clé: {category.key} • {category.generateAutoResponse ? "Réponse auto activée" : "Réponse auto désactivée"}
+                              Clé: {category.key} •{" "}
+                              {category.generateAutoResponse
+                                ? "Réponse auto activée"
+                                : "Réponse auto désactivée"}
                             </div>
                           </div>
                         </div>
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => deleteCategoryMutation.mutate(category.id)}
-                          disabled={category.isSystem || deleteCategoryMutation.isPending}
+                          onClick={() =>
+                            deleteCategoryMutation.mutate(category.id)
+                          }
+                          disabled={
+                            category.isSystem ||
+                            deleteCategoryMutation.isPending
+                          }
                           data-testid={`button-delete-category-${category.key}`}
                         >
                           <Trash2 className="h-4 w-4" />
@@ -807,7 +1028,9 @@ export default function Settings() {
         <TabsContent value="automation" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-xl">Paramètres d'automatisation</CardTitle>
+              <CardTitle className="text-xl">
+                Paramètres d'automatisation
+              </CardTitle>
               <CardDescription>
                 Configurez les fonctionnalités intelligentes
               </CardDescription>
@@ -815,15 +1038,21 @@ export default function Settings() {
             <CardContent className="space-y-6">
               <div className="flex items-center justify-between">
                 <div className="flex-1">
-                  <Label className="text-base">Analyse automatique des emails</Label>
+                  <Label className="text-base">
+                    Analyse automatique des emails
+                  </Label>
                   <p className="text-sm text-muted-foreground">
-                    Détection automatique du type d'email et extraction de données
+                    Détection automatique du type d'email et extraction de
+                    données
                   </p>
                 </div>
                 <Switch
                   checked={settings?.autoAnalysis !== false}
                   onCheckedChange={(checked) =>
-                    updateSettingMutation.mutate({ key: "autoAnalysis", value: checked })
+                    updateSettingMutation.mutate({
+                      key: "autoAnalysis",
+                      value: checked,
+                    })
                   }
                   data-testid="switch-auto-analysis"
                 />
@@ -838,14 +1067,19 @@ export default function Settings() {
                 <Switch
                   checked={settings?.autoResponses !== false}
                   onCheckedChange={(checked) =>
-                    updateSettingMutation.mutate({ key: "autoResponses", value: checked })
+                    updateSettingMutation.mutate({
+                      key: "autoResponses",
+                      value: checked,
+                    })
                   }
                   data-testid="switch-auto-responses"
                 />
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex-1">
-                  <Label className="text-base">Planification automatique des RDV</Label>
+                  <Label className="text-base">
+                    Planification automatique des RDV
+                  </Label>
                   <p className="text-sm text-muted-foreground">
                     Création automatique de rendez-vous depuis les emails
                   </p>
@@ -853,7 +1087,10 @@ export default function Settings() {
                 <Switch
                   checked={settings?.autoScheduling !== false}
                   onCheckedChange={(checked) =>
-                    updateSettingMutation.mutate({ key: "autoScheduling", value: checked })
+                    updateSettingMutation.mutate({
+                      key: "autoScheduling",
+                      value: checked,
+                    })
                   }
                   data-testid="switch-auto-scheduling"
                 />
@@ -866,16 +1103,22 @@ export default function Settings() {
         <TabsContent value="alerts" className="space-y-6">
           <Alert>
             <Bell className="h-4 w-4" />
-            <AlertTitle>Règles d'alerte personnalisées (Administrateurs uniquement)</AlertTitle>
+            <AlertTitle>
+              Règles d'alerte personnalisées (Administrateurs uniquement)
+            </AlertTitle>
             <AlertDescription>
-              Créez des règles d'alerte intelligentes en langage naturel. L'IA interprétera vos instructions et créera automatiquement des alertes basées sur vos critères.
+              Créez des règles d'alerte intelligentes en langage naturel. L'IA
+              interprétera vos instructions et créera automatiquement des
+              alertes basées sur vos critères.
             </AlertDescription>
           </Alert>
 
           {/* Create New Alert Rule */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-xl">Créer une règle d'alerte</CardTitle>
+              <CardTitle className="text-xl">
+                Créer une règle d'alerte
+              </CardTitle>
               <CardDescription>
                 Décrivez en français la règle d'alerte que vous souhaitez créer
               </CardDescription>
@@ -895,18 +1138,34 @@ export default function Settings() {
                   Exemples de prompts :
                 </p>
                 <ul className="text-xs text-muted-foreground list-disc list-inside space-y-1 ml-2">
-                  <li>Alerte pour emails urgents de type devis qui ne sont pas traités depuis plus de 24 heures</li>
-                  <li>Rappel pour rendez-vous confirmés qui commencent dans moins de 2 heures</li>
-                  <li>Alerte critique pour emails de facture reçus il y a plus de 10 jours et toujours en status nouveau</li>
+                  <li>
+                    Alerte pour emails urgents de type devis qui ne sont pas
+                    traités depuis plus de 24 heures
+                  </li>
+                  <li>
+                    Rappel pour rendez-vous confirmés qui commencent dans moins
+                    de 2 heures
+                  </li>
+                  <li>
+                    Alerte critique pour emails de facture reçus il y a plus de
+                    10 jours et toujours en status nouveau
+                  </li>
                 </ul>
               </div>
-              <Button 
-                onClick={() => alertPrompt.trim() && createAlertRuleMutation.mutate(alertPrompt.trim())}
-                disabled={createAlertRuleMutation.isPending || !alertPrompt.trim()}
+              <Button
+                onClick={() =>
+                  alertPrompt.trim() &&
+                  createAlertRuleMutation.mutate(alertPrompt.trim())
+                }
+                disabled={
+                  createAlertRuleMutation.isPending || !alertPrompt.trim()
+                }
                 data-testid="button-create-alert-rule"
               >
                 <Plus className="h-4 w-4 mr-2" />
-                {createAlertRuleMutation.isPending ? "Création en cours..." : "Créer la règle"}
+                {createAlertRuleMutation.isPending
+                  ? "Création en cours..."
+                  : "Créer la règle"}
               </Button>
             </CardContent>
           </Card>
@@ -914,7 +1173,9 @@ export default function Settings() {
           {/* Existing Alert Rules */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-xl">Règles d'alerte existantes</CardTitle>
+              <CardTitle className="text-xl">
+                Règles d'alerte existantes
+              </CardTitle>
               <CardDescription>
                 Gérez vos règles d'alerte personnalisées
               </CardDescription>
@@ -941,14 +1202,20 @@ export default function Settings() {
                         <div className="flex-1 space-y-1">
                           <div className="flex items-center gap-2">
                             <h4 className="font-medium text-sm">{rule.name}</h4>
-                            <span className={`text-xs px-2 py-0.5 rounded-full ${
-                              rule.severity === 'critical' 
-                                ? 'bg-destructive/10 text-destructive' 
-                                : rule.severity === 'warning'
-                                ? 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-500'
-                                : 'bg-blue-500/10 text-blue-600 dark:text-blue-500'
-                            }`}>
-                              {rule.severity === 'critical' ? 'Critique' : rule.severity === 'warning' ? 'Attention' : 'Info'}
+                            <span
+                              className={`text-xs px-2 py-0.5 rounded-full ${
+                                rule.severity === "critical"
+                                  ? "bg-destructive/10 text-destructive"
+                                  : rule.severity === "warning"
+                                    ? "bg-yellow-500/10 text-yellow-600 dark:text-yellow-500"
+                                    : "bg-blue-500/10 text-blue-600 dark:text-blue-500"
+                              }`}
+                            >
+                              {rule.severity === "critical"
+                                ? "Critique"
+                                : rule.severity === "warning"
+                                  ? "Attention"
+                                  : "Info"}
                             </span>
                           </div>
                           <p className="text-xs text-muted-foreground italic">
@@ -959,7 +1226,10 @@ export default function Settings() {
                           <Switch
                             checked={rule.isActive}
                             onCheckedChange={(checked) =>
-                              toggleAlertRuleMutation.mutate({ id: rule.id, isActive: checked })
+                              toggleAlertRuleMutation.mutate({
+                                id: rule.id,
+                                isActive: checked,
+                              })
                             }
                             disabled={toggleAlertRuleMutation.isPending}
                             data-testid={`switch-rule-${rule.id}`}
@@ -967,7 +1237,9 @@ export default function Settings() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => deleteAlertRuleMutation.mutate(rule.id)}
+                            onClick={() =>
+                              deleteAlertRuleMutation.mutate(rule.id)
+                            }
                             disabled={deleteAlertRuleMutation.isPending}
                             data-testid={`button-delete-rule-${rule.id}`}
                           >
@@ -976,7 +1248,8 @@ export default function Settings() {
                         </div>
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        <strong>Détails :</strong> {JSON.stringify(rule.ruleData, null, 2)}
+                        <strong>Détails :</strong>{" "}
+                        {JSON.stringify(rule.ruleData, null, 2)}
                       </div>
                     </div>
                   ))}
@@ -994,7 +1267,9 @@ export default function Settings() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="default-rdv-duration">Durée par défaut des RDV (minutes)</Label>
+                <Label htmlFor="default-rdv-duration">
+                  Durée par défaut des RDV (minutes)
+                </Label>
                 <Input
                   id="default-rdv-duration"
                   type="number"
@@ -1009,7 +1284,9 @@ export default function Settings() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="alert-deadline">Délai d'alerte email non traité (heures)</Label>
+                <Label htmlFor="alert-deadline">
+                  Délai d'alerte email non traité (heures)
+                </Label>
                 <Input
                   id="alert-deadline"
                   type="number"
