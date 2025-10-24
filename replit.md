@@ -4,6 +4,11 @@
 IzyInbox is an intelligent web application designed to automate administrative tasks for SMEs. It leverages AI for email analysis and automates the management of quotes, invoices, appointments, and documents. The core purpose is to streamline administrative workflows, enhance efficiency, and provide actionable insights for small and medium-sized businesses. The project aims to become a leading solution for smart automation for busy managers, with ambitions for broad market adoption.
 
 ## Recent Changes (October 24, 2025)
+- **Calendar Multiple Appointments Fix**:
+  - Fixed bug where appointments wouldn't open when multiple were scheduled on the same day
+  - Added selection dialog that appears when clicking a day with multiple appointments
+  - Users can now view and select from all appointments on a given day
+  - Improved UX with clear appointment list showing time, title, and location
 - **Global Category System with Flexible Assignment**: 
   - Refactored categories to be global (removed account-specific association from emailCategories table)
   - Created emailAccountCategories junction table for many-to-many relationship between accounts and categories
