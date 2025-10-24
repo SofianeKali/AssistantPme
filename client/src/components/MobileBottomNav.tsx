@@ -35,16 +35,16 @@ const mainNavItems = [
     testId: "mobile-nav-emails",
   },
   {
-    title: "Calendrier",
-    url: "/calendar",
-    icon: Calendar,
-    testId: "mobile-nav-calendar",
-  },
-  {
     title: "Alertes",
     url: "/alerts",
     icon: Bell,
     testId: "mobile-menu-alerts",
+  },
+  {
+    title: "Calendrier",
+    url: "/calendar",
+    icon: Calendar,
+    testId: "mobile-nav-calendar",
   },
   {
     title: "Plus",
