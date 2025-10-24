@@ -298,7 +298,7 @@ export default function Dashboard() {
             )}
           </CardContent>
         </Card>
-        
+
         {/* Évolution des emails traités */}
         <Card>
           <CardHeader>
@@ -374,10 +374,7 @@ export default function Dashboard() {
             </ResponsiveContainer>
           </CardContent>
         </Card>
-      </div>
 
-      {/* Charts Row 2 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* RDV planifiés par semaine */}
         <Card>
           <CardHeader>
