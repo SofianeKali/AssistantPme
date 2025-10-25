@@ -4,6 +4,16 @@
 IzyInbox is an intelligent web application designed to automate administrative tasks for SMEs. It leverages AI for email analysis and automates the management of quotes, invoices, appointments, and documents. The core purpose is to streamline administrative workflows, enhance efficiency, and provide actionable insights for small and medium-sized businesses. The project aims to become a leading solution for smart automation for busy managers, with ambitions for broad market adoption.
 
 ## Recent Changes (October 25, 2025)
+- **Automatic Task Completion When Email is Processed**:
+  - Implemented automatic task completion when associated email is marked as "traité"
+  - Created completeTasksForProcessedEmail() method in DatabaseStorage
+  - Integrated auto-completion into all routes that mark emails as processed:
+    - PATCH /api/emails/bulk/update-status (when status = 'traite')
+    - PATCH /api/emails/bulk/mark-processed
+    - PATCH /api/emails/:id/mark-processed
+    - POST /api/emails/:id/send-response
+  - Tasks automatically transition to "Terminé" status when email is marked "traité"
+  - Tested and verified with e2e tests
 - **Task Assignment Feature**:
   - Added assignedToId field to tasks table for user assignment
   - Created updateTaskAssignment storage method and PATCH /api/tasks/:id/assign API route
