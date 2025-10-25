@@ -486,3 +486,62 @@ Respond ONLY with valid JSON matching this exact structure:
     throw new Error("Impossible d'interpréter le prompt d'alerte. Veuillez reformuler votre demande.");
   }
 }
+
+export async function generateTaskFromEmail(emailContent: {
+  subject: string;
+  body: string;
+  from: string;
+  category: string;
+}): Promise<{ title: string; description: string; priority: string }> {
+  try {
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: `You are an intelligent assistant that helps extract actionable tasks from emails.
+Analyze the email and create a task with:
+- A clear, concise title (max 80 characters) describing the action to take
+- A detailed description including key information and context
+- Priority level: "urgent" if time-sensitive or critical, "haute" if important, "moyenne" otherwise
+
+Consider the email category (${emailContent.category}) when determining the task.
+
+Respond with JSON in this exact format:
+{
+  "title": "Clear action-oriented title",
+  "description": "Detailed description with context and key information",
+  "priority": "urgent" | "haute" | "moyenne"
+}`
+        },
+        {
+          role: "user",
+          content: `Email from: ${emailContent.from}
+Subject: ${emailContent.subject}
+Category: ${emailContent.category}
+
+Content:
+${emailContent.body.substring(0, 2000)}`
+        }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.3,
+    });
+
+    const result = JSON.parse(response.choices[0].message.content || "{}");
+    
+    return {
+      title: result.title || `Traiter: ${emailContent.subject}`,
+      description: result.description || emailContent.body.substring(0, 500),
+      priority: result.priority || 'moyenne',
+    };
+  } catch (error) {
+    console.error("Error generating task from email:", error);
+    // Fallback to a basic task
+    return {
+      title: `Traiter: ${emailContent.subject.substring(0, 60)}`,
+      description: `Email de ${emailContent.from}\n\n${emailContent.body.substring(0, 300)}`,
+      priority: 'moyenne',
+    };
+  }
+}

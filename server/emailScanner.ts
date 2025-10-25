@@ -1,6 +1,6 @@
 import imaps from 'imap-simple';
 import { simpleParser, ParsedMail, AddressObject } from 'mailparser';
-import { analyzeEmail, generateAppointmentSuggestions, generateEmailResponse } from './openai';
+import { analyzeEmail, generateAppointmentSuggestions, generateEmailResponse, generateTaskFromEmail } from './openai';
 import type { IStorage } from './storage';
 import type { EmailAccount, InsertEmail, InsertDocument, InsertAppointment } from '../shared/schema';
 import { uploadFileToDrive, getOrCreateFolder, getOrCreateSubfolder } from './googleDrive';
@@ -45,8 +45,9 @@ export class EmailScanner {
       const availableCategories = categories.map(c => ({ key: c.key, label: c.label }));
       const availableCategoryKeys = new Set(categories.map(c => c.key));
       
-      // Create a map for category settings (generateAutoResponse)
+      // Create a map for category settings (generateAutoResponse and autoCreateTask)
       const categorySettingsMap = new Map(categories.map(c => [c.key, c.generateAutoResponse]));
+      const autoCreateTaskMap = new Map(categories.map(c => [c.key, c.autoCreateTask]));
       
       const config = {
         imap: {
@@ -184,6 +185,34 @@ export class EmailScanner {
           result.created++;
 
           console.log(`[IMAP] Created email: ${createdEmail.id} - ${mail.subject}`);
+
+          // Auto-create task if category has autoCreateTask enabled
+          const shouldCreateTask = autoCreateTaskMap.get(emailType) === true;
+          if (shouldCreateTask) {
+            console.log(`[IMAP] Auto-creating task for email category '${emailType}'...`);
+            try {
+              const taskData = await generateTaskFromEmail({
+                subject: mail.subject || 'Sans objet',
+                body: mail.text || mail.html || '',
+                from: getAddressText(mail.from) || 'Inconnu',
+                category: emailType,
+              });
+              
+              await this.storage.createTask({
+                emailId: createdEmail.id,
+                title: taskData.title,
+                description: taskData.description,
+                status: 'nouveau',
+                priority: taskData.priority,
+                createdById: account.userId,
+              });
+              
+              console.log(`[IMAP] Task created successfully: ${taskData.title}`);
+            } catch (taskError) {
+              console.error(`[IMAP] Failed to create task:`, taskError);
+              // Continue processing even if task creation fails
+            }
+          }
 
           // Process attachments
           if (mail.attachments && mail.attachments.length > 0) {
