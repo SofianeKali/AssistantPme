@@ -93,6 +93,7 @@ export default function Settings() {
     icon: "Mail",
     isSystem: false,
     generateAutoResponse: true,
+    autoCreateTask: false,
   });
 
   const [alertPrompt, setAlertPrompt] = useState("");
@@ -208,6 +209,7 @@ export default function Settings() {
         icon: "Mail",
         isSystem: false,
         generateAutoResponse: true,
+        autoCreateTask: false,
       });
     },
     onError: () => {
@@ -945,6 +947,25 @@ export default function Settings() {
                   Générer une réponse automatique pour cette catégorie
                 </Label>
               </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="auto-create-task"
+                  checked={newCategory.autoCreateTask}
+                  onCheckedChange={(checked) =>
+                    setNewCategory({
+                      ...newCategory,
+                      autoCreateTask: checked as boolean,
+                    })
+                  }
+                  data-testid="checkbox-auto-create-task"
+                />
+                <Label
+                  htmlFor="auto-create-task"
+                  className="text-sm font-normal"
+                >
+                  Créer automatiquement une tâche pour chaque email de cette catégorie
+                </Label>
+              </div>
               <Button
                 onClick={() => addCategoryMutation.mutate(newCategory)}
                 disabled={
@@ -993,8 +1014,11 @@ export default function Settings() {
                             <div className="text-sm text-muted-foreground">
                               Clé: {category.key} •{" "}
                               {category.generateAutoResponse
-                                ? "Réponse auto activée"
-                                : "Réponse auto désactivée"}
+                                ? "Réponse auto ✓"
+                                : "Réponse auto ✗"} •{" "}
+                              {category.autoCreateTask
+                                ? "Tâches auto ✓"
+                                : "Tâches auto ✗"}
                             </div>
                           </div>
                         </div>
