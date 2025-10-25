@@ -3,7 +3,16 @@
 ## Overview
 IzyInbox is an intelligent web application designed to automate administrative tasks for SMEs. It leverages AI for email analysis and automates the management of quotes, invoices, appointments, and documents. The core purpose is to streamline administrative workflows, enhance efficiency, and provide actionable insights for small and medium-sized businesses. The project aims to become a leading solution for smart automation for busy managers, with ambitions for broad market adoption.
 
-## Recent Changes (October 24, 2025)
+## Recent Changes (October 25, 2025)
+- **Task Assignment Feature**:
+  - Added assignedToId field to tasks table for user assignment
+  - Created updateTaskAssignment storage method and PATCH /api/tasks/:id/assign API route
+  - Enhanced Tasks.tsx UI to display assigned user with avatar and name in task cards
+  - Added assignment dropdown in task detail dialog to assign/unassign tasks to users
+  - Tasks can now be assigned to specific users or left unassigned
+  - Assignment changes automatically refresh the tasks board
+
+## Previous Changes (October 24, 2025)
 - **Calendar Multiple Appointments Fix**:
   - Fixed bug where appointments wouldn't open when multiple were scheduled on the same day
   - Added selection dialog that appears when clicking a day with multiple appointments
