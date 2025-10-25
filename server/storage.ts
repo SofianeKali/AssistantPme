@@ -142,6 +142,7 @@ export interface IStorage {
   getTasks(filters?: { status?: string; emailId?: string }): Promise<Task[]>;
   getTaskById(id: string): Promise<Task | undefined>;
   updateTaskStatus(id: string, status: string): Promise<Task>;
+  updateTaskAssignment(id: string, assignedToId: string | null): Promise<Task>;
   deleteTask(id: string): Promise<void>;
 }
 
@@ -1286,6 +1287,15 @@ export class DatabaseStorage implements IStorage {
     const [updated] = await db
       .update(tasks)
       .set({ status, updatedAt: new Date() })
+      .where(eq(tasks.id, id))
+      .returning();
+    return updated;
+  }
+  
+  async updateTaskAssignment(id: string, assignedToId: string | null): Promise<Task> {
+    const [updated] = await db
+      .update(tasks)
+      .set({ assignedToId, updatedAt: new Date() })
       .where(eq(tasks.id, id))
       .returning();
     return updated;
