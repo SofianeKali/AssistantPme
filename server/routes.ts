@@ -1035,6 +1035,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch('/api/tasks/:id/assign', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { assignedToId } = req.body;
+      
+      // assignedToId peut être null pour désassigner
+      const task = await storage.updateTaskAssignment(id, assignedToId);
+      res.json(task);
+    } catch (error) {
+      console.error("Error updating task assignment:", error);
+      res.status(500).json({ message: "Failed to update task assignment" });
+    }
+  });
+
   app.delete('/api/tasks/:id', isAuthenticated, async (req, res) => {
     try {
       await storage.deleteTask(req.params.id);
