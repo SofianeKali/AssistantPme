@@ -988,6 +988,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Tasks (Tâches à réaliser)
+  app.get('/api/tasks', isAuthenticated, async (req, res) => {
+    try {
+      const { status, emailId } = req.query;
+      const tasks = await storage.getTasks({
+        status: status as string | undefined,
+        emailId: emailId as string | undefined,
+      });
+      res.json(tasks);
+    } catch (error) {
+      console.error("Error fetching tasks:", error);
+      res.status(500).json({ message: "Failed to fetch tasks" });
+    }
+  });
+
+  app.post('/api/tasks', isAuthenticated, async (req: any, res) => {
+    try {
+      const { insertTaskSchema } = await import("@shared/schema");
+      const validatedData = insertTaskSchema.parse({
+        ...req.body,
+        createdById: (req.user as any).id,
+      });
+      const task = await storage.createTask(validatedData);
+      res.json(task);
+    } catch (error) {
+      console.error("Error creating task:", error);
+      res.status(400).json({ message: "Invalid task data" });
+    }
+  });
+
+  app.patch('/api/tasks/:id/status', isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      
+      if (!['nouveau', 'en_cours', 'termine'].includes(status)) {
+        return res.status(400).json({ message: "Invalid status value" });
+      }
+      
+      const task = await storage.updateTaskStatus(id, status);
+      res.json(task);
+    } catch (error) {
+      console.error("Error updating task status:", error);
+      res.status(500).json({ message: "Failed to update task status" });
+    }
+  });
+
+  app.delete('/api/tasks/:id', isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteTask(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      res.status(500).json({ message: "Failed to delete task" });
+    }
+  });
+
   // Tags
   // GET is accessible to all authenticated users (tags are used throughout the app)
   app.get('/api/tags', isAuthenticated, async (req, res) => {
