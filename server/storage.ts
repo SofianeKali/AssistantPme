@@ -14,6 +14,7 @@ import {
   documentTags,
   appointmentTags,
   emailCategories,
+  tasks,
   type User,
   type UpsertUser,
   type EmailAccount,
@@ -38,6 +39,8 @@ import {
   type InsertReminder,
   type EmailCategory,
   type InsertEmailCategory,
+  type Task,
+  type InsertTask,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, gte, lte, like, or, isNull, sql, ne } from "drizzle-orm";
@@ -133,6 +136,13 @@ export interface IStorage {
   assignCategoriesToAccount(emailAccountId: string, categoryIds: string[]): Promise<void>;
   getAccountCategories(emailAccountId: string): Promise<EmailCategory[]>;
   removeAccountCategory(emailAccountId: string, categoryId: string): Promise<void>;
+  
+  // Tasks
+  createTask(task: InsertTask): Promise<Task>;
+  getTasks(filters?: { status?: string; emailId?: string }): Promise<Task[]>;
+  getTaskById(id: string): Promise<Task | undefined>;
+  updateTaskStatus(id: string, status: string): Promise<Task>;
+  deleteTask(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1215,6 +1225,7 @@ export class DatabaseStorage implements IStorage {
         icon: emailCategories.icon,
         isSystem: emailCategories.isSystem,
         generateAutoResponse: emailCategories.generateAutoResponse,
+        autoCreateTask: emailCategories.autoCreateTask,
         createdAt: emailCategories.createdAt,
         updatedAt: emailCategories.updatedAt,
       })
@@ -1236,6 +1247,49 @@ export class DatabaseStorage implements IStorage {
           eq(emailAccountCategories.categoryId, categoryId)
         )
       );
+  }
+  
+  // Tasks operations
+  async createTask(task: InsertTask): Promise<Task> {
+    const [newTask] = await db.insert(tasks).values(task).returning();
+    return newTask;
+  }
+  
+  async getTasks(filters?: { status?: string; emailId?: string }): Promise<Task[]> {
+    let query = db.select().from(tasks);
+    
+    const conditions = [];
+    if (filters?.status) {
+      conditions.push(eq(tasks.status, filters.status));
+    }
+    if (filters?.emailId) {
+      conditions.push(eq(tasks.emailId, filters.emailId));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
+    }
+    
+    const result = await query.orderBy(desc(tasks.createdAt));
+    return result;
+  }
+  
+  async getTaskById(id: string): Promise<Task | undefined> {
+    const [task] = await db.select().from(tasks).where(eq(tasks.id, id));
+    return task;
+  }
+  
+  async updateTaskStatus(id: string, status: string): Promise<Task> {
+    const [updated] = await db
+      .update(tasks)
+      .set({ status, updatedAt: new Date() })
+      .where(eq(tasks.id, id))
+      .returning();
+    return updated;
+  }
+  
+  async deleteTask(id: string): Promise<void> {
+    await db.delete(tasks).where(eq(tasks.id, id));
   }
 }
 

@@ -107,6 +107,7 @@ export const emailCategories = pgTable("email_categories", {
   icon: varchar("icon").notNull().default("Mail"), // Lucide icon name
   isSystem: boolean("is_system").notNull().default(false), // System categories cannot be deleted
   generateAutoResponse: boolean("generate_auto_response").notNull().default(true), // Whether to generate AI auto-response
+  autoCreateTask: boolean("auto_create_task").notNull().default(false), // Whether to automatically create tasks from emails in this category
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -260,6 +261,28 @@ export const appointmentTags = pgTable("appointment_tags", {
 }, (table) => ({
   pk: { columns: [table.appointmentId, table.tagId] }
 }));
+
+// Tasks (Tâches à réaliser)
+export const tasks = pgTable("tasks", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  emailId: varchar("email_id").references(() => emails.id, { onDelete: "cascade" }),
+  categoryId: varchar("category_id").references(() => emailCategories.id),
+  title: text("title").notNull(),
+  description: text("description"),
+  status: varchar("status").notNull().default("nouveau"), // nouveau, en_cours, termine
+  createdById: varchar("created_by_id").notNull().references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertTaskSchema = createInsertSchema(tasks).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertTask = z.infer<typeof insertTaskSchema>;
+export type Task = typeof tasks.$inferSelect;
 
 // Alerts
 export const alerts = pgTable("alerts", {
@@ -491,6 +514,21 @@ export const remindersRelations = relations(reminders, ({ one }) => ({
 export const alertRulesRelations = relations(alertRules, ({ one }) => ({
   createdBy: one(users, {
     fields: [alertRules.createdById],
+    references: [users.id],
+  }),
+}));
+
+export const tasksRelations = relations(tasks, ({ one }) => ({
+  email: one(emails, {
+    fields: [tasks.emailId],
+    references: [emails.id],
+  }),
+  category: one(emailCategories, {
+    fields: [tasks.categoryId],
+    references: [emailCategories.id],
+  }),
+  createdBy: one(users, {
+    fields: [tasks.createdById],
     references: [users.id],
   }),
 }));
