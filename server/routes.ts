@@ -297,6 +297,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: "traite",
       });
 
+      // Automatically complete associated tasks
+      await storage.completeTasksForProcessedEmail(email.id);
+
       res.json({ 
         success: true, 
         email: updatedEmail,
@@ -338,6 +341,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             throw new Error(`Email ${emailId} not found`);
           }
           await storage.updateEmail(emailId, undefined, { status });
+          
+          // If status is "traite", automatically complete associated tasks
+          if (status === 'traite') {
+            await storage.completeTasksForProcessedEmail(emailId);
+          }
+          
           return { emailId, index };
         })
       );
@@ -385,6 +394,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             throw new Error(`Email ${emailId} not found`);
           }
           await storage.updateEmail(emailId, undefined, { status: "traite" });
+          
+          // Automatically complete associated tasks
+          await storage.completeTasksForProcessedEmail(emailId);
+          
           return { emailId, index };
         })
       );
@@ -424,6 +437,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedEmail = await storage.updateEmail(email.id, undefined, {
         status: "traite",
       });
+
+      // Automatically complete associated tasks
+      await storage.completeTasksForProcessedEmail(email.id);
 
       res.json({ 
         success: true, 

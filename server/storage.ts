@@ -1304,6 +1304,24 @@ export class DatabaseStorage implements IStorage {
   async deleteTask(id: string): Promise<void> {
     await db.delete(tasks).where(eq(tasks.id, id));
   }
+
+  async completeTasksForProcessedEmail(emailId: string): Promise<number> {
+    const relatedTasks = await this.getTasks({ emailId });
+    
+    if (relatedTasks.length === 0) {
+      return 0;
+    }
+
+    let completedCount = 0;
+    for (const task of relatedTasks) {
+      if (task.status !== 'termine') {
+        await this.updateTaskStatus(task.id, 'termine');
+        completedCount++;
+      }
+    }
+
+    return completedCount;
+  }
 }
 
 export const storage = new DatabaseStorage();
