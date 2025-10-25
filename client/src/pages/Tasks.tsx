@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Dialog,
   DialogContent,
@@ -17,10 +18,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { CheckCircle2, Circle, Clock, MoreVertical, Trash2, Mail } from "lucide-react";
-import type { Task } from "@shared/schema";
+import { CheckCircle2, Circle, Clock, MoreVertical, Trash2, Mail, User as UserIcon } from "lucide-react";
+import type { Task, User } from "@shared/schema";
 
 export default function Tasks() {
   const { toast } = useToast();
@@ -30,12 +38,26 @@ export default function Tasks() {
     queryKey: ["/api/tasks"],
   });
 
+  const { data: users = [] } = useQuery<User[]>({
+    queryKey: ["/api/users"],
+  });
+
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
       await apiRequest("PATCH", `/api/tasks/${id}/status`, { status });
     },
     onSuccess: () => {
       toast({ title: "Statut de la tâche mis à jour" });
+      queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+    },
+  });
+
+  const updateAssignmentMutation = useMutation({
+    mutationFn: async ({ id, assignedToId }: { id: string; assignedToId: string | null }) => {
+      await apiRequest("PATCH", `/api/tasks/${id}/assign`, { assignedToId });
+    },
+    onSuccess: () => {
+      toast({ title: "Assignation mise à jour" });
       queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
     },
   });
@@ -85,49 +107,80 @@ export default function Tasks() {
     }
   };
 
-  const TaskCard = ({ task }: { task: Task }) => (
-    <Card
-      className="hover-elevate cursor-pointer"
-      onClick={() => setSelectedTask(task)}
-      data-testid={`task-card-${task.id}`}
-    >
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-2">
-              <Badge
-                className={`${getPriorityColor(task.priority)} text-white`}
-                data-testid={`task-priority-${task.id}`}
-              >
-                {getPriorityLabel(task.priority)}
-              </Badge>
-              {task.emailId && (
-                <Mail className="h-4 w-4 text-muted-foreground" />
+  const getAssignedUser = (assignedToId: string | null) => {
+    if (!assignedToId) return null;
+    return users.find(u => u.id === assignedToId);
+  };
+
+  const getUserInitials = (user: User) => {
+    if (user.firstName && user.lastName) {
+      return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
+    }
+    return (user.email || "U")[0].toUpperCase();
+  };
+
+  const TaskCard = ({ task }: { task: Task }) => {
+    const assignedUser = getAssignedUser(task.assignedToId);
+    
+    return (
+      <Card
+        className="hover-elevate cursor-pointer"
+        onClick={() => setSelectedTask(task)}
+        data-testid={`task-card-${task.id}`}
+      >
+        <CardContent className="p-4">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-2">
+                <Badge
+                  className={`${getPriorityColor(task.priority)} text-white`}
+                  data-testid={`task-priority-${task.id}`}
+                >
+                  {getPriorityLabel(task.priority)}
+                </Badge>
+                {task.emailId && (
+                  <Mail className="h-4 w-4 text-muted-foreground" />
+                )}
+              </div>
+              <h3 className="font-medium text-sm mb-1 line-clamp-2" data-testid={`task-title-${task.id}`}>
+                {task.title}
+              </h3>
+              {task.description && (
+                <p className="text-xs text-muted-foreground line-clamp-2">
+                  {task.description}
+                </p>
               )}
+              <div className="flex items-center gap-2 mt-2">
+                <p className="text-xs text-muted-foreground">
+                  {new Date(task.createdAt!).toLocaleDateString('fr-FR')}
+                </p>
+                {assignedUser && (
+                  <div className="flex items-center gap-1" data-testid={`task-assigned-${task.id}`}>
+                    <Avatar className="h-5 w-5">
+                      <AvatarFallback className="text-[10px]">
+                        {getUserInitials(assignedUser)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-xs text-muted-foreground">
+                      {assignedUser.firstName && assignedUser.lastName
+                        ? `${assignedUser.firstName} ${assignedUser.lastName}`
+                        : assignedUser.email}
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
-            <h3 className="font-medium text-sm mb-1 line-clamp-2" data-testid={`task-title-${task.id}`}>
-              {task.title}
-            </h3>
-            {task.description && (
-              <p className="text-xs text-muted-foreground line-clamp-2">
-                {task.description}
-              </p>
-            )}
-            <p className="text-xs text-muted-foreground mt-2">
-              {new Date(task.createdAt!).toLocaleDateString('fr-FR')}
-            </p>
-          </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                data-testid={`button-task-menu-${task.id}`}
-              >
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  data-testid={`button-task-menu-${task.id}`}
+                >
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               {task.status !== "nouveau" && (
                 <DropdownMenuItem
@@ -182,6 +235,7 @@ export default function Tasks() {
       </CardContent>
     </Card>
   );
+  };
 
   const StatusColumn = ({
     title,
@@ -268,13 +322,14 @@ export default function Tasks() {
             </DialogTitle>
             <DialogDescription>
               Créée le{" "}
-              {selectedTask?.createdAt &&
-                new Date(selectedTask.createdAt).toLocaleDateString('fr-FR', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric',
-                })}
+              {selectedTask?.createdAt
+                ? new Date(selectedTask.createdAt).toLocaleDateString('fr-FR', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })
+                : ""}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -286,6 +341,35 @@ export default function Tasks() {
                 </p>
               </div>
             )}
+            <div>
+              <h3 className="font-medium mb-2">Assigné à</h3>
+              <Select
+                value={selectedTask?.assignedToId || "unassigned"}
+                onValueChange={(value) => {
+                  if (selectedTask) {
+                    updateAssignmentMutation.mutate({
+                      id: selectedTask.id,
+                      assignedToId: value === "unassigned" ? null : value,
+                    });
+                  }
+                }}
+                data-testid="select-task-assignment"
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Non assignée" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="unassigned">Non assignée</SelectItem>
+                  {users.map((user) => (
+                    <SelectItem key={user.id} value={user.id}>
+                      {user.firstName && user.lastName
+                        ? `${user.firstName} ${user.lastName}`
+                        : user.email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="flex gap-2">
               <Button
                 onClick={() =>
