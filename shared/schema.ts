@@ -271,6 +271,7 @@ export const tasks = pgTable("tasks", {
   description: text("description"),
   status: varchar("status").notNull().default("nouveau"), // nouveau, en_cours, termine
   priority: varchar("priority").notNull().default("moyenne"), // urgent, haute, moyenne, basse
+  assignedToId: varchar("assigned_to_id").references(() => users.id),
   createdById: varchar("created_by_id").notNull().references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
