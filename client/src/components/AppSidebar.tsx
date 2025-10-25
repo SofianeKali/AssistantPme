@@ -6,6 +6,7 @@ import {
   Settings,
   Tag,
   Bell,
+  CheckSquare,
   Users,
   LogOut,
   ChevronUp,
@@ -56,6 +57,12 @@ const mainMenuItems = [
     url: "/alerts",
     icon: Bell,
     testId: "sidebar-alerts",
+  },
+  {
+    title: "Tâches",
+    url: "/tasks",
+    icon: CheckSquare,
+    testId: "sidebar-tasks",
   },
   {
     title: "Calendrier",

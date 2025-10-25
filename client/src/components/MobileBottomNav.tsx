@@ -4,6 +4,7 @@ import {
   Calendar,
   FileText,
   Bell,
+  CheckSquare,
   Settings,
   Menu,
 } from "lucide-react";
@@ -56,6 +57,12 @@ const mainNavItems = [
 ];
 
 const moreMenuItems = [
+  {
+    title: "Tâches",
+    url: "/tasks",
+    icon: CheckSquare,
+    testId: "mobile-nav-tasks",
+  },
   {
     title: "Documents",
     url: "/documents",

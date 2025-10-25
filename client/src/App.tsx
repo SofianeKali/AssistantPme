@@ -16,6 +16,7 @@ import Emails from "@/pages/Emails";
 import Calendar from "@/pages/Calendar";
 import Documents from "@/pages/Documents";
 import Alerts from "@/pages/Alerts";
+import Tasks from "@/pages/Tasks";
 import Tags from "@/pages/Tags";
 import Users from "@/pages/Users";
 import Settings from "@/pages/Settings";
@@ -38,6 +39,7 @@ function Router() {
           <Route path="/calendar" component={Calendar} />
           <Route path="/documents" component={Documents} />
           <Route path="/alerts" component={Alerts} />
+          <Route path="/tasks" component={Tasks} />
           <Route path="/tags" component={Tags} />
           <Route path="/users" component={Users} />
           <Route path="/settings" component={Settings} />
