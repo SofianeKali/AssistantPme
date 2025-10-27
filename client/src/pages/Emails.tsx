@@ -12,7 +12,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Search, Mail, MoreVertical, Sparkles, Check, X, MailCheck } from "lucide-react";
+import {
+  Search,
+  Mail,
+  MoreVertical,
+  Sparkles,
+  Check,
+  X,
+  MailCheck,
+} from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
@@ -40,17 +48,17 @@ export default function Emails() {
   const [customPrompt, setCustomPrompt] = useState<string>("");
   const [showPromptInput, setShowPromptInput] = useState<boolean>(false);
   const { toast } = useToast();
-  
+
   // Load email categories dynamically
   const { data: emailCategories } = useQuery<any>({
     queryKey: ["/api/email-categories"],
   });
-  
+
   // Read category and status from URL query parameters
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const category = params.get('category');
-    const status = params.get('status');
+    const category = params.get("category");
+    const status = params.get("status");
     if (category) {
       setTypeFilter(category);
     }
@@ -60,42 +68,63 @@ export default function Emails() {
   }, [location]);
 
   const { data: rawEmails, isLoading } = useQuery({
-    queryKey: ["/api/emails", { type: typeFilter, status: statusFilter, search }],
+    queryKey: [
+      "/api/emails",
+      { type: typeFilter, status: statusFilter, search },
+    ],
     queryFn: async () => {
       const params = new URLSearchParams();
-      if (typeFilter && typeFilter !== 'all') params.append('type', typeFilter);
-      if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter);
-      if (search) params.append('search', search);
-      
-      const url = `/api/emails${params.toString() ? `?${params.toString()}` : ''}`;
-      const res = await fetch(url, { credentials: 'include' });
-      
+      if (typeFilter && typeFilter !== "all") params.append("type", typeFilter);
+      if (statusFilter && statusFilter !== "all")
+        params.append("status", statusFilter);
+      if (search) params.append("search", search);
+
+      const url = `/api/emails${params.toString() ? `?${params.toString()}` : ""}`;
+      const res = await fetch(url, { credentials: "include" });
+
       if (!res.ok) {
         throw new Error(`${res.status}: ${res.statusText}`);
       }
-      
+
       return res.json();
     },
   });
 
   // Sort emails: unprocessed (nouveau) first, then by received date
-  const emails = rawEmails ? [...rawEmails].sort((a, b) => {
-    // First, sort by status: "nouveau" comes first
-    if (a.status === 'nouveau' && b.status !== 'nouveau') return -1;
-    if (a.status !== 'nouveau' && b.status === 'nouveau') return 1;
-    
-    // Then sort by received date (most recent first)
-    return new Date(b.receivedAt).getTime() - new Date(a.receivedAt).getTime();
-  }) : [];
+  const emails = rawEmails
+    ? [...rawEmails].sort((a, b) => {
+        // First, sort by status: "nouveau" comes first
+        if (a.status === "nouveau" && b.status !== "nouveau") return -1;
+        if (a.status !== "nouveau" && b.status === "nouveau") return 1;
+
+        // Then sort by received date (most recent first)
+        return (
+          new Date(b.receivedAt).getTime() - new Date(a.receivedAt).getTime()
+        );
+      })
+    : [];
 
   const generateResponseMutation = useMutation({
-    mutationFn: async ({ emailId, customPrompt }: { emailId: string; customPrompt?: string }) => {
+    mutationFn: async ({
+      emailId,
+      customPrompt,
+    }: {
+      emailId: string;
+      customPrompt?: string;
+    }) => {
       // Only send customPrompt if it has actual content (not empty string)
-      const promptToSend = customPrompt && customPrompt.trim().length > 0 ? customPrompt.trim() : undefined;
-      
-      const res = await apiRequest("POST", `/api/emails/${emailId}/generate-response`, {
-        ...(promptToSend && { customPrompt: promptToSend }),
-      });
+      const promptToSend =
+        customPrompt && customPrompt.trim().length > 0
+          ? customPrompt.trim()
+          : undefined;
+
+      const res = await apiRequest(
+        "POST",
+        `/api/emails/${emailId}/generate-response`,
+        {
+          ...(promptToSend && { customPrompt: promptToSend }),
+        },
+      );
       return res.json();
     },
     onSuccess: (data, variables) => {
@@ -107,14 +136,15 @@ export default function Emails() {
       setShowPromptInput(false);
       // Invalidate queries to refresh email list with updated suggestedResponse
       queryClient.invalidateQueries({ queryKey: ["/api/emails"] });
-      
+
       // Determine if custom prompt was actually used
-      const usedCustomPrompt = variables.customPrompt && variables.customPrompt.trim().length > 0;
-      
+      const usedCustomPrompt =
+        variables.customPrompt && variables.customPrompt.trim().length > 0;
+
       toast({
         title: "Succès",
-        description: usedCustomPrompt 
-          ? "Réponse générée selon vos instructions" 
+        description: usedCustomPrompt
+          ? "Réponse générée selon vos instructions"
           : "Réponse générée avec succès",
       });
     },
@@ -129,13 +159,19 @@ export default function Emails() {
 
   const markProcessedMutation = useMutation({
     mutationFn: async (emailId: string) => {
-      const res = await apiRequest("PATCH", `/api/emails/${emailId}/mark-processed`, {});
+      const res = await apiRequest(
+        "PATCH",
+        `/api/emails/${emailId}/mark-processed`,
+        {},
+      );
       return res.json();
     },
     onSuccess: () => {
       // Invalidate queries to refresh email list
       queryClient.invalidateQueries({ queryKey: ["/api/emails"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/emails/stats/by-category"] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/emails/stats/by-category"],
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       toast({
         title: "Succès",
@@ -152,8 +188,18 @@ export default function Emails() {
   });
 
   const sendResponseMutation = useMutation({
-    mutationFn: async ({ emailId, responseText }: { emailId: string; responseText: string }) => {
-      const res = await apiRequest("POST", `/api/emails/${emailId}/send-response`, { responseText });
+    mutationFn: async ({
+      emailId,
+      responseText,
+    }: {
+      emailId: string;
+      responseText: string;
+    }) => {
+      const res = await apiRequest(
+        "POST",
+        `/api/emails/${emailId}/send-response`,
+        { responseText },
+      );
       return res.json();
     },
     onSuccess: (data) => {
@@ -178,23 +224,34 @@ export default function Emails() {
   });
 
   const bulkUpdateStatusMutation = useMutation({
-    mutationFn: async ({ emailIds, status }: { emailIds: string[]; status: string }) => {
-      const res = await apiRequest("PATCH", "/api/emails/bulk/update-status", { emailIds, status });
+    mutationFn: async ({
+      emailIds,
+      status,
+    }: {
+      emailIds: string[];
+      status: string;
+    }) => {
+      const res = await apiRequest("PATCH", "/api/emails/bulk/update-status", {
+        emailIds,
+        status,
+      });
       return res.json();
     },
     onSuccess: (data) => {
       // Invalidate queries to refresh email list
       queryClient.invalidateQueries({ queryKey: ["/api/emails"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/emails/stats/by-category"] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/emails/stats/by-category"],
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-      
+
       const statusLabels: Record<string, string> = {
         nouveau: "nouveau",
         en_cours: "en cours",
         traite: "traité",
         archive: "archivé",
       };
-      
+
       if (data.failed > 0 && data.failedIds) {
         // Partial failure - keep only failed emails selected for retry
         setSelectedEmailIds(data.failedIds);
@@ -215,7 +272,8 @@ export default function Emails() {
     onError: (error: any) => {
       toast({
         title: "Erreur",
-        description: error.message || "Impossible de mettre à jour le statut des emails",
+        description:
+          error.message || "Impossible de mettre à jour le statut des emails",
         variant: "destructive",
       });
     },
@@ -223,15 +281,19 @@ export default function Emails() {
 
   const bulkMarkProcessedMutation = useMutation({
     mutationFn: async (emailIds: string[]) => {
-      const res = await apiRequest("PATCH", "/api/emails/bulk/mark-processed", { emailIds });
+      const res = await apiRequest("PATCH", "/api/emails/bulk/mark-processed", {
+        emailIds,
+      });
       return res.json();
     },
     onSuccess: (data) => {
       // Invalidate queries to refresh email list
       queryClient.invalidateQueries({ queryKey: ["/api/emails"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/emails/stats/by-category"] });
+      queryClient.invalidateQueries({
+        queryKey: ["/api/emails/stats/by-category"],
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-      
+
       if (data.failed > 0 && data.failedIds) {
         // Partial failure - keep only failed emails selected for retry
         setSelectedEmailIds(data.failedIds);
@@ -252,7 +314,8 @@ export default function Emails() {
     onError: (error: any) => {
       toast({
         title: "Erreur",
-        description: error.message || "Impossible de marquer les emails comme traités",
+        description:
+          error.message || "Impossible de marquer les emails comme traités",
         variant: "destructive",
       });
     },
@@ -316,7 +379,7 @@ export default function Emails() {
     if (checked) {
       setSelectedEmailIds([...selectedEmailIds, emailId]);
     } else {
-      setSelectedEmailIds(selectedEmailIds.filter(id => id !== emailId));
+      setSelectedEmailIds(selectedEmailIds.filter((id) => id !== emailId));
     }
   };
 
@@ -344,7 +407,7 @@ export default function Emails() {
   const formatEmailAddress = (emailAddress: string) => {
     if (!emailAddress) return "";
     // Remove quotes around display name: "Name" <email> -> Name <email>
-    return emailAddress.replace(/^"([^"]+)"\s*</, '$1 <');
+    return emailAddress.replace(/^"([^"]+)"\s*</, "$1 <");
   };
 
   // Get initials from email address (after formatting)
@@ -360,7 +423,9 @@ export default function Emails() {
     <div className="p-4 md:p-6 space-y-4 md:space-y-6 overflow-x-hidden">
       {/* Header */}
       <div>
-        <h1 className="text-2xl md:text-3xl font-semibold text-foreground mb-2">Emails</h1>
+        <h1 className="text-2xl md:text-3xl font-semibold text-foreground mb-2">
+          Emails
+        </h1>
         <p className="text-sm text-muted-foreground">
           Gestion et analyse intelligente de vos emails
         </p>
@@ -379,7 +444,10 @@ export default function Emails() {
           />
         </div>
         <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-full sm:w-48" data-testid="select-email-type">
+          <SelectTrigger
+            className="w-full sm:w-48"
+            data-testid="select-email-type"
+          >
             <SelectValue placeholder="Type d'email" />
           </SelectTrigger>
           <SelectContent>
@@ -392,7 +460,10 @@ export default function Emails() {
           </SelectContent>
         </Select>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full sm:w-48" data-testid="select-email-status">
+          <SelectTrigger
+            className="w-full sm:w-48"
+            data-testid="select-email-status"
+          >
             <SelectValue placeholder="Statut" />
           </SelectTrigger>
           <SelectContent>
@@ -427,14 +498,18 @@ export default function Emails() {
             </div>
             <div className="flex flex-wrap items-center gap-2">
               {bulkUpdateStatusMutation.isPending ? (
-                <span className="text-xs md:text-sm text-muted-foreground">Mise à jour...</span>
+                <span className="text-xs md:text-sm text-muted-foreground">
+                  Mise à jour...
+                </span>
               ) : (
-                <span className="text-xs md:text-sm text-muted-foreground w-full md:w-auto">Changer le statut :</span>
+                <span className="text-xs md:text-sm text-muted-foreground w-full md:w-auto">
+                  Changer le statut :
+                </span>
               )}
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => handleBulkUpdateStatus('nouveau')}
+                onClick={() => handleBulkUpdateStatus("nouveau")}
                 disabled={bulkUpdateStatusMutation.isPending}
                 data-testid="button-bulk-mark-nouveau"
                 className="flex-1 md:flex-none"
@@ -445,7 +520,7 @@ export default function Emails() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => handleBulkUpdateStatus('en_cours')}
+                onClick={() => handleBulkUpdateStatus("en_cours")}
                 disabled={bulkUpdateStatusMutation.isPending}
                 data-testid="button-bulk-mark-en-cours"
                 className="flex-1 md:flex-none"
@@ -455,7 +530,7 @@ export default function Emails() {
               <Button
                 variant="default"
                 size="sm"
-                onClick={() => handleBulkUpdateStatus('traite')}
+                onClick={() => handleBulkUpdateStatus("traite")}
                 disabled={bulkUpdateStatusMutation.isPending}
                 data-testid="button-bulk-mark-traite"
                 className="flex-1 md:flex-none"
@@ -466,7 +541,7 @@ export default function Emails() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => handleBulkUpdateStatus('archive')}
+                onClick={() => handleBulkUpdateStatus("archive")}
                 disabled={bulkUpdateStatusMutation.isPending}
                 data-testid="button-bulk-mark-archive"
                 className="flex-1 md:flex-none"
@@ -485,7 +560,9 @@ export default function Emails() {
           <div className="p-4 bg-muted/30">
             <div className="flex items-center gap-3">
               <Checkbox
-                checked={emails.length > 0 && selectedEmailIds.length === emails.length}
+                checked={
+                  emails.length > 0 && selectedEmailIds.length === emails.length
+                }
                 onCheckedChange={handleSelectAll}
                 data-testid="checkbox-select-all"
               />
@@ -495,7 +572,7 @@ export default function Emails() {
             </div>
           </div>
         )}
-        
+
         {isLoading ? (
           <div className="p-4 space-y-3">
             {[...Array(5)].map((_, i) => (
@@ -507,21 +584,23 @@ export default function Emails() {
             <div
               key={email.id}
               className={`p-3 md:p-4 hover-elevate ${
-                email.status === 'nouveau' 
-                  ? 'border-l-4 border-l-primary bg-primary/5 dark:bg-primary/10' 
-                  : ''
+                email.status === "nouveau"
+                  ? "border-l-4 border-l-primary bg-primary/5 dark:bg-primary/10"
+                  : ""
               }`}
               data-testid={`email-${email.id}`}
             >
               <div className="flex items-start gap-2 md:gap-4">
                 <Checkbox
                   checked={selectedEmailIds.includes(email.id)}
-                  onCheckedChange={(checked) => handleSelectEmail(email.id, checked as boolean)}
+                  onCheckedChange={(checked) =>
+                    handleSelectEmail(email.id, checked as boolean)
+                  }
                   onClick={(e) => e.stopPropagation()}
                   data-testid={`checkbox-email-${email.id}`}
                   className="mt-2 md:mt-3 flex-shrink-0"
                 />
-                <div 
+                <div
                   className="flex items-start gap-2 md:gap-4 flex-1 min-w-0 cursor-pointer"
                   onClick={() => setSelectedEmail(email)}
                 >
@@ -534,33 +613,68 @@ export default function Emails() {
                     <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-2 mb-1">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1 md:gap-2 flex-wrap mb-1">
-                          <span className="text-sm font-medium truncate max-w-[150px] md:max-w-none">{formatEmailAddress(email.from)}</span>
+                          <span
+                            className={`${
+                              email.status === "nouveau"
+                                ? "text-sm font-medium truncate max-w-[150px] md:max-w-none"
+                                : "text-xs text-muted-foreground truncate max-w-[150px] md:max-w-none"
+                            }`}
+                          >
+                            {formatEmailAddress(email.from)}
+                          </span>
                           {email.respondedAt && (
-                            <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 flex-shrink-0" data-testid={`badge-responded-${email.id}`}>
+                            <Badge
+                              variant="outline"
+                              className="text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 flex-shrink-0"
+                              data-testid={`badge-responded-${email.id}`}
+                            >
                               <Check className="h-3 w-3 mr-1" />
                               <span className="hidden sm:inline">Répondu</span>
                             </Badge>
                           )}
                           {email.status && (
-                            <Badge variant="outline" className={`text-xs flex-shrink-0 ${getStatusColor(email.status)}`} data-testid={`badge-status-${email.id}`}>
+                            <Badge
+                              variant="outline"
+                              className={`text-xs flex-shrink-0 ${getStatusColor(email.status)}`}
+                              data-testid={`badge-status-${email.id}`}
+                            >
                               {getStatusLabel(email.status)}
                             </Badge>
                           )}
                         </div>
                         {email.to && (
                           <div className="text-xs text-muted-foreground mb-1">
-                            À: <span className="truncate max-w-[200px] md:max-w-none inline-block align-bottom">{formatEmailAddress(email.to)}</span>
+                            À:{" "}
+                            <span className="truncate max-w-[200px] md:max-w-none inline-block align-bottom">
+                              {formatEmailAddress(email.to)}
+                            </span>
                           </div>
                         )}
-                        <div className="text-sm font-semibold line-clamp-1 md:line-clamp-none">{email.subject}</div>
+                        <div className="text-sm font-semibold line-clamp-1 md:line-clamp-none">
+                          <span
+                            className={`${
+                              email.status === "nouveau"
+                                ? ""
+                                : "text-muted-foreground"
+                            }`}
+                          >
+                            {formatEmailAddress(email.subject)}
+                          </span>
+                        </div>
                         <div className="flex items-center gap-1 md:gap-2 flex-wrap mt-1 md:hidden">
                           {email.emailType && (
-                            <Badge variant="outline" className={`text-xs flex-shrink-0 ${getEmailTypeColor(email.emailType)}`}>
+                            <Badge
+                              variant="outline"
+                              className={`text-xs flex-shrink-0 ${getEmailTypeColor(email.emailType)}`}
+                            >
                               {email.emailType}
                             </Badge>
                           )}
                           {email.priority && email.priority !== "normal" && (
-                            <Badge variant="outline" className={`text-xs flex-shrink-0 ${getPriorityColor(email.priority)}`}>
+                            <Badge
+                              variant="outline"
+                              className={`text-xs flex-shrink-0 ${getPriorityColor(email.priority)}`}
+                            >
                               {email.priority}
                             </Badge>
                           )}
@@ -568,12 +682,14 @@ export default function Emails() {
                       </div>
                       <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
                         <span className="text-xs text-muted-foreground whitespace-nowrap">
-                          {format(new Date(email.receivedAt), "dd MMM", { locale: fr })}
+                          {format(new Date(email.receivedAt), "dd MMM", {
+                            locale: fr,
+                          })}
                         </span>
-                        {email.status !== 'traite' && (
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
+                        {email.status !== "traite" && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             className="h-8 w-8 flex-shrink-0"
                             onClick={(e) => {
                               e.stopPropagation();
@@ -590,12 +706,18 @@ export default function Emails() {
                     </div>
                     <div className="hidden md:flex items-center gap-2 flex-wrap mb-2">
                       {email.emailType && (
-                        <Badge variant="outline" className={`text-xs ${getEmailTypeColor(email.emailType)}`}>
+                        <Badge
+                          variant="outline"
+                          className={`text-xs ${getEmailTypeColor(email.emailType)}`}
+                        >
                           {email.emailType}
                         </Badge>
                       )}
                       {email.priority && email.priority !== "normal" && (
-                        <Badge variant="outline" className={`text-xs ${getPriorityColor(email.priority)}`}>
+                        <Badge
+                          variant="outline"
+                          className={`text-xs ${getPriorityColor(email.priority)}`}
+                        >
                           {email.priority}
                         </Badge>
                       )}
@@ -617,24 +739,37 @@ export default function Emails() {
       </Card>
 
       {/* Email Detail Dialog */}
-      <Dialog open={!!selectedEmail} onOpenChange={(open) => !open && setSelectedEmail(null)}>
+      <Dialog
+        open={!!selectedEmail}
+        onOpenChange={(open) => !open && setSelectedEmail(null)}
+      >
         <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto overflow-x-hidden w-[95vw] md:w-full">
           <DialogHeader>
-            <DialogTitle className="text-base sm:text-xl break-words pr-8">{selectedEmail?.subject}</DialogTitle>
+            <DialogTitle className="text-base sm:text-xl break-words pr-8">
+              {selectedEmail?.subject}
+            </DialogTitle>
             <div className="space-y-1 text-sm text-muted-foreground">
               <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
                 <span className="font-medium text-foreground">De:</span>
-                <span className="break-all">{formatEmailAddress(selectedEmail?.from || "")}</span>
+                <span className="break-all">
+                  {formatEmailAddress(selectedEmail?.from || "")}
+                </span>
               </div>
               {selectedEmail?.to && (
                 <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
                   <span className="font-medium text-foreground">À:</span>
-                  <span className="break-all">{formatEmailAddress(selectedEmail?.to)}</span>
+                  <span className="break-all">
+                    {formatEmailAddress(selectedEmail?.to)}
+                  </span>
                 </div>
               )}
               {selectedEmail?.receivedAt && (
                 <div>
-                  {format(new Date(selectedEmail.receivedAt), "dd MMMM yyyy à HH:mm", { locale: fr })}
+                  {format(
+                    new Date(selectedEmail.receivedAt),
+                    "dd MMMM yyyy à HH:mm",
+                    { locale: fr },
+                  )}
                 </div>
               )}
             </div>
@@ -658,7 +793,9 @@ export default function Emails() {
               <div className="p-4 rounded-md bg-chart-2/5 border border-chart-2/20">
                 <div className="flex items-center gap-2 mb-2">
                   <Sparkles className="h-4 w-4 text-chart-2" />
-                  <span className="text-sm font-medium">Réponse suggérée par IA</span>
+                  <span className="text-sm font-medium">
+                    Réponse suggérée par IA
+                  </span>
                 </div>
                 <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">
                   {selectedEmail.suggestedResponse}
@@ -668,7 +805,9 @@ export default function Emails() {
 
             {/* Email Body */}
             <div className="prose prose-sm max-w-none">
-              <div className="text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere">{selectedEmail?.body}</div>
+              <div className="text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere">
+                {selectedEmail?.body}
+              </div>
             </div>
 
             {/* Custom Prompt Input */}
@@ -705,17 +844,21 @@ export default function Emails() {
                 <div className="flex flex-col gap-2">
                   <div className="flex flex-col sm:flex-row gap-2">
                     <Button
-                      onClick={() => generateResponseMutation.mutate({ 
-                        emailId: selectedEmail?.id,
-                        customPrompt: customPrompt || undefined
-                      })}
+                      onClick={() =>
+                        generateResponseMutation.mutate({
+                          emailId: selectedEmail?.id,
+                          customPrompt: customPrompt || undefined,
+                        })
+                      }
                       disabled={generateResponseMutation.isPending}
                       data-testid="button-generate-response"
                       className="flex-1"
                     >
                       <Sparkles className="h-4 w-4 mr-2" />
                       <span className="truncate">
-                        {generateResponseMutation.isPending ? "Génération..." : "Générer une réponse"}
+                        {generateResponseMutation.isPending
+                          ? "Génération..."
+                          : "Générer une réponse"}
                       </span>
                     </Button>
                     <Button
@@ -739,13 +882,17 @@ export default function Emails() {
               {selectedEmail?.status !== "traite" && (
                 <Button
                   variant="outline"
-                  onClick={() => markProcessedMutation.mutate(selectedEmail?.id)}
+                  onClick={() =>
+                    markProcessedMutation.mutate(selectedEmail?.id)
+                  }
                   disabled={markProcessedMutation.isPending}
                   data-testid="button-mark-processed"
                   className="w-full"
                 >
                   <Check className="h-4 w-4 mr-2" />
-                  {markProcessedMutation.isPending ? "En cours..." : "Marquer comme traité"}
+                  {markProcessedMutation.isPending
+                    ? "En cours..."
+                    : "Marquer comme traité"}
                 </Button>
               )}
             </div>
@@ -766,14 +913,17 @@ export default function Emails() {
             <Textarea
               value={selectedEmail?.suggestedResponse || ""}
               onChange={(e) =>
-                setSelectedEmail({ ...selectedEmail, suggestedResponse: e.target.value })
+                setSelectedEmail({
+                  ...selectedEmail,
+                  suggestedResponse: e.target.value,
+                })
               }
               rows={8}
               data-testid="textarea-response"
             />
             <div className="flex flex-col sm:flex-row gap-2 sm:justify-between">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => {
                   markProcessedMutation.mutate(selectedEmail?.id);
                   setShowResponseDialog(false);
@@ -784,12 +934,14 @@ export default function Emails() {
               >
                 <Check className="h-4 w-4 mr-2" />
                 <span className="truncate">
-                  {markProcessedMutation.isPending ? "En cours..." : "Marquer traité"}
+                  {markProcessedMutation.isPending
+                    ? "En cours..."
+                    : "Marquer traité"}
                 </span>
               </Button>
               <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => setShowResponseDialog(false)}
                   className="flex-1 sm:flex-none"
                 >
@@ -802,7 +954,10 @@ export default function Emails() {
                       responseText: selectedEmail?.suggestedResponse || "",
                     })
                   }
-                  disabled={sendResponseMutation.isPending || !selectedEmail?.suggestedResponse}
+                  disabled={
+                    sendResponseMutation.isPending ||
+                    !selectedEmail?.suggestedResponse
+                  }
                   data-testid="button-approve-response"
                   className="flex-1 sm:flex-none"
                 >
