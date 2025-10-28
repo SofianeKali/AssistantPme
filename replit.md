@@ -4,6 +4,19 @@
 IzyInbox is an intelligent web application designed to automate administrative tasks for SMEs. It leverages AI for email analysis and automates the management of quotes, invoices, appointments, and documents. The core purpose is to streamline administrative workflows, enhance efficiency, and provide actionable insights for small and medium-sized businesses. The project aims to become a leading solution for smart automation for busy managers, with ambitions for broad market adoption.
 
 ## Recent Changes (October 28, 2025)
+- **Dashboard Task Management Card**:
+  - Added "Tâches en cours" card to dashboard, displayed alongside alerts card in a grid layout
+  - Card shows tasks with status "nouveau" or "en_cours" (up to 5 most recent)
+  - Visual differentiation between task statuses:
+    - "Nouveau" tasks: Circle icon (yellow/chart-3 color), secondary badge variant
+    - "En cours" tasks: Clock icon (blue/primary color), default badge variant
+  - Quick status change actions directly from dashboard:
+    - ArrowRight button to start a task (nouveau → en_cours)
+    - CheckCircle2 button to complete a task (en_cours → termine)
+  - "Voir tout" button links to full Tasks page for comprehensive task management
+  - Mutation properly invalidates cache and shows toast notifications on status updates
+  - Architecture reviewed and validated by architect
+
 - **Email Read/Unread Status Feature**:
   - Implemented separate read/unread tracking independent of processed/unprocessed status (nouveau/traité)
   - New emails from scanner are created with `isRead: false` (explicitly set in emailScanner.ts)
