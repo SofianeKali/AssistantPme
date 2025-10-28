@@ -9,6 +9,10 @@ import {
   TrendingDown,
   LucideIcon,
   RefreshCw,
+  CheckCircle2,
+  Circle,
+  Clock,
+  ArrowRight,
 } from "lucide-react";
 import * as LucideIcons from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -95,6 +99,37 @@ export default function Dashboard() {
     queryKey: ["/api/alerts", { limit: 5, resolved: false }],
   });
 
+  const { data: tasks, isLoading: tasksLoading } = useQuery<any>({
+    queryKey: ["/api/tasks"],
+    select: (data) => {
+      // Filter only "nouveau" and "en_cours" tasks
+      return data?.filter((task: any) => 
+        task.status === "nouveau" || task.status === "en_cours"
+      ) || [];
+    },
+  });
+
+  const updateTaskStatusMutation = useMutation({
+    mutationFn: async ({ taskId, status }: { taskId: string; status: string }) => {
+      const res = await apiRequest("PATCH", `/api/tasks/${taskId}/status`, { status });
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/tasks"] });
+      toast({
+        title: "Statut mis à jour",
+        description: "Le statut de la tâche a été modifié",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erreur",
+        description: "Impossible de mettre à jour le statut",
+        variant: "destructive",
+      });
+    },
+  });
+
   const generateAlertsMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/alerts/generate");
@@ -153,79 +188,164 @@ export default function Dashboard() {
         </p>
       </div>
 
-      {/* Recent Alerts */}
-      <Card className="mb-6">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle className="text-xl">Alertes récentes</CardTitle>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => generateAlertsMutation.mutate()}
-            disabled={generateAlertsMutation.isPending}
-            data-testid="button-generate-alerts"
-          >
-            <RefreshCw
-              className={`h-4 w-4 mr-2 ${generateAlertsMutation.isPending ? "animate-spin" : ""}`}
-            />
-            Vérifier
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {alertsLoading ? (
-            <div className="space-y-3">
-              {[...Array(3)].map((_, i) => (
-                <Skeleton key={i} className="h-16" />
-              ))}
-            </div>
-          ) : alerts && alerts.length > 0 ? (
-            <div className="space-y-3">
-              {alerts.slice(0, 5).map((alert: any) => (
-                <div
-                  key={alert.id}
-                  className="flex items-start gap-3 p-3 rounded-md border border-border hover-elevate"
-                  data-testid={`alert-${alert.id}`}
-                >
-                  <AlertTriangle
-                    className={`h-5 w-5 mt-0.5 ${
-                      alert.severity === "critical"
-                        ? "text-destructive"
-                        : alert.severity === "warning"
-                          ? "text-chart-3"
-                          : "text-primary"
-                    }`}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium">{alert.title}</div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {alert.message}
+      {/* Tasks and Alerts Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        {/* Pending Tasks */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+            <CardTitle className="text-xl">Tâches en cours</CardTitle>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setLocation("/tasks")}
+              data-testid="button-view-all-tasks"
+            >
+              Voir tout
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {tasksLoading ? (
+              <div className="space-y-3">
+                {[...Array(3)].map((_, i) => (
+                  <Skeleton key={i} className="h-20" />
+                ))}
+              </div>
+            ) : tasks && tasks.length > 0 ? (
+              <div className="space-y-3">
+                {tasks.slice(0, 5).map((task: any) => (
+                  <div
+                    key={task.id}
+                    className="flex items-start gap-3 p-3 rounded-md border border-border hover-elevate"
+                    data-testid={`task-${task.id}`}
+                  >
+                    {task.status === "nouveau" ? (
+                      <Circle className="h-5 w-5 mt-0.5 text-chart-3" />
+                    ) : (
+                      <Clock className="h-5 w-5 mt-0.5 text-primary" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium">{task.title}</div>
+                      {task.description && (
+                        <div className="text-xs text-muted-foreground mt-1 line-clamp-1">
+                          {task.description}
+                        </div>
+                      )}
+                      <Badge
+                        variant={task.status === "nouveau" ? "secondary" : "default"}
+                        className="text-xs mt-2"
+                      >
+                        {task.status === "nouveau" ? "Nouveau" : "En cours"}
+                      </Badge>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      {task.status === "nouveau" && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => updateTaskStatusMutation.mutate({ taskId: task.id, status: "en_cours" })}
+                          disabled={updateTaskStatusMutation.isPending}
+                          data-testid={`button-start-task-${task.id}`}
+                        >
+                          <ArrowRight className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {task.status === "en_cours" && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => updateTaskStatusMutation.mutate({ taskId: task.id, status: "termine" })}
+                          disabled={updateTaskStatusMutation.isPending}
+                          data-testid={`button-complete-task-${task.id}`}
+                        >
+                          <CheckCircle2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </div>
-                  <Badge
-                    variant={
-                      alert.severity === "critical"
-                        ? "destructive"
-                        : alert.severity === "warning"
-                          ? "default"
-                          : "secondary"
-                    }
-                    className="text-xs"
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-sm text-muted-foreground">
+                Aucune tâche en cours
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Recent Alerts */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+            <CardTitle className="text-xl">Alertes récentes</CardTitle>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => generateAlertsMutation.mutate()}
+              disabled={generateAlertsMutation.isPending}
+              data-testid="button-generate-alerts"
+            >
+              <RefreshCw
+                className={`h-4 w-4 mr-2 ${generateAlertsMutation.isPending ? "animate-spin" : ""}`}
+              />
+              Vérifier
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {alertsLoading ? (
+              <div className="space-y-3">
+                {[...Array(3)].map((_, i) => (
+                  <Skeleton key={i} className="h-16" />
+                ))}
+              </div>
+            ) : alerts && alerts.length > 0 ? (
+              <div className="space-y-3">
+                {alerts.slice(0, 5).map((alert: any) => (
+                  <div
+                    key={alert.id}
+                    className="flex items-start gap-3 p-3 rounded-md border border-border hover-elevate"
+                    data-testid={`alert-${alert.id}`}
                   >
-                    {alert.severity === "critical"
-                      ? "Critique"
-                      : alert.severity === "warning"
-                        ? "Attention"
-                        : "Info"}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-sm text-muted-foreground">
-              Aucune alerte active
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                    <AlertTriangle
+                      className={`h-5 w-5 mt-0.5 ${
+                        alert.severity === "critical"
+                          ? "text-destructive"
+                          : alert.severity === "warning"
+                            ? "text-chart-3"
+                            : "text-primary"
+                      }`}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium">{alert.title}</div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {alert.message}
+                      </div>
+                    </div>
+                    <Badge
+                      variant={
+                        alert.severity === "critical"
+                          ? "destructive"
+                          : alert.severity === "warning"
+                            ? "default"
+                            : "secondary"
+                      }
+                      className="text-xs"
+                    >
+                      {alert.severity === "critical"
+                        ? "Critique"
+                        : alert.severity === "warning"
+                          ? "Attention"
+                          : "Info"}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-sm text-muted-foreground">
+                Aucune alerte active
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Email Categories */}
       <div>
