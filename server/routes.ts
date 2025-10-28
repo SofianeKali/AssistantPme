@@ -451,6 +451,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch('/api/emails/:id/mark-read', isAuthenticated, async (req: any, res) => {
+    try {
+      // Get email (shared inbox - no ownership check)
+      const email = await storage.getEmailById(req.params.id);
+      if (!email) {
+        return res.status(404).json({ message: "Email not found" });
+      }
+
+      // Mark email as read
+      const updatedEmail = await storage.updateEmail(email.id, undefined, {
+        isRead: true,
+      });
+
+      res.json({ 
+        success: true, 
+        email: updatedEmail 
+      });
+    } catch (error) {
+      console.error("Error marking email as read:", error);
+      res.status(500).json({ message: "Failed to mark email as read" });
+    }
+  });
+
   app.get('/api/emails/:id/responses', isAuthenticated, async (req, res) => {
     try {
       const responses = await storage.getEmailResponses(req.params.id);

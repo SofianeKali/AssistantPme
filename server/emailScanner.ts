@@ -175,6 +175,7 @@ export class EmailScanner {
               actionRecommendations: analysis.actionRecommendations || [],
             },
             hasAttachments: (mail.attachments?.length || 0) > 0,
+            isRead: false, // New emails start as unread
             requiresResponse: emailType === 'devis' || analysis.priority === 'urgent',
             responseDeadline: emailType === 'devis' 
               ? new Date(Date.now() + 48 * 60 * 60 * 1000) // 48h for quotes

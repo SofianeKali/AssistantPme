@@ -15,6 +15,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Search,
   Mail,
+  MailOpen,
   MoreVertical,
   Sparkles,
   Check,
@@ -184,6 +185,21 @@ export default function Emails() {
         description: "Impossible de marquer l'email comme traité",
         variant: "destructive",
       });
+    },
+  });
+
+  const markReadMutation = useMutation({
+    mutationFn: async (emailId: string) => {
+      const res = await apiRequest(
+        "PATCH",
+        `/api/emails/${emailId}/mark-read`,
+        {},
+      );
+      return res.json();
+    },
+    onSuccess: () => {
+      // Invalidate queries to refresh email list
+      queryClient.invalidateQueries({ queryKey: ["/api/emails"] });
     },
   });
 
@@ -602,7 +618,12 @@ export default function Emails() {
                 />
                 <div
                   className="flex items-start gap-2 md:gap-4 flex-1 min-w-0 cursor-pointer"
-                  onClick={() => setSelectedEmail(email)}
+                  onClick={() => {
+                    setSelectedEmail(email);
+                    if (!email.isRead) {
+                      markReadMutation.mutate(email.id);
+                    }
+                  }}
                 >
                   <Avatar className="h-8 w-8 md:h-10 md:w-10 flex-shrink-0">
                     <AvatarFallback className="text-xs">
@@ -631,6 +652,17 @@ export default function Emails() {
                               <Check className="h-3 w-3 mr-1" />
                               <span className="hidden sm:inline">Répondu</span>
                             </Badge>
+                          )}
+                          {email.isRead ? (
+                            <MailOpen
+                              className="h-4 w-4 text-muted-foreground flex-shrink-0"
+                              data-testid={`icon-read-${email.id}`}
+                            />
+                          ) : (
+                            <Mail
+                              className="h-4 w-4 text-primary flex-shrink-0"
+                              data-testid={`icon-unread-${email.id}`}
+                            />
                           )}
                           {email.status && (
                             <Badge
