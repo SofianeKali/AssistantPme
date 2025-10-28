@@ -103,15 +103,26 @@ export default function Dashboard() {
     queryKey: ["/api/tasks"],
     select: (data) => {
       // Filter only "nouveau" and "en_cours" tasks
-      return data?.filter((task: any) => 
-        task.status === "nouveau" || task.status === "en_cours"
-      ) || [];
+      return (
+        data?.filter(
+          (task: any) =>
+            task.status === "nouveau" || task.status === "en_cours",
+        ) || []
+      );
     },
   });
 
   const updateTaskStatusMutation = useMutation({
-    mutationFn: async ({ taskId, status }: { taskId: string; status: string }) => {
-      const res = await apiRequest("PATCH", `/api/tasks/${taskId}/status`, { status });
+    mutationFn: async ({
+      taskId,
+      status,
+    }: {
+      taskId: string;
+      status: string;
+    }) => {
+      const res = await apiRequest("PATCH", `/api/tasks/${taskId}/status`, {
+        status,
+      });
       return await res.json();
     },
     onSuccess: () => {
@@ -231,7 +242,9 @@ export default function Dashboard() {
                         </div>
                       )}
                       <Badge
-                        variant={task.status === "nouveau" ? "secondary" : "default"}
+                        variant={
+                          task.status === "nouveau" ? "secondary" : "default"
+                        }
                         className="text-xs mt-2"
                       >
                         {task.status === "nouveau" ? "Nouveau" : "En cours"}
@@ -242,7 +255,12 @@ export default function Dashboard() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => updateTaskStatusMutation.mutate({ taskId: task.id, status: "en_cours" })}
+                          onClick={() =>
+                            updateTaskStatusMutation.mutate({
+                              taskId: task.id,
+                              status: "en_cours",
+                            })
+                          }
                           disabled={updateTaskStatusMutation.isPending}
                           data-testid={`button-start-task-${task.id}`}
                         >
@@ -253,7 +271,12 @@ export default function Dashboard() {
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => updateTaskStatusMutation.mutate({ taskId: task.id, status: "termine" })}
+                          onClick={() =>
+                            updateTaskStatusMutation.mutate({
+                              taskId: task.id,
+                              status: "termine",
+                            })
+                          }
                           disabled={updateTaskStatusMutation.isPending}
                           data-testid={`button-complete-task-${task.id}`}
                         >
