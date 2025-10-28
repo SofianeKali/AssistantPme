@@ -1,6 +1,15 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle, FileText, Calendar, Mail, TrendingUp, TrendingDown, LucideIcon, RefreshCw } from "lucide-react";
+import {
+  AlertTriangle,
+  FileText,
+  Calendar,
+  Mail,
+  TrendingUp,
+  TrendingDown,
+  LucideIcon,
+  RefreshCw,
+} from "lucide-react";
 import * as LucideIcons from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -8,20 +17,20 @@ import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  LineChart, 
-  Line, 
-  BarChart, 
-  Bar, 
-  PieChart, 
-  Pie, 
-  Cell, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  ResponsiveContainer 
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
 } from "recharts";
 
 // Map icon names to Lucide components
@@ -39,7 +48,7 @@ const getIconComponent = (iconName: string): LucideIcon => {
     Archive: LucideIcons.Archive,
     AlertCircle: LucideIcons.AlertCircle,
   };
-  
+
   return iconMap[iconName] || LucideIcons.Mail;
 };
 
@@ -62,7 +71,7 @@ const CHART_COLORS = [
 export default function Dashboard() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  
+
   const { data: stats, isLoading } = useQuery<any>({
     queryKey: ["/api/dashboard/stats"],
   });
@@ -71,13 +80,16 @@ export default function Dashboard() {
     queryKey: ["/api/dashboard/charts"],
   });
 
-  const { data: categoryStats, isLoading: categoryStatsLoading } = useQuery<any>({
-    queryKey: ["/api/emails/stats/by-category"],
-  });
+  const { data: categoryStats, isLoading: categoryStatsLoading } =
+    useQuery<any>({
+      queryKey: ["/api/emails/stats/by-category"],
+    });
 
-  const { data: emailCategories, isLoading: categoriesLoading } = useQuery<any>({
-    queryKey: ["/api/email-categories"],
-  });
+  const { data: emailCategories, isLoading: categoriesLoading } = useQuery<any>(
+    {
+      queryKey: ["/api/email-categories"],
+    },
+  );
 
   const { data: alerts, isLoading: alertsLoading } = useQuery<any>({
     queryKey: ["/api/alerts", { limit: 5, resolved: false }],
@@ -91,7 +103,7 @@ export default function Dashboard() {
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/alerts"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-      
+
       if (data.created > 0) {
         toast({
           title: "Alertes générées",
@@ -133,172 +145,157 @@ export default function Dashboard() {
     <div className="p-6 space-y-6 max-w-[1400px] mx-auto">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-semibold text-foreground mb-2">Tableau de bord</h1>
+        <h1 className="text-3xl font-semibold text-foreground mb-2">
+          Tableau de bord
+        </h1>
         <p className="text-sm text-muted-foreground">
           Vue d'ensemble de votre activité administrative
         </p>
       </div>
 
-      {/* Top KPIs - Devis et Factures */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card 
-          className="hover-elevate cursor-pointer"
-          onClick={() => setLocation('/emails?category=devis&status=nouveau')}
-          data-testid="kpi-devis"
-        >
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Devis</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-semibold">{stats?.quotesNoResponse || 0}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Non traités
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card 
-          className="hover-elevate cursor-pointer"
-          onClick={() => setLocation('/emails?category=facture&status=nouveau')}
-          data-testid="kpi-factures"
-        >
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Factures</CardTitle>
-            <LucideIcons.Receipt className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-semibold">{stats?.unpaidInvoices || 0}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Non traités
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Recent Alerts */}
+      <Card className="mb-6">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <CardTitle className="text-xl">Alertes récentes</CardTitle>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => generateAlertsMutation.mutate()}
+            disabled={generateAlertsMutation.isPending}
+            data-testid="button-generate-alerts"
+          >
+            <RefreshCw
+              className={`h-4 w-4 mr-2 ${generateAlertsMutation.isPending ? "animate-spin" : ""}`}
+            />
+            Vérifier
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {alertsLoading ? (
+            <div className="space-y-3">
+              {[...Array(3)].map((_, i) => (
+                <Skeleton key={i} className="h-16" />
+              ))}
+            </div>
+          ) : alerts && alerts.length > 0 ? (
+            <div className="space-y-3">
+              {alerts.slice(0, 5).map((alert: any) => (
+                <div
+                  key={alert.id}
+                  className="flex items-start gap-3 p-3 rounded-md border border-border hover-elevate"
+                  data-testid={`alert-${alert.id}`}
+                >
+                  <AlertTriangle
+                    className={`h-5 w-5 mt-0.5 ${
+                      alert.severity === "critical"
+                        ? "text-destructive"
+                        : alert.severity === "warning"
+                          ? "text-chart-3"
+                          : "text-primary"
+                    }`}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium">{alert.title}</div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {alert.message}
+                    </div>
+                  </div>
+                  <Badge
+                    variant={
+                      alert.severity === "critical"
+                        ? "destructive"
+                        : alert.severity === "warning"
+                          ? "default"
+                          : "secondary"
+                    }
+                    className="text-xs"
+                  >
+                    {alert.severity === "critical"
+                      ? "Critique"
+                      : alert.severity === "warning"
+                        ? "Attention"
+                        : "Info"}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-sm text-muted-foreground">
+              Aucune alerte active
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Email Categories */}
       <div>
-        <h2 className="text-xl font-semibold mb-4">Emails non traités par catégorie</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {categoryStatsLoading || categoriesLoading ? (
-            [...Array(4)].map((_, i) => <Skeleton key={i} className="h-32" />)
-          ) : (
-            emailCategories && (() => {
-              const uniqueCategories = emailCategories.reduce((acc: any[], category: any) => {
-                const existing = acc.find(c => c.key === category.key);
-                if (!existing) {
-                  acc.push(category);
-                } else if (category.isSystem && !existing.isSystem) {
-                  const index = acc.indexOf(existing);
-                  acc[index] = category;
-                }
-                return acc;
-              }, []);
+        <h2 className="text-xl font-semibold mb-4">
+          Emails non traités par catégorie
+        </h2>
 
-              return uniqueCategories.map((category: any) => {
-                const IconComponent = getIconComponent(category.icon);
-                return (
-                  <Card
-                    key={category.key}
-                    className="hover-elevate cursor-pointer"
-                    onClick={() => setLocation(`/emails?category=${category.key}&status=nouveau`)}
-                    data-testid={`category-block-${category.key}`}
-                  >
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">{category.label}</CardTitle>
-                      <div 
-                        className="w-8 h-8 rounded-md flex items-center justify-center"
-                        style={{ backgroundColor: category.color + '20', color: category.color }}
-                      >
-                        <IconComponent className="h-4 w-4" />
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-2xl font-semibold">{categoryStats?.[category.key] || 0}</div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Non traités
-                      </p>
-                    </CardContent>
-                  </Card>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {categoryStatsLoading || categoriesLoading
+            ? [...Array(4)].map((_, i) => <Skeleton key={i} className="h-32" />)
+            : emailCategories &&
+              (() => {
+                const uniqueCategories = emailCategories.reduce(
+                  (acc: any[], category: any) => {
+                    const existing = acc.find((c) => c.key === category.key);
+                    if (!existing) {
+                      acc.push(category);
+                    } else if (category.isSystem && !existing.isSystem) {
+                      const index = acc.indexOf(existing);
+                      acc[index] = category;
+                    }
+                    return acc;
+                  },
+                  [],
                 );
-              });
-            })()
-          )}
+
+                return uniqueCategories.map((category: any) => {
+                  const IconComponent = getIconComponent(category.icon);
+                  return (
+                    <Card
+                      key={category.key}
+                      className="hover-elevate cursor-pointer"
+                      onClick={() =>
+                        setLocation(
+                          `/emails?category=${category.key}&status=nouveau`,
+                        )
+                      }
+                      data-testid={`category-block-${category.key}`}
+                    >
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">
+                          {category.label}
+                        </CardTitle>
+                        <div
+                          className="w-8 h-8 rounded-md flex items-center justify-center"
+                          style={{
+                            backgroundColor: category.color + "20",
+                            color: category.color,
+                          }}
+                        >
+                          <IconComponent className="h-4 w-4" />
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-semibold">
+                          {categoryStats?.[category.key] || 0}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Non traités
+                        </p>
+                      </CardContent>
+                    </Card>
+                  );
+                });
+              })()}
         </div>
       </div>
 
       {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-               {/* Recent Alerts */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-            <CardTitle className="text-xl">Alertes récentes</CardTitle>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => generateAlertsMutation.mutate()}
-              disabled={generateAlertsMutation.isPending}
-              data-testid="button-generate-alerts"
-            >
-              <RefreshCw className={`h-4 w-4 mr-2 ${generateAlertsMutation.isPending ? 'animate-spin' : ''}`} />
-              Vérifier
-            </Button>
-          </CardHeader>
-          <CardContent>
-            {alertsLoading ? (
-              <div className="space-y-3">
-                {[...Array(3)].map((_, i) => (
-                  <Skeleton key={i} className="h-16" />
-                ))}
-              </div>
-            ) : alerts && alerts.length > 0 ? (
-              <div className="space-y-3">
-                {alerts.slice(0, 5).map((alert: any) => (
-                  <div
-                    key={alert.id}
-                    className="flex items-start gap-3 p-3 rounded-md border border-border hover-elevate"
-                    data-testid={`alert-${alert.id}`}
-                  >
-                    <AlertTriangle
-                      className={`h-5 w-5 mt-0.5 ${
-                        alert.severity === "critical"
-                          ? "text-destructive"
-                          : alert.severity === "warning"
-                            ? "text-chart-3"
-                            : "text-primary"
-                      }`}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium">{alert.title}</div>
-                      <div className="text-xs text-muted-foreground mt-1">{alert.message}</div>
-                    </div>
-                    <Badge
-                      variant={
-                        alert.severity === "critical"
-                          ? "destructive"
-                          : alert.severity === "warning"
-                            ? "default"
-                            : "secondary"
-                      }
-                      className="text-xs"
-                    >
-                      {alert.severity === "critical"
-                        ? "Critique"
-                        : alert.severity === "warning"
-                          ? "Attention"
-                          : "Info"}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-sm text-muted-foreground">
-                Aucune alerte active
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
         {/* Évolution des emails traités */}
         <Card>
           <CardHeader>
@@ -307,27 +304,27 @@ export default function Dashboard() {
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
               <LineChart data={charts?.emailEvolution || []}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis 
-                  dataKey="day" 
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="hsl(var(--border))"
+                />
+                <XAxis
+                  dataKey="day"
                   stroke="hsl(var(--muted-foreground))"
                   fontSize={12}
                 />
-                <YAxis 
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                />
-                <Tooltip 
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <Tooltip
                   contentStyle={{
                     backgroundColor: "hsl(var(--card))",
                     border: "1px solid hsl(var(--border))",
                     borderRadius: "6px",
                   }}
                 />
-                <Line 
-                  type="monotone" 
-                  dataKey="count" 
-                  stroke={COLORS.primary} 
+                <Line
+                  type="monotone"
+                  dataKey="count"
+                  stroke={COLORS.primary}
                   strokeWidth={2}
                   dot={{ fill: COLORS.primary }}
                 />
@@ -354,22 +351,23 @@ export default function Dashboard() {
                   dataKey="value"
                   label={(entry) => `${entry.name}`}
                 >
-                  {charts?.emailDistribution?.map((entry: any, index: number) => (
-                    <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                  ))}
+                  {charts?.emailDistribution?.map(
+                    (entry: any, index: number) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={CHART_COLORS[index % CHART_COLORS.length]}
+                      />
+                    ),
+                  )}
                 </Pie>
-                <Tooltip 
+                <Tooltip
                   contentStyle={{
                     backgroundColor: "hsl(var(--card))",
                     border: "1px solid hsl(var(--border))",
                     borderRadius: "6px",
                   }}
                 />
-                <Legend 
-                  verticalAlign="bottom" 
-                  height={36}
-                  iconType="circle"
-                />
+                <Legend verticalAlign="bottom" height={36} iconType="circle" />
               </PieChart>
             </ResponsiveContainer>
           </CardContent>
@@ -383,25 +381,25 @@ export default function Dashboard() {
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={charts?.appointmentsByWeek || []}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis 
-                  dataKey="week" 
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="hsl(var(--border))"
+                />
+                <XAxis
+                  dataKey="week"
                   stroke="hsl(var(--muted-foreground))"
                   fontSize={12}
                 />
-                <YAxis 
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                />
-                <Tooltip 
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <Tooltip
                   contentStyle={{
                     backgroundColor: "hsl(var(--card))",
                     border: "1px solid hsl(var(--border))",
                     borderRadius: "6px",
                   }}
                 />
-                <Bar 
-                  dataKey="count" 
+                <Bar
+                  dataKey="count"
                   fill={COLORS.chart2}
                   radius={[4, 4, 0, 0]}
                 />
@@ -417,26 +415,29 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
-              <BarChart 
+              <BarChart
                 data={charts?.categoryProcessing || []}
                 layout="vertical"
               >
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis 
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="hsl(var(--border))"
+                />
+                <XAxis
                   type="number"
                   domain={[0, 100]}
                   stroke="hsl(var(--muted-foreground))"
                   fontSize={12}
                   unit="%"
                 />
-                <YAxis 
+                <YAxis
                   type="category"
-                  dataKey="category" 
+                  dataKey="category"
                   stroke="hsl(var(--muted-foreground))"
                   fontSize={12}
                   width={80}
                 />
-                <Tooltip 
+                <Tooltip
                   contentStyle={{
                     backgroundColor: "hsl(var(--card))",
                     border: "1px solid hsl(var(--border))",
@@ -444,8 +445,8 @@ export default function Dashboard() {
                   }}
                   formatter={(value: any) => [`${value}%`, "Taux"]}
                 />
-                <Bar 
-                  dataKey="rate" 
+                <Bar
+                  dataKey="rate"
                   fill={COLORS.chart3}
                   radius={[0, 4, 4, 0]}
                 />
@@ -463,7 +464,7 @@ export default function Dashboard() {
             {charts?.emailFunnel?.map((stage: any, index: number) => {
               const maxCount = charts.emailFunnel[0]?.count || 1;
               const percentage = Math.round((stage.count / maxCount) * 100);
-              
+
               return (
                 <div key={index} className="space-y-2">
                   <div className="flex justify-between text-sm">
@@ -475,7 +476,8 @@ export default function Dashboard() {
                       className="h-2 rounded-full transition-all"
                       style={{
                         width: `${percentage}%`,
-                        backgroundColor: CHART_COLORS[index % CHART_COLORS.length],
+                        backgroundColor:
+                          CHART_COLORS[index % CHART_COLORS.length],
                       }}
                     />
                   </div>
