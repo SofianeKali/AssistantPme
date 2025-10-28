@@ -3,7 +3,20 @@
 ## Overview
 IzyInbox is an intelligent web application designed to automate administrative tasks for SMEs. It leverages AI for email analysis and automates the management of quotes, invoices, appointments, and documents. The core purpose is to streamline administrative workflows, enhance efficiency, and provide actionable insights for small and medium-sized businesses. The project aims to become a leading solution for smart automation for busy managers, with ambitions for broad market adoption.
 
-## Recent Changes (October 25, 2025)
+## Recent Changes (October 28, 2025)
+- **Email Read/Unread Status Feature**:
+  - Implemented separate read/unread tracking independent of processed/unprocessed status (nouveau/traité)
+  - New emails from scanner are created with `isRead: false` (explicitly set in emailScanner.ts)
+  - Created PATCH /api/emails/:id/mark-read API endpoint to mark emails as read
+  - Frontend automatically marks email as read when user opens it in detail dialog
+  - Added visual indicators in email list:
+    - Unread emails: Mail icon (primary color) with data-testid="icon-unread-{emailId}"
+    - Read emails: MailOpen icon (muted color) with data-testid="icon-read-{emailId}"
+  - Read status persists in database and survives page refreshes
+  - User flow: Emails start as unread → opening marks as read → responding/manual marking changes treated status
+  - Architecture reviewed and validated by architect
+
+## Previous Changes (October 25, 2025)
 - **Automatic Task Completion When Email is Processed**:
   - Implemented automatic task completion when associated email is marked as "traité"
   - Created completeTasksForProcessedEmail() method in DatabaseStorage
