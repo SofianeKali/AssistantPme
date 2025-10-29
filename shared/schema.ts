@@ -340,6 +340,31 @@ export const insertSettingSchema = createInsertSchema(settings).omit({
 export type InsertSetting = z.infer<typeof insertSettingSchema>;
 export type Setting = typeof settings.$inferSelect;
 
+// Cloud Storage Configurations (per-user credentials)
+export const cloudStorageConfigs = pgTable("cloud_storage_configs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  provider: varchar("provider").notNull(), // 'google_drive' or 'onedrive'
+  // Credentials stored as JSON (encrypted at application layer)
+  // For Google Drive: { clientId, clientSecret, refreshToken }
+  // For OneDrive: { clientId, clientSecret, tenantId, refreshToken }
+  credentials: jsonb("credentials").notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  unique("unique_user_provider").on(table.userId, table.provider),
+]);
+
+export const insertCloudStorageConfigSchema = createInsertSchema(cloudStorageConfigs).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertCloudStorageConfig = z.infer<typeof insertCloudStorageConfigSchema>;
+export type CloudStorageConfig = typeof cloudStorageConfigs.$inferSelect;
+
 // Email responses/drafts
 export const emailResponses = pgTable("email_responses", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
