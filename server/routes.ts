@@ -67,9 +67,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Sidebar counts
-  app.get('/api/sidebar/counts', isAuthenticated, async (req, res) => {
+  app.get('/api/sidebar/counts', isAuthenticated, async (req: any, res) => {
     try {
-      const counts = await storage.getSidebarCounts();
+      const userId = (req.user as any).id;
+      const counts = await storage.getSidebarCounts(userId);
       res.json(counts);
     } catch (error) {
       console.error("Error fetching sidebar counts:", error);

@@ -1222,7 +1222,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Sidebar counts for navigation menu
-  async getSidebarCounts(): Promise<{
+  async getSidebarCounts(userId?: string): Promise<{
     unprocessedEmails: number;
     unresolvedAlerts: number;
     tasksNew: number;
@@ -1232,58 +1232,97 @@ export class DatabaseStorage implements IStorage {
   }> {
     const now = new Date();
 
-    // Count unprocessed emails (nouveau + en_cours)
+    // Count unprocessed emails (nouveau + en_cours) - filtered by user
+    const emailConditions = [
+      or(
+        eq(emails.status, 'nouveau'),
+        eq(emails.status, 'en_cours')
+      )
+    ];
+    if (userId) {
+      emailConditions.push(eq(emails.userId, userId));
+    }
     const [unprocessedEmailsResult] = await db
       .select({ count: sql<number>`count(*)` })
       .from(emails)
-      .where(
-        or(
-          eq(emails.status, 'nouveau'),
-          eq(emails.status, 'en_cours')
-        )
-      );
+      .where(and(...emailConditions));
     const unprocessedEmails = Number(unprocessedEmailsResult?.count || 0);
 
-    // Count unresolved alerts
-    const [unresolvedAlertsResult] = await db
-      .select({ count: sql<number>`count(*)` })
+    // Count unresolved alerts - filtered by user (via alert_rules join)
+    let alertQuery = db
+      .select({ count: sql<number>`count(DISTINCT ${alerts.id})` })
       .from(alerts)
-      .where(eq(alerts.isResolved, false));
+      .leftJoin(alertRules, eq(alerts.ruleId, alertRules.id));
+    
+    const alertConditions = [eq(alerts.isResolved, false)];
+    if (userId) {
+      alertConditions.push(eq(alertRules.createdById, userId));
+    }
+    
+    alertQuery = alertQuery.where(and(...alertConditions)) as any;
+    const [unresolvedAlertsResult] = await alertQuery;
     const unresolvedAlerts = Number(unresolvedAlertsResult?.count || 0);
 
-    // Count tasks with status "nouveau"
+    // Count tasks with status "nouveau" - filtered by user (creator or assignee)
+    let tasksNewConditions: any[] = [eq(tasks.status, 'nouveau')];
+    if (userId) {
+      const userCondition = or(
+        eq(tasks.createdById, userId),
+        eq(tasks.assignedToId, userId)
+      );
+      if (userCondition) {
+        tasksNewConditions.push(userCondition);
+      }
+    }
     const [tasksNewResult] = await db
       .select({ count: sql<number>`count(*)` })
       .from(tasks)
-      .where(eq(tasks.status, 'nouveau'));
+      .where(and(...tasksNewConditions));
     const tasksNew = Number(tasksNewResult?.count || 0);
 
-    // Count tasks with status "en_cours"
+    // Count tasks with status "en_cours" - filtered by user (creator or assignee)
+    let tasksInProgressConditions: any[] = [eq(tasks.status, 'en_cours')];
+    if (userId) {
+      const userCondition = or(
+        eq(tasks.createdById, userId),
+        eq(tasks.assignedToId, userId)
+      );
+      if (userCondition) {
+        tasksInProgressConditions.push(userCondition);
+      }
+    }
     const [tasksInProgressResult] = await db
       .select({ count: sql<number>`count(*)` })
       .from(tasks)
-      .where(eq(tasks.status, 'en_cours'));
+      .where(and(...tasksInProgressConditions));
     const tasksInProgress = Number(tasksInProgressResult?.count || 0);
 
-    // Count upcoming appointments (startTime >= now)
+    // Count upcoming appointments (startTime >= now) - filtered by user
+    const appointmentConditions = [gte(appointments.startTime, now)];
+    if (userId) {
+      appointmentConditions.push(eq(appointments.createdById, userId));
+    }
     const [upcomingAppointmentsResult] = await db
       .select({ count: sql<number>`count(*)` })
       .from(appointments)
-      .where(gte(appointments.startTime, now));
+      .where(and(...appointmentConditions));
     const upcomingAppointments = Number(upcomingAppointmentsResult?.count || 0);
 
-    // Count documents attached to unprocessed emails
-    // This is a join between documents and emails where email status is nouveau or en_cours
+    // Count documents attached to unprocessed emails - filtered by user via emails
+    const documentEmailConditions = [
+      or(
+        eq(emails.status, 'nouveau'),
+        eq(emails.status, 'en_cours')
+      )
+    ];
+    if (userId) {
+      documentEmailConditions.push(eq(emails.userId, userId));
+    }
     const [documentsInUnprocessedResult] = await db
       .select({ count: sql<number>`count(DISTINCT ${documents.id})` })
       .from(documents)
       .innerJoin(emails, eq(documents.emailId, emails.id))
-      .where(
-        or(
-          eq(emails.status, 'nouveau'),
-          eq(emails.status, 'en_cours')
-        )
-      );
+      .where(and(...documentEmailConditions));
     const documentsInUnprocessedEmails = Number(documentsInUnprocessedResult?.count || 0);
 
     return {
