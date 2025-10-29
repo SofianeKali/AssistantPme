@@ -194,6 +194,15 @@ export default function Dashboard() {
     },
   });
 
+  // Queries for unprocessed emails by category
+  const { data: categoryStats, isLoading: categoryStatsLoading } = useQuery<Record<string, number>>({
+    queryKey: ["/api/emails/stats/by-category"],
+  });
+
+  const { data: categories, isLoading: categoriesLoading } = useQuery<any>({
+    queryKey: ["/api/email-categories"],
+  });
+
   const updateTaskStatusMutation = useMutation({
     mutationFn: async ({
       taskId,
@@ -469,6 +478,72 @@ export default function Dashboard() {
         </Card>
       </div>
 
+      {/* Emails non traités par catégorie */}
+      <div>
+        <h2 className="text-xl font-semibold mb-4">
+          Emails non traités par catégorie
+        </h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {categoryStatsLoading || categoriesLoading
+            ? [...Array(4)].map((_, i) => <Skeleton key={i} className="h-32" />)
+            : categories &&
+              (() => {
+                const uniqueCategories = categories.reduce(
+                  (acc: any[], category: any) => {
+                    const existing = acc.find((c) => c.key === category.key);
+                    if (!existing) {
+                      acc.push(category);
+                    } else if (category.isSystem && !existing.isSystem) {
+                      const index = acc.indexOf(existing);
+                      acc[index] = category;
+                    }
+                    return acc;
+                  },
+                  [],
+                );
+
+                return uniqueCategories.map((category: any) => {
+                  const IconComponent = getIconComponent(category.icon);
+                  return (
+                    <Card
+                      key={category.key}
+                      className="hover-elevate cursor-pointer"
+                      onClick={() =>
+                        setLocation(
+                          `/emails?category=${category.key}&status=nouveau`,
+                        )
+                      }
+                      data-testid={`category-block-${category.key}`}
+                    >
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">
+                          {category.label}
+                        </CardTitle>
+                        <div
+                          className="w-8 h-8 rounded-md flex items-center justify-center"
+                          style={{
+                            backgroundColor: category.color + "20",
+                            color: category.color,
+                          }}
+                        >
+                          <IconComponent className="h-4 w-4" />
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-semibold">
+                          {categoryStats?.[category.key] || 0}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Non traités
+                        </p>
+                      </CardContent>
+                    </Card>
+                  );
+                });
+              })()}
+        </div>
+      </div>
 
       {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
