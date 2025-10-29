@@ -9,9 +9,12 @@ import { fr } from "date-fns/locale";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useLocation } from "wouter";
 
 export default function Alerts() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
+
   const { data: activeAlerts, isLoading: activeLoading } = useQuery({
     queryKey: ["/api/alerts", { resolved: false }],
   });
@@ -52,6 +55,10 @@ export default function Alerts() {
     }
   };
 
+  const handleAlertClick = (alertId: string) => {
+    setLocation(`/emails?alertId=${alertId}`);
+  };
+
   const AlertList = ({ alerts, isLoading, showResolveButton = true }: any) => (
     <div className="space-y-3">
       {isLoading ? (
@@ -60,7 +67,7 @@ export default function Alerts() {
         alerts.map((alert: any) => (
           <Card
             key={alert.id}
-            className={`p-4 ${
+            className={`p-4 cursor-pointer hover-elevate ${
               alert.severity === "critical"
                 ? "border-l-4 border-l-destructive"
                 : alert.severity === "warning"
@@ -68,6 +75,7 @@ export default function Alerts() {
                   : ""
             }`}
             data-testid={`alert-${alert.id}`}
+            onClick={() => handleAlertClick(alert.id)}
           >
             <div className="flex items-start gap-4">
               <AlertTriangle className={`h-5 w-5 mt-1 ${getSeverityColor(alert.severity)}`} />
@@ -90,7 +98,10 @@ export default function Alerts() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => resolveAlertMutation.mutate(alert.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    resolveAlertMutation.mutate(alert.id);
+                  }}
                   disabled={resolveAlertMutation.isPending}
                   data-testid={`button-resolve-${alert.id}`}
                 >
