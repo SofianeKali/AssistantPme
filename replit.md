@@ -22,14 +22,20 @@ The application uses a modern web stack:
 - **System Design Choices**: Global category system with flexible assignment to multiple email accounts via a junction table. Category deletion automatically transfers affected emails to a fallback "autre" category. Email read/unread status is tracked independently of processed status. Tasks associated with an email are automatically completed when the email is marked as "traité". Task assignment to users is supported. Appointment selection dialog for days with multiple appointments. Automated scanning of individual email accounts.
 
 **Key Features**:
-- **Dashboard**: High-level overview of critical alerts, monthly statistics, activity summaries, and "Tasks in Progress" card with quick status changes. Features advanced data visualizations with configurable period controls:
+- **Dashboard**: High-level overview of critical alerts, monthly statistics, activity summaries, and "Tasks in Progress" card with quick status changes. Features advanced data visualizations with configurable period controls and full drag-and-drop customization:
+  * **Drag-and-Drop Layout Customization**: All dashboard sections (category cards and 6 charts) support manual reorganization via drag-and-drop using @dnd-kit/sortable library
+    - Persistent user preferences stored in `userDashboardLayouts` table with per-user layout configuration
+    - Visual drag handles (GripVertical icon) appear on hover for intuitive interaction
+    - Reset button to restore default layout order
+    - Fixed sections: Tasks and Alerts cards remain at the top (not draggable)
+    - Draggable sections (7 total): Categories, Email Evolution, Email Distribution, Appointments, Category Processing, Tasks Evolution, Alerts Evolution
   * **Configurable Period System**: All 6 dashboard charts support independent week/month period selection with temporal navigation (previous/next controls) and precise period labels (e.g., "Semaine du 21 au 27 octobre 2024" or "Octobre 2024")
-  * **Évolution des emails traités**: Bar chart showing processed email trends over configurable periods
+  * **Évolution des emails traités**: Line chart showing processed email trends over configurable periods
   * **Répartition des emails reçus**: Pie chart using category-configured colors with email counts, supports period filtering
   * **Évolution des RDV**: Bar chart displaying appointment trends with week/month period selection
   * **Taux de traitement par catégorie**: Vertical bar chart colored by category showing processing rates across periods
-  * **Évolution des tâches**: Line chart tracking task evolution (Nouveau/En cours/Terminé) with configurable time periods
-  * **Évolution des alertes**: Line chart monitoring alert trends (Actives/Résolues) with period controls
+  * **Évolution des tâches**: Stacked bar chart tracking task evolution (Nouveau/En cours/Terminé) with configurable time periods
+  * **Évolution des alertes**: Stacked bar chart monitoring alert trends (Actives/Résolues) with period controls
   * Category-colored visualizations throughout for consistent visual identity
   * Weeks calculated from Monday to Sunday, months use standard calendar boundaries
 - **Email Management**: AI-powered categorization, priority/sentiment detection, auto-response generation, task assignment, and alerts. Supports bulk processing and individual email account scanning. Features read/unread status tracking and category-based automatic marking as processed.

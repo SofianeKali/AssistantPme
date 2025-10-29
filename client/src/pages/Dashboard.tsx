@@ -308,6 +308,71 @@ export default function Dashboard() {
     queryKey: ["/api/email-categories"],
   });
 
+  // Dashboard layout state and queries
+  const [layout, setLayout] = useState<string[]>(DEFAULT_LAYOUT);
+  
+  const { data: savedLayout } = useQuery<any>({
+    queryKey: ["/api/dashboard/layout"],
+  });
+
+  // Load saved layout on mount
+  useEffect(() => {
+    if (savedLayout?.layout && Array.isArray(savedLayout.layout) && savedLayout.layout.length > 0) {
+      setLayout(savedLayout.layout);
+    }
+  }, [savedLayout]);
+
+  // Save layout mutation
+  const saveLayoutMutation = useMutation({
+    mutationFn: async (newLayout: string[]) => {
+      const res = await apiRequest("POST", "/api/dashboard/layout", { layout: newLayout });
+      return await res.json();
+    },
+    onError: () => {
+      toast({
+        title: "Erreur",
+        description: "Impossible de sauvegarder l'ordre",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Handle drag end
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      setLayout((items) => {
+        const oldIndex = items.indexOf(active.id as string);
+        const newIndex = items.indexOf(over.id as string);
+        const newLayout = arrayMove(items, oldIndex, newIndex);
+        
+        // Save to backend
+        saveLayoutMutation.mutate(newLayout);
+        
+        return newLayout;
+      });
+    }
+  };
+
+  // Reset layout to default
+  const resetLayout = () => {
+    setLayout(DEFAULT_LAYOUT);
+    saveLayoutMutation.mutate(DEFAULT_LAYOUT);
+    toast({
+      title: "Ordre réinitialisé",
+      description: "L'ordre par défaut a été restauré",
+    });
+  };
+
   const updateTaskStatusMutation = useMutation({
     mutationFn: async ({
       taskId,
@@ -367,6 +432,416 @@ export default function Dashboard() {
     },
   });
 
+  // Render functions for each dashboard section
+  const renderSection = (sectionId: string) => {
+    const sections: Record<string, JSX.Element> = {
+      "categories": renderCategoriesSection(),
+      "email-evolution": renderEmailEvolutionChart(),
+      "email-distribution": renderEmailDistributionChart(),
+      "appointments": renderAppointmentsChart(),
+      "category-processing": renderCategoryProcessingChart(),
+      "tasks-evolution": renderTasksEvolutionChart(),
+      "alerts-evolution": renderAlertsEvolutionChart(),
+    };
+    
+    return sections[sectionId] || null;
+  };
+
+  function renderCategoriesSection() {
+    return (
+      <div key="categories">
+        <h2 className="text-xl font-semibold mb-4">
+          Emails non traités par catégorie
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {categoryStatsLoading || categoriesLoading
+            ? [...Array(4)].map((_, i) => <Skeleton key={i} className="h-32" />)
+            : categories &&
+              (() => {
+                const uniqueCategories = categories.reduce(
+                  (acc: any[], category: any) => {
+                    const existing = acc.find((c) => c.key === category.key);
+                    if (!existing) {
+                      acc.push(category);
+                    } else if (category.isSystem && !existing.isSystem) {
+                      const index = acc.indexOf(existing);
+                      acc[index] = category;
+                    }
+                    return acc;
+                  },
+                  [],
+                );
+
+                return uniqueCategories.map((category: any) => {
+                  const IconComponent = getIconComponent(category.icon);
+                  return (
+                    <Card
+                      key={category.key}
+                      className="hover-elevate cursor-pointer"
+                      onClick={() =>
+                        setLocation(
+                          `/emails?category=${category.key}&status=nouveau`,
+                        )
+                      }
+                      data-testid={`category-block-${category.key}`}
+                    >
+                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">
+                          {category.label}
+                        </CardTitle>
+                        <div
+                          className="w-8 h-8 rounded-md flex items-center justify-center"
+                          style={{
+                            backgroundColor: category.color + "20",
+                            color: category.color,
+                          }}
+                        >
+                          <IconComponent className="h-4 w-4" />
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-semibold">
+                          {categoryStats?.[category.key] || 0}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Non traités
+                        </p>
+                      </CardContent>
+                    </Card>
+                  );
+                });
+              })()}
+        </div>
+      </div>
+    );
+  }
+
+  function renderEmailEvolutionChart() {
+    return (
+      <Card key="email-evolution">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <CardTitle>Évolution des emails traités</CardTitle>
+          <ChartPeriodControls
+            periodType={emailEvolutionPeriod}
+            onPeriodTypeChange={(type) => setEmailEvolutionPeriod(type)}
+            offset={emailEvolutionOffset}
+            onOffsetChange={setEmailEvolutionOffset}
+            periodLabel={getPeriodLabel(emailEvolutionPeriod, emailEvolutionOffset)}
+            testIdPrefix="email-evolution"
+          />
+        </CardHeader>
+        <CardContent>
+          {emailEvolutionLoading ? (
+            <Skeleton className="h-[250px]" />
+          ) : (
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={emailEvolution || []}>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="hsl(var(--border))"
+                />
+                <XAxis
+                  dataKey="day"
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                />
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "6px",
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="count"
+                  stroke={COLORS.primary}
+                  strokeWidth={2}
+                  name="Emails traités"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  function renderEmailDistributionChart() {
+    return (
+      <Card key="email-distribution">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <CardTitle>Répartition des emails reçus</CardTitle>
+          <ChartPeriodControls
+            periodType={emailDistributionPeriod}
+            onPeriodTypeChange={(type) => setEmailDistributionPeriod(type)}
+            offset={emailDistributionOffset}
+            onOffsetChange={setEmailDistributionOffset}
+            periodLabel={getPeriodLabel(emailDistributionPeriod, emailDistributionOffset)}
+            testIdPrefix="email-distribution"
+          />
+        </CardHeader>
+        <CardContent>
+          {emailDistributionLoading ? (
+            <Skeleton className="h-[250px]" />
+          ) : (
+            <ResponsiveContainer width="100%" height={250}>
+              <PieChart>
+                <Pie
+                  data={emailDistribution || []}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, value }) => `${name}: ${value}`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {(emailDistribution || []).map((entry: any, index: number) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={entry.color || CHART_COLORS[index % CHART_COLORS.length]}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "6px",
+                  }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  function renderAppointmentsChart() {
+    return (
+      <Card key="appointments">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <CardTitle>Évolution des RDV</CardTitle>
+          <ChartPeriodControls
+            periodType={appointmentsPeriod}
+            onPeriodTypeChange={(type) => setAppointmentsPeriod(type)}
+            offset={appointmentsOffset}
+            onOffsetChange={setAppointmentsOffset}
+            periodLabel={getPeriodLabel(appointmentsPeriod, appointmentsOffset)}
+            testIdPrefix="appointments"
+          />
+        </CardHeader>
+        <CardContent>
+          {appointmentsWeekLoading ? (
+            <Skeleton className="h-[250px]" />
+          ) : (
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={appointmentsWeek || []}>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="hsl(var(--border))"
+                />
+                <XAxis
+                  dataKey="day"
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                />
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "6px",
+                  }}
+                />
+                <Bar
+                  dataKey="count"
+                  fill={COLORS.chart3}
+                  radius={[4, 4, 0, 0]}
+                  name="Rendez-vous"
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  function renderCategoryProcessingChart() {
+    return (
+      <Card key="category-processing">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <CardTitle>Taux de traitement par catégorie</CardTitle>
+          <ChartPeriodControls
+            periodType={categoryProcessingPeriod}
+            onPeriodTypeChange={(type) => setCategoryProcessingPeriod(type)}
+            offset={categoryProcessingOffset}
+            onOffsetChange={setCategoryProcessingOffset}
+            periodLabel={getPeriodLabel(categoryProcessingPeriod, categoryProcessingOffset)}
+            testIdPrefix="category-processing"
+          />
+        </CardHeader>
+        <CardContent>
+          {categoryProcessingLoading ? (
+            <Skeleton className="h-[250px]" />
+          ) : (
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={categoryProcessing || []}>
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="hsl(var(--border))"
+                />
+                <XAxis
+                  dataKey="category"
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                />
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "6px",
+                  }}
+                />
+                <Bar dataKey="rate" radius={[4, 4, 0, 0]} name="Taux de traitement (%)">
+                  {(categoryProcessing || []).map((entry: any, index: number) => (
+                    <Cell key={`cell-${index}`} fill={entry.color || COLORS.chart1} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  function renderTasksEvolutionChart() {
+    return (
+      <Card key="tasks-evolution">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <CardTitle>Évolution des tâches</CardTitle>
+          <ChartPeriodControls
+            periodType={tasksPeriod}
+            onPeriodTypeChange={(type) => setTasksPeriod(type)}
+            offset={tasksOffset}
+            onOffsetChange={setTasksOffset}
+            periodLabel={getPeriodLabel(tasksPeriod, tasksOffset)}
+            testIdPrefix="tasks"
+          />
+        </CardHeader>
+        <CardContent>
+          {tasksEvolutionLoading ? (
+            <Skeleton className="h-[250px]" />
+          ) : (
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={tasksEvolution || []}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis
+                  dataKey="day"
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                />
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "6px",
+                  }}
+                />
+                <Legend />
+                <Bar
+                  dataKey="nouveau"
+                  stackId="a"
+                  fill={COLORS.chart3}
+                  radius={[0, 0, 0, 0]}
+                  name="Nouveau"
+                />
+                <Bar
+                  dataKey="enCours"
+                  stackId="a"
+                  fill={COLORS.primary}
+                  radius={[0, 0, 0, 0]}
+                  name="En cours"
+                />
+                <Bar
+                  dataKey="termine"
+                  stackId="a"
+                  fill={COLORS.chart2}
+                  radius={[4, 4, 0, 0]}
+                  name="Terminé"
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  function renderAlertsEvolutionChart() {
+    return (
+      <Card key="alerts-evolution">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <CardTitle>Evolution des alertes</CardTitle>
+          <ChartPeriodControls
+            periodType={alertsPeriod}
+            onPeriodTypeChange={(type) => setAlertsPeriod(type)}
+            offset={alertsOffset}
+            onOffsetChange={setAlertsOffset}
+            periodLabel={getPeriodLabel(alertsPeriod, alertsOffset)}
+            testIdPrefix="alerts"
+          />
+        </CardHeader>
+        <CardContent>
+          {alertsEvolutionLoading ? (
+            <Skeleton className="h-[250px]" />
+          ) : (
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={alertsEvolution || []}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis
+                  dataKey="day"
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                />
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "6px",
+                  }}
+                />
+                <Legend />
+                <Bar
+                  dataKey="active"
+                  stackId="a"
+                  fill={COLORS.chart3}
+                  radius={[0, 0, 0, 0]}
+                  name="Actives"
+                />
+                <Bar
+                  dataKey="resolved"
+                  stackId="a"
+                  fill={COLORS.chart1}
+                  radius={[4, 4, 0, 0]}
+                  name="Résolues"
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (isLoading) {
     return (
       <div className="p-6 space-y-6">
@@ -386,16 +861,27 @@ export default function Dashboard() {
   return (
     <div className="p-6 space-y-6 max-w-[1400px] mx-auto">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-semibold text-foreground mb-2">
-          Mon cockpit
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Vue d'ensemble de votre activité administrative
-        </p>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-3xl font-semibold text-foreground mb-2">
+            Tableau de bord
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Vue d'ensemble de votre activité administrative
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={resetLayout}
+          data-testid="button-reset-layout"
+        >
+          <RotateCcw className="h-4 w-4 mr-2" />
+          Réinitialiser l'ordre
+        </Button>
       </div>
 
-      {/* Tasks and Alerts Grid */}
+      {/* Tasks and Alerts Grid - Fixed position, not draggable */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* Pending Tasks */}
         <Card>
@@ -457,28 +943,24 @@ export default function Dashboard() {
                               status: "en_cours",
                             })
                           }
-                          disabled={updateTaskStatusMutation.isPending}
                           data-testid={`button-start-task-${task.id}`}
                         >
-                          <ArrowRight className="h-4 w-4" />
+                          <Clock className="h-3 w-3" />
                         </Button>
                       )}
-                      {task.status === "en_cours" && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() =>
-                            updateTaskStatusMutation.mutate({
-                              taskId: task.id,
-                              status: "termine",
-                            })
-                          }
-                          disabled={updateTaskStatusMutation.isPending}
-                          data-testid={`button-complete-task-${task.id}`}
-                        >
-                          <CheckCircle2 className="h-4 w-4" />
-                        </Button>
-                      )}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() =>
+                          updateTaskStatusMutation.mutate({
+                            taskId: task.id,
+                            status: "termine",
+                          })
+                        }
+                        data-testid={`button-complete-task-${task.id}`}
+                      >
+                        <CheckCircle2 className="h-3 w-3" />
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -491,22 +973,29 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Recent Alerts */}
+        {/* Active Alerts */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-            <CardTitle className="text-xl">Alertes récentes</CardTitle>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => generateAlertsMutation.mutate()}
-              disabled={generateAlertsMutation.isPending}
-              data-testid="button-generate-alerts"
-            >
-              <RefreshCw
-                className={`h-4 w-4 mr-2 ${generateAlertsMutation.isPending ? "animate-spin" : ""}`}
-              />
-              Vérifier
-            </Button>
+            <CardTitle className="text-xl">Alertes actives</CardTitle>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => generateAlertsMutation.mutate()}
+                disabled={generateAlertsMutation.isPending}
+                data-testid="button-generate-alerts"
+              >
+                <RefreshCw className={`h-4 w-4 ${generateAlertsMutation.isPending ? "animate-spin" : ""}`} />
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setLocation("/alerts")}
+                data-testid="button-view-all-alerts"
+              >
+                Voir tout
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {alertsLoading ? (
@@ -517,39 +1006,29 @@ export default function Dashboard() {
               </div>
             ) : alerts && alerts.length > 0 ? (
               <div className="space-y-3">
-                {alerts.slice(0, 5).map((alert: any) => (
+                {alerts.map((alert: any) => (
                   <div
                     key={alert.id}
+                    className={`flex items-center gap-3 p-3 rounded-md border border-border hover-elevate ${alert.emailCount > 0 ? "cursor-pointer" : ""}`}
                     onClick={() => {
                       if (alert.emailCount > 0) {
                         setLocation(`/emails?alertId=${alert.id}`);
                       }
                     }}
-                    className={`flex items-start gap-3 p-3 rounded-md border border-border hover-elevate ${
-                      alert.emailCount > 0
-                        ? "cursor-pointer active-elevate-2"
-                        : ""
-                    }`}
                     data-testid={`alert-${alert.id}`}
                   >
                     <AlertTriangle
-                      className={`h-5 w-5 mt-0.5 ${
+                      className={
                         alert.severity === "critical"
-                          ? "text-destructive"
+                          ? "h-5 w-5 text-destructive"
                           : alert.severity === "warning"
-                            ? "text-chart-3"
-                            : "text-primary"
-                      }`}
+                            ? "h-5 w-5 text-chart-3"
+                            : "h-5 w-5 text-muted-foreground"
+                      }
                     />
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium flex items-center gap-2">
+                      <div className="text-sm font-medium">
                         {alert.title}
-                        {alert.emailCount > 0 && (
-                          <Badge variant="secondary" className="text-xs">
-                            {alert.emailCount} email
-                            {alert.emailCount > 1 ? "s" : ""}
-                          </Badge>
-                        )}
                       </div>
                       <div className="text-xs text-muted-foreground mt-1">
                         {alert.message}
@@ -586,418 +1065,25 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Emails non traités par catégorie */}
-      <div>
-        <h2 className="text-xl font-semibold mb-4">
-          Emails non traités par catégorie
-        </h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {categoryStatsLoading || categoriesLoading
-            ? [...Array(4)].map((_, i) => <Skeleton key={i} className="h-32" />)
-            : categories &&
-              (() => {
-                const uniqueCategories = categories.reduce(
-                  (acc: any[], category: any) => {
-                    const existing = acc.find((c) => c.key === category.key);
-                    if (!existing) {
-                      acc.push(category);
-                    } else if (category.isSystem && !existing.isSystem) {
-                      const index = acc.indexOf(existing);
-                      acc[index] = category;
-                    }
-                    return acc;
-                  },
-                  [],
-                );
-
-                return uniqueCategories.map((category: any) => {
-                  const IconComponent = getIconComponent(category.icon);
-                  return (
-                    <Card
-                      key={category.key}
-                      className="hover-elevate cursor-pointer"
-                      onClick={() =>
-                        setLocation(
-                          `/emails?category=${category.key}&status=nouveau`,
-                        )
-                      }
-                      data-testid={`category-block-${category.key}`}
-                    >
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          {category.label}
-                        </CardTitle>
-                        <div
-                          className="w-8 h-8 rounded-md flex items-center justify-center"
-                          style={{
-                            backgroundColor: category.color + "20",
-                            color: category.color,
-                          }}
-                        >
-                          <IconComponent className="h-4 w-4" />
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-semibold">
-                          {categoryStats?.[category.key] || 0}
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Non traités
-                        </p>
-                      </CardContent>
-                    </Card>
-                  );
-                });
-              })()}
-        </div>
-      </div>
-
-      {/* Charts Row 1 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Répartition des emails reçus */}
-        <Card data-testid="card-email-distribution">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-            <CardTitle>Répartition des emails reçus</CardTitle>
-            <ChartPeriodControls
-              periodType={emailDistributionPeriod}
-              onPeriodTypeChange={(type) => setEmailDistributionPeriod(type)}
-              offset={emailDistributionOffset}
-              onOffsetChange={setEmailDistributionOffset}
-              periodLabel={getPeriodLabel(
-                emailDistributionPeriod,
-                emailDistributionOffset,
-              )}
-              testIdPrefix="email-distribution"
-            />
-          </CardHeader>
-          <CardContent>
-            {emailDistributionLoading ? (
-              <Skeleton className="h-[250px]" />
-            ) : (
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie
-                    data={emailDistribution || []}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={2}
-                    dataKey="value"
-                    label={(entry) => `${entry.name} (${entry.value})`}
-                    labelLine={true}
-                  >
-                    {emailDistribution?.map((entry: any, index: number) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={
-                          entry.color ||
-                          CHART_COLORS[index % CHART_COLORS.length]
-                        }
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "6px",
-                    }}
-                  />
-                  <Legend
-                    verticalAlign="bottom"
-                    height={36}
-                    iconType="circle"
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Taux de traitement par catégorie */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-            <CardTitle>Taux de traitement par catégorie</CardTitle>
-            <ChartPeriodControls
-              periodType={categoryProcessingPeriod}
-              onPeriodTypeChange={(type) => setCategoryProcessingPeriod(type)}
-              offset={categoryProcessingOffset}
-              onOffsetChange={setCategoryProcessingOffset}
-              periodLabel={getPeriodLabel(
-                categoryProcessingPeriod,
-                categoryProcessingOffset,
-              )}
-              testIdPrefix="category-processing"
-            />
-          </CardHeader>
-          <CardContent>
-            {categoryProcessingLoading ? (
-              <Skeleton className="h-[250px]" />
-            ) : (
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={categoryProcessing || []}>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="hsl(var(--border))"
-                  />
-                  <XAxis
-                    dataKey="category"
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
-                  />
-                  <YAxis
-                    domain={[0, 100]}
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
-                    unit="%"
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "6px",
-                    }}
-                    formatter={(value: any) => [`${value}%`, "Taux"]}
-                  />
-                  <Bar dataKey="rate" radius={[4, 4, 0, 0]}>
-                    {categoryProcessing?.map((entry: any, index: number) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={entry.color || COLORS.chart3}
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Évolution des emails traités */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-            <CardTitle>Évolution des emails traités</CardTitle>
-            <ChartPeriodControls
-              periodType={emailEvolutionPeriod}
-              onPeriodTypeChange={(type) => setEmailEvolutionPeriod(type)}
-              offset={emailEvolutionOffset}
-              onOffsetChange={setEmailEvolutionOffset}
-              periodLabel={getPeriodLabel(
-                emailEvolutionPeriod,
-                emailEvolutionOffset,
-              )}
-              testIdPrefix="email-evolution"
-            />
-          </CardHeader>
-          <CardContent>
-            {emailEvolutionLoading ? (
-              <Skeleton className="h-[250px]" />
-            ) : (
-              <ResponsiveContainer width="100%" height={250}>
-                <LineChart data={emailEvolution || []}>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="hsl(var(--border))"
-                  />
-                  <XAxis
-                    dataKey="day"
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
-                  />
-                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "6px",
-                    }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="count"
-                    stroke={COLORS.primary}
-                    strokeWidth={2}
-                    dot={{ fill: COLORS.primary }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Évolution des RDV */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-            <CardTitle>Évolution des RDV</CardTitle>
-            <ChartPeriodControls
-              periodType={appointmentsPeriod}
-              onPeriodTypeChange={(type) => setAppointmentsPeriod(type)}
-              offset={appointmentsOffset}
-              onOffsetChange={setAppointmentsOffset}
-              periodLabel={getPeriodLabel(
-                appointmentsPeriod,
-                appointmentsOffset,
-              )}
-              testIdPrefix="appointments"
-            />
-          </CardHeader>
-          <CardContent>
-            {appointmentsWeekLoading ? (
-              <Skeleton className="h-[250px]" />
-            ) : (
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={appointmentsWeek || []}>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="hsl(var(--border))"
-                  />
-                  <XAxis
-                    dataKey="day"
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
-                  />
-                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "6px",
-                    }}
-                  />
-                  <Bar
-                    dataKey="count"
-                    fill={COLORS.chart2}
-                    radius={[4, 4, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Évolution des tâches */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-            <CardTitle>Évolution des tâches</CardTitle>
-            <ChartPeriodControls
-              periodType={tasksPeriod}
-              onPeriodTypeChange={(type) => setTasksPeriod(type)}
-              offset={tasksOffset}
-              onOffsetChange={setTasksOffset}
-              periodLabel={getPeriodLabel(tasksPeriod, tasksOffset)}
-              testIdPrefix="tasks"
-            />
-          </CardHeader>
-          <CardContent>
-            {tasksEvolutionLoading ? (
-              <Skeleton className="h-[250px]" />
-            ) : (
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={tasksEvolution || []}>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="hsl(var(--border))"
-                  />
-                  <XAxis
-                    dataKey="day"
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
-                  />
-                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "6px",
-                    }}
-                  />
-                  <Legend />
-                  <Bar
-                    dataKey="nouveau"
-                    stackId="a"
-                    fill={COLORS.chart3}
-                    radius={[0, 0, 0, 0]}
-                    name="Nouveau"
-                  />
-                  <Bar
-                    dataKey="enCours"
-                    stackId="a"
-                    fill={COLORS.primary}
-                    radius={[0, 0, 0, 0]}
-                    name="En cours"
-                  />
-                  <Bar
-                    dataKey="termine"
-                    stackId="a"
-                    fill={COLORS.chart2}
-                    radius={[4, 4, 0, 0]}
-                    name="Terminé"
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Evolution des alertes */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-            <CardTitle>Evolution des alertes</CardTitle>
-            <ChartPeriodControls
-              periodType={alertsPeriod}
-              onPeriodTypeChange={(type) => setAlertsPeriod(type)}
-              offset={alertsOffset}
-              onOffsetChange={setAlertsOffset}
-              periodLabel={getPeriodLabel(alertsPeriod, alertsOffset)}
-              testIdPrefix="alerts"
-            />
-          </CardHeader>
-          <CardContent>
-            {alertsEvolutionLoading ? (
-              <Skeleton className="h-[250px]" />
-            ) : (
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={alertsEvolution || []}>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="hsl(var(--border))"
-                  />
-                  <XAxis
-                    dataKey="day"
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
-                  />
-                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "6px",
-                    }}
-                  />
-                  <Legend />
-                  <Bar
-                    dataKey="active"
-                    stackId="a"
-                    fill={COLORS.chart3}
-                    radius={[0, 0, 0, 0]}
-                    name="Actives"
-                  />
-                  <Bar
-                    dataKey="resolved"
-                    stackId="a"
-                    fill={COLORS.chart1}
-                    radius={[4, 4, 0, 0]}
-                    name="Résolues"
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+      {/* Draggable sections */}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={layout}
+          strategy={verticalListSortingStrategy}
+        >
+          <div className="space-y-6">
+            {layout.map((sectionId) => (
+              <SortableItem key={sectionId} id={sectionId}>
+                {renderSection(sectionId)}
+              </SortableItem>
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
     </div>
   );
 }
