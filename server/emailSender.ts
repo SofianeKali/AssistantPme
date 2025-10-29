@@ -1,6 +1,12 @@
 import nodemailer from 'nodemailer';
 import type { EmailAccount } from '@shared/schema';
 
+export interface EmailAttachment {
+  filename: string;
+  content: Buffer;
+  contentType?: string;
+}
+
 export interface SendEmailParams {
   to: string;
   subject: string;
@@ -8,6 +14,7 @@ export interface SendEmailParams {
   textBody?: string; // Plain text version (optional)
   inReplyTo?: string; // Original message ID for threading
   references?: string; // For email threading
+  attachments?: EmailAttachment[]; // Email attachments
 }
 
 export async function sendEmailResponse(
@@ -64,6 +71,16 @@ export async function sendEmailResponse(
     }
     if (params.references) {
       mailOptions.references = params.references;
+    }
+
+    // Add attachments if provided
+    if (params.attachments && params.attachments.length > 0) {
+      mailOptions.attachments = params.attachments.map(att => ({
+        filename: att.filename,
+        content: att.content,
+        contentType: att.contentType,
+      }));
+      console.log(`[SMTP] Adding ${params.attachments.length} attachment(s)`);
     }
 
     // Send email

@@ -23,6 +23,9 @@ import {
   MailCheck,
   ChevronLeft,
   ChevronRight,
+  Paperclip,
+  FileIcon,
+  Trash2,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -58,6 +61,7 @@ export default function Emails() {
   const [aiSearchPrompt, setAISearchPrompt] = useState("");
   const [aiSearchActive, setAISearchActive] = useState(false);
   const [aiSearchCriteria, setAISearchCriteria] = useState<any>(null);
+  const [attachments, setAttachments] = useState<File[]>([]);
   const { toast } = useToast();
 
   // Load email categories dynamically
@@ -339,32 +343,50 @@ export default function Emails() {
     mutationFn: async ({
       emailId,
       responseText,
+      attachments,
     }: {
       emailId: string;
       responseText: string;
+      attachments?: File[];
     }) => {
-      const res = await apiRequest(
-        "POST",
-        `/api/emails/${emailId}/send-response`,
-        { responseText },
-      );
+      // Use FormData for multipart upload
+      const formData = new FormData();
+      formData.append('responseText', responseText);
+      
+      // Add attachments if any
+      if (attachments && attachments.length > 0) {
+        attachments.forEach(file => {
+          formData.append('attachments', file);
+        });
+      }
+
+      const res = await fetch(`/api/emails/${emailId}/send-response`, {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: res.statusText }));
+        throw new Error(errorData.error || errorData.message || res.statusText);
+      }
+
       return res.json();
     },
-    onSuccess: (data) => {
-      // Close the response dialog
-      setShowResponseDialog(false);
-      // Update selected email to reflect sent status
-      setSelectedEmail(data.email);
-      // Invalidate queries to refresh email list
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/emails"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/alerts"] });
       toast({
-        title: "Succès",
-        description: "Réponse envoyée avec succès",
+        title: "Réponse envoyée",
+        description: "Votre réponse a été envoyée avec succès",
       });
+      setShowResponseDialog(false);
+      setSelectedEmail(null);
+      setAttachments([]); // Clear attachments
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
-        title: "Erreur",
+        title: "Erreur d'envoi",
         description: error.message || "Impossible d'envoyer la réponse",
         variant: "destructive",
       });
@@ -1296,6 +1318,95 @@ export default function Emails() {
               rows={8}
               data-testid="textarea-response"
             />
+            
+            {/* Attachments Section */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium flex items-center gap-2">
+                <Paperclip className="h-4 w-4" />
+                Pièces jointes
+              </label>
+              
+              {/* File Input */}
+              <div>
+                <Input
+                  type="file"
+                  multiple
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []);
+                    const maxFileSize = 15 * 1024 * 1024; // 15 MB per file
+                    const maxTotalSize = 25 * 1024 * 1024; // 25 MB total
+
+                    // Check individual file sizes
+                    const oversizedFile = files.find(f => f.size > maxFileSize);
+                    if (oversizedFile) {
+                      toast({
+                        title: "Fichier trop volumineux",
+                        description: `Le fichier "${oversizedFile.name}" dépasse la taille maximale de 15 MB par fichier`,
+                        variant: "destructive",
+                      });
+                      e.target.value = '';
+                      return;
+                    }
+
+                    // Check total size
+                    const totalSize = [...attachments, ...files].reduce((sum, f) => sum + f.size, 0);
+                    if (totalSize > maxTotalSize) {
+                      toast({
+                        title: "Taille totale dépassée",
+                        description: "La taille totale des pièces jointes ne peut pas dépasser 25 MB",
+                        variant: "destructive",
+                      });
+                      e.target.value = '';
+                      return;
+                    }
+
+                    setAttachments([...attachments, ...files]);
+                    // Reset input
+                    e.target.value = '';
+                  }}
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.jpg,.jpeg,.png,.gif,.webp,.zip,.rar,.7z,.json,.xml"
+                  data-testid="input-attachments"
+                  className="cursor-pointer"
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Max 15 MB par fichier, 25 MB au total. Types acceptés : PDF, Word, Excel, PowerPoint, Images, Archives, etc.
+                </p>
+              </div>
+
+              {/* Attached Files List */}
+              {attachments.length > 0 && (
+                <div className="space-y-2">
+                  {attachments.map((file, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center gap-2 p-2 rounded-md bg-muted text-sm"
+                      data-testid={`attachment-${index}`}
+                    >
+                      <FileIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <span className="flex-1 truncate">{file.name}</span>
+                      <span className="text-xs text-muted-foreground flex-shrink-0">
+                        {(file.size / 1024).toFixed(1)} KB
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 flex-shrink-0"
+                        onClick={() => {
+                          setAttachments(attachments.filter((_, i) => i !== index));
+                        }}
+                        data-testid={`button-remove-attachment-${index}`}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                  <p className="text-xs text-muted-foreground">
+                    Taille totale : {(attachments.reduce((sum, f) => sum + f.size, 0) / 1024 / 1024).toFixed(2)} MB / 25 MB
+                  </p>
+                </div>
+              )}
+            </div>
+
             <div className="flex flex-col sm:flex-row gap-2 sm:justify-between">
               <Button
                 variant="outline"
@@ -1327,6 +1438,7 @@ export default function Emails() {
                     sendResponseMutation.mutate({
                       emailId: selectedEmail?.id,
                       responseText: selectedEmail?.suggestedResponse || "",
+                      attachments,
                     })
                   }
                   disabled={

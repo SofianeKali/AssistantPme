@@ -11,6 +11,17 @@ I want the agent to prioritize robust error handling and logging.
 I prefer to see a clear plan before implementation.
 
 ## Recent Changes
+### October 29, 2025 - Email Reply Attachments Support
+- **Implemented Attachment Support for Email Replies**:
+  - Added multer middleware for multipart file uploads (15 MB per file, 25 MB total)
+  - Modified `/api/emails/:id/send-response` to accept file attachments via FormData
+  - Updated `sendEmailResponse` in `emailSender.ts` to handle Nodemailer attachments
+  - Frontend file selector with validation, preview, and removal controls
+  - Supports PDF, Word, Excel, PowerPoint, Images, Archives, and other common formats
+  - Client-side validation for file size limits (25 MB total)
+  - Real-time display of attached files with size information
+  - Files stored in-memory and sent directly via SMTP (no disk storage)
+
 ### October 29, 2025 - AI-Powered Email Search
 - **Implemented AI Search Feature**: Natural language search for emails using GPT-5
   - Separated prompt analysis (once) from data retrieval (pagination-friendly)

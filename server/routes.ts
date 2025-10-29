@@ -10,6 +10,50 @@ import { EmailScanner } from "./emailScanner";
 import { processDocument } from "./ocrService";
 import { downloadFileFromDrive } from "./googleDrive";
 import { sendEmailResponse } from "./emailSender";
+import multer from "multer";
+
+// Configure multer for file uploads (in-memory storage)
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 15 * 1024 * 1024, // 15 MB per file
+    files: 10, // Maximum 10 files
+  },
+  fileFilter: (req, file, cb) => {
+    // Accept most common file types
+    const allowedMimeTypes = [
+      // Documents
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'text/plain',
+      'text/csv',
+      // Images
+      'image/jpeg',
+      'image/png',
+      'image/gif',
+      'image/webp',
+      'image/svg+xml',
+      // Archives
+      'application/zip',
+      'application/x-rar-compressed',
+      'application/x-7z-compressed',
+      // Others
+      'application/json',
+      'application/xml',
+    ];
+
+    if (allowedMimeTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`Type de fichier non autorisé: ${file.mimetype}`));
+    }
+  },
+});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
@@ -473,9 +517,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/emails/:id/send-response', isAuthenticated, async (req: any, res) => {
+  app.post('/api/emails/:id/send-response', isAuthenticated, (req: any, res, next) => {
+    upload.array('attachments', 10)(req, res, (err) => {
+      if (err) {
+        // Handle Multer errors
+        if (err instanceof multer.MulterError) {
+          if (err.code === 'LIMIT_FILE_SIZE') {
+            return res.status(413).json({ 
+              message: "Fichier trop volumineux",
+              error: "Un ou plusieurs fichiers dépassent la taille maximale de 15 MB"
+            });
+          }
+          if (err.code === 'LIMIT_FILE_COUNT') {
+            return res.status(400).json({ 
+              message: "Trop de fichiers",
+              error: "Vous ne pouvez joindre que 10 fichiers maximum"
+            });
+          }
+          if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+            return res.status(400).json({ 
+              message: "Fichier inattendu",
+              error: "Nom de champ invalide pour les fichiers"
+            });
+          }
+          return res.status(400).json({ 
+            message: "Erreur de téléchargement",
+            error: err.message
+          });
+        }
+        // Handle other errors (e.g., file type validation)
+        return res.status(400).json({ 
+          message: "Type de fichier non autorisé",
+          error: err.message
+        });
+      }
+      next();
+    });
+  }, async (req: any, res) => {
     try {
       const { responseText } = req.body;
+      const files = req.files as Express.Multer.File[] | undefined;
 
       // Validate response text
       if (!responseText || responseText.trim().length === 0) {
@@ -494,6 +575,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Email account not found" });
       }
 
+      // Prepare attachments if any
+      const attachments = files?.map(file => ({
+        filename: file.originalname,
+        content: file.buffer,
+        contentType: file.mimetype,
+      })) || [];
+
+      console.log(`[Email Response] Sending response with ${attachments.length} attachment(s)`);
+
       // Send email via SMTP
       const sendResult = await sendEmailResponse(emailAccount, {
         to: email.from,
@@ -501,6 +591,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         body: responseText,
         inReplyTo: email.messageId,
         references: email.messageId,
+        attachments,
       });
 
       if (!sendResult.success) {
