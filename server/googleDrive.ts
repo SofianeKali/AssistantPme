@@ -98,10 +98,13 @@ export async function uploadFileToDrive(
   fileName: string,
   mimeType: string,
   fileBuffer: Buffer,
-  folderId?: string
+  folderId?: string,
+  userId?: string
 ): Promise<{ fileId: string; webViewLink: string }> {
   try {
-    const drive = await getUncachableGoogleDriveClient();
+    const drive = userId 
+      ? await getUserGoogleDriveClient(userId)
+      : await getUncachableGoogleDriveClient();
     
     const fileMetadata: any = {
       name: fileName,
@@ -136,9 +139,11 @@ export async function uploadFileToDrive(
   }
 }
 
-export async function getOrCreateFolder(folderName: string): Promise<string> {
+export async function getOrCreateFolder(folderName: string, userId?: string): Promise<string> {
   try {
-    const drive = await getUncachableGoogleDriveClient();
+    const drive = userId 
+      ? await getUserGoogleDriveClient(userId)
+      : await getUncachableGoogleDriveClient();
     
     // Search for existing folder
     const response = await drive.files.list({
@@ -169,9 +174,11 @@ export async function getOrCreateFolder(folderName: string): Promise<string> {
   }
 }
 
-export async function getOrCreateSubfolder(parentFolderId: string, subfolderName: string): Promise<string> {
+export async function getOrCreateSubfolder(parentFolderId: string, subfolderName: string, userId?: string): Promise<string> {
   try {
-    const drive = await getUncachableGoogleDriveClient();
+    const drive = userId 
+      ? await getUserGoogleDriveClient(userId)
+      : await getUncachableGoogleDriveClient();
     
     // Search for existing subfolder within parent
     const response = await drive.files.list({
@@ -203,9 +210,11 @@ export async function getOrCreateSubfolder(parentFolderId: string, subfolderName
   }
 }
 
-export async function downloadFileFromDrive(fileId: string): Promise<Buffer> {
+export async function downloadFileFromDrive(fileId: string, userId?: string): Promise<Buffer> {
   try {
-    const drive = await getUncachableGoogleDriveClient();
+    const drive = userId 
+      ? await getUserGoogleDriveClient(userId)
+      : await getUncachableGoogleDriveClient();
     
     const response = await drive.files.get(
       { fileId, alt: 'media' },

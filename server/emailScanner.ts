@@ -3,9 +3,11 @@ import { simpleParser, ParsedMail, AddressObject } from 'mailparser';
 import { analyzeEmail, generateAppointmentSuggestions, generateEmailResponse, generateTaskFromEmail } from './openai';
 import type { IStorage } from './storage';
 import type { EmailAccount, InsertEmail, InsertDocument, InsertAppointment } from '../shared/schema';
-import { uploadFileToDrive, getOrCreateFolder, getOrCreateSubfolder } from './googleDrive';
+import { uploadFileToDrive, getOrCreateFolder, getOrCreateSubfolder, getUserGoogleDriveClient } from './googleDrive';
+import { uploadFileToOneDrive, getOrCreateOneDriveFolder } from './onedrive';
 import { forwardAttachments } from './emailForwarder';
 import type { EmailAttachment } from './emailSender';
+import { PassThrough } from 'stream';
 
 // Utility function to safely extract text from AddressObject
 function getAddressText(address: AddressObject | AddressObject[] | undefined): string {
@@ -265,66 +267,186 @@ export class EmailScanner {
           }
 
           // Process attachments (only if document extraction is enabled)
-          if (mail.attachments && mail.attachments.length > 0 && documentExtractionEnabled && isDocumentStorageEnabled && documentStorageProvider === 'google_drive') {
-            console.log(`[IMAP] Processing ${mail.attachments.length} attachments for Google Drive...`);
+          if (mail.attachments && mail.attachments.length > 0 && documentExtractionEnabled && isDocumentStorageEnabled) {
+            console.log(`[IMAP] Processing ${mail.attachments.length} attachments for ${documentStorageProvider}...`);
             
             try {
-              // Get or create main Google Drive folder
-              const mainFolderId = await getOrCreateFolder('PME-Assistant-Documents');
-              
-              // Get or create category-specific subfolder
-              const categoryFolderId = await getOrCreateSubfolder(mainFolderId, emailType);
-              console.log(`[IMAP] Using category folder: ${emailType}`);
-              
-              for (const attachment of mail.attachments) {
-                try {
-                  const filename = attachment.filename || `attachment-${Date.now()}`;
-                  const mimeType = attachment.contentType || 'application/octet-stream';
-                  const buffer = attachment.content;
-
-                  console.log(`[IMAP] Uploading attachment: ${filename} to /${emailType}/`);
-                  
-                  // Upload to Google Drive in category-specific folder
-                  const uploadResult = await uploadFileToDrive(
-                    filename,
-                    mimeType,
-                    buffer,
-                    categoryFolderId
-                  );
-
-                  // Detect document type based on mime type and normalized email type
-                  let documentType: 'facture' | 'devis' | 'contrat' | 'autre' = 'autre';
-                  if (emailType === 'facture') {
-                    documentType = 'facture';
-                  } else if (emailType === 'devis') {
-                    documentType = 'devis';
-                  } else if (mimeType.includes('pdf') && filename.toLowerCase().includes('contrat')) {
-                    documentType = 'contrat';
-                  }
-
-                  // Create document record
-                  const documentData: InsertDocument = {
-                    emailId: createdEmail.id,
-                    filename: filename,
-                    originalFilename: filename, // Store original filename
-                    mimeType: mimeType,
-                    size: buffer.length,
-                    storageProvider: 'google_drive',
-                    storagePath: uploadResult.fileId, // Store Drive file ID as path
-                    driveFileId: uploadResult.fileId,
-                    driveUrl: uploadResult.webViewLink,
-                    documentType: documentType,
+              if (documentStorageProvider === 'google_drive') {
+                // Google Drive upload with user credentials
+                const userDrive = await getUserGoogleDriveClient(account.userId);
+                
+                // Get or create folders using user's drive client
+                const mainFolderName = 'PME-Assistant-Documents';
+                let mainFolderId: string;
+                
+                // Search for main folder
+                const mainFolderResponse = await userDrive.files.list({
+                  q: `name='${mainFolderName}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+                  fields: 'files(id, name)',
+                  spaces: 'drive',
+                });
+                
+                if (mainFolderResponse.data.files && mainFolderResponse.data.files.length > 0) {
+                  mainFolderId = mainFolderResponse.data.files[0].id!;
+                } else {
+                  // Create main folder
+                  const folderMetadata = {
+                    name: mainFolderName,
+                    mimeType: 'application/vnd.google-apps.folder',
                   };
+                  const folder = await userDrive.files.create({
+                    requestBody: folderMetadata,
+                    fields: 'id',
+                  });
+                  mainFolderId = folder.data.id!;
+                }
+                
+                // Get or create category-specific subfolder
+                const categoryFolderResponse = await userDrive.files.list({
+                  q: `name='${emailType}' and '${mainFolderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
+                  fields: 'files(id, name)',
+                  spaces: 'drive',
+                });
+                
+                let categoryFolderId: string;
+                if (categoryFolderResponse.data.files && categoryFolderResponse.data.files.length > 0) {
+                  categoryFolderId = categoryFolderResponse.data.files[0].id!;
+                } else {
+                  const folderMetadata = {
+                    name: emailType,
+                    mimeType: 'application/vnd.google-apps.folder',
+                    parents: [mainFolderId],
+                  };
+                  const folder = await userDrive.files.create({
+                    requestBody: folderMetadata,
+                    fields: 'id',
+                  });
+                  categoryFolderId = folder.data.id!;
+                }
+                
+                console.log(`[IMAP] Using Google Drive category folder: ${emailType}`);
+                
+                // Upload each attachment
+                for (const attachment of mail.attachments) {
+                  try {
+                    const filename = attachment.filename || `attachment-${Date.now()}`;
+                    const mimeType = attachment.contentType || 'application/octet-stream';
+                    const buffer = attachment.content;
 
-                  await this.storage.createDocument(documentData);
-                  console.log(`[IMAP] Created document record for: ${filename}`);
+                    console.log(`[IMAP] Uploading attachment: ${filename} to Google Drive /${emailType}/`);
+                    
+                    // Upload to Google Drive
+                    const fileMetadata: any = {
+                      name: filename,
+                      parents: [categoryFolderId],
+                    };
+                    
+                    const stream = new PassThrough();
+                    stream.end(buffer);
+                    
+                    const media = {
+                      mimeType,
+                      body: stream,
+                    };
+                    
+                    const response = await userDrive.files.create({
+                      requestBody: fileMetadata,
+                      media,
+                      fields: 'id, webViewLink',
+                    });
 
-                } catch (attachError) {
-                  console.error(`[IMAP] Error processing attachment:`, attachError);
+                    // Detect document type
+                    let documentType: 'facture' | 'devis' | 'contrat' | 'autre' = 'autre';
+                    if (emailType === 'facture') {
+                      documentType = 'facture';
+                    } else if (emailType === 'devis') {
+                      documentType = 'devis';
+                    } else if (mimeType.includes('pdf') && filename.toLowerCase().includes('contrat')) {
+                      documentType = 'contrat';
+                    }
+
+                    // Create document record
+                    const documentData: InsertDocument = {
+                      emailId: createdEmail.id,
+                      filename: filename,
+                      originalFilename: filename,
+                      mimeType: mimeType,
+                      size: buffer.length,
+                      storageProvider: 'google_drive',
+                      storagePath: response.data.id!,
+                      driveFileId: response.data.id!,
+                      driveUrl: response.data.webViewLink!,
+                      documentType: documentType,
+                    };
+
+                    await this.storage.createDocument(documentData);
+                    console.log(`[IMAP] Created Google Drive document record for: ${filename}`);
+
+                  } catch (attachError) {
+                    console.error(`[IMAP] Error processing attachment:`, attachError);
+                  }
+                }
+              } else if (documentStorageProvider === 'onedrive') {
+                // OneDrive upload with user credentials
+                const mainFolderPath = 'PME-Assistant-Documents';
+                const categoryFolderPath = `${mainFolderPath}/${emailType}`;
+                
+                // Create folders if they don't exist
+                await getOrCreateOneDriveFolder(account.userId, mainFolderPath);
+                await getOrCreateOneDriveFolder(account.userId, emailType, mainFolderPath);
+                
+                console.log(`[IMAP] Using OneDrive category folder: ${emailType}`);
+                
+                // Upload each attachment
+                for (const attachment of mail.attachments) {
+                  try {
+                    const filename = attachment.filename || `attachment-${Date.now()}`;
+                    const mimeType = attachment.contentType || 'application/octet-stream';
+                    const buffer = attachment.content;
+
+                    console.log(`[IMAP] Uploading attachment: ${filename} to OneDrive /${categoryFolderPath}/`);
+                    
+                    const uploadResult = await uploadFileToOneDrive(
+                      account.userId,
+                      filename,
+                      buffer,
+                      categoryFolderPath
+                    );
+
+                    // Detect document type
+                    let documentType: 'facture' | 'devis' | 'contrat' | 'autre' = 'autre';
+                    if (emailType === 'facture') {
+                      documentType = 'facture';
+                    } else if (emailType === 'devis') {
+                      documentType = 'devis';
+                    } else if (mimeType.includes('pdf') && filename.toLowerCase().includes('contrat')) {
+                      documentType = 'contrat';
+                    }
+
+                    // Create document record
+                    const documentData: InsertDocument = {
+                      emailId: createdEmail.id,
+                      filename: filename,
+                      originalFilename: filename,
+                      mimeType: mimeType,
+                      size: buffer.length,
+                      storageProvider: 'onedrive',
+                      storagePath: uploadResult.fileId,
+                      driveFileId: uploadResult.fileId,
+                      driveUrl: uploadResult.webUrl,
+                      documentType: documentType,
+                    };
+
+                    await this.storage.createDocument(documentData);
+                    console.log(`[IMAP] Created OneDrive document record for: ${filename}`);
+
+                  } catch (attachError) {
+                    console.error(`[IMAP] Error processing attachment:`, attachError);
+                  }
                 }
               }
-            } catch (driveError) {
-              console.error(`[IMAP] Error with Google Drive:`, driveError);
+            } catch (storageError) {
+              console.error(`[IMAP] Error with cloud storage (${documentStorageProvider}):`, storageError);
             }
           }
 
