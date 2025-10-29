@@ -27,7 +27,15 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { CheckCircle2, Circle, Clock, MoreVertical, Trash2, Mail, User as UserIcon } from "lucide-react";
+import {
+  CheckCircle2,
+  Circle,
+  Clock,
+  MoreVertical,
+  Trash2,
+  Mail,
+  User as UserIcon,
+} from "lucide-react";
 import type { Task, User } from "@shared/schema";
 
 export default function Tasks() {
@@ -53,7 +61,13 @@ export default function Tasks() {
   });
 
   const updateAssignmentMutation = useMutation({
-    mutationFn: async ({ id, assignedToId }: { id: string; assignedToId: string | null }) => {
+    mutationFn: async ({
+      id,
+      assignedToId,
+    }: {
+      id: string;
+      assignedToId: string | null;
+    }) => {
       await apiRequest("PATCH", `/api/tasks/${id}/assign`, { assignedToId });
     },
     onSuccess: () => {
@@ -109,7 +123,7 @@ export default function Tasks() {
 
   const getAssignedUser = (assignedToId: string | null) => {
     if (!assignedToId) return null;
-    return users.find(u => u.id === assignedToId);
+    return users.find((u) => u.id === assignedToId);
   };
 
   const getUserInitials = (user: User) => {
@@ -121,7 +135,7 @@ export default function Tasks() {
 
   const TaskCard = ({ task }: { task: Task }) => {
     const assignedUser = getAssignedUser(task.assignedToId);
-    
+
     return (
       <Card
         className="hover-elevate cursor-pointer"
@@ -142,7 +156,10 @@ export default function Tasks() {
                   <Mail className="h-4 w-4 text-muted-foreground" />
                 )}
               </div>
-              <h3 className="font-medium text-sm mb-1 line-clamp-2" data-testid={`task-title-${task.id}`}>
+              <h3
+                className="font-medium text-sm mb-1 line-clamp-2"
+                data-testid={`task-title-${task.id}`}
+              >
                 {task.title}
               </h3>
               {task.description && (
@@ -152,10 +169,13 @@ export default function Tasks() {
               )}
               <div className="flex items-center gap-2 mt-2">
                 <p className="text-xs text-muted-foreground">
-                  {new Date(task.createdAt!).toLocaleDateString('fr-FR')}
+                  {new Date(task.createdAt!).toLocaleDateString("fr-FR")}
                 </p>
                 {assignedUser && (
-                  <div className="flex items-center gap-1" data-testid={`task-assigned-${task.id}`}>
+                  <div
+                    className="flex items-center gap-1"
+                    data-testid={`task-assigned-${task.id}`}
+                  >
                     <Avatar className="h-5 w-5">
                       <AvatarFallback className="text-[10px]">
                         {getUserInitials(assignedUser)}
@@ -181,60 +201,69 @@ export default function Tasks() {
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {task.status !== "nouveau" && (
+              <DropdownMenuContent align="end">
+                {task.status !== "nouveau" && (
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      updateStatusMutation.mutate({
+                        id: task.id,
+                        status: "nouveau",
+                      });
+                    }}
+                    data-testid={`button-status-nouveau-${task.id}`}
+                  >
+                    <Circle className="h-4 w-4 mr-2" />
+                    Marquer comme Nouveau
+                  </DropdownMenuItem>
+                )}
+                {task.status !== "en_cours" && (
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      updateStatusMutation.mutate({
+                        id: task.id,
+                        status: "en_cours",
+                      });
+                    }}
+                    data-testid={`button-status-en_cours-${task.id}`}
+                  >
+                    <Clock className="h-4 w-4 mr-2" />
+                    Marquer comme En cours
+                  </DropdownMenuItem>
+                )}
+                {task.status !== "termine" && (
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      updateStatusMutation.mutate({
+                        id: task.id,
+                        status: "termine",
+                      });
+                    }}
+                    data-testid={`button-status-termine-${task.id}`}
+                  >
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    Marquer comme Terminé
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.stopPropagation();
-                    updateStatusMutation.mutate({ id: task.id, status: "nouveau" });
+                    deleteTaskMutation.mutate(task.id);
                   }}
-                  data-testid={`button-status-nouveau-${task.id}`}
+                  className="text-red-600"
+                  data-testid={`button-delete-task-${task.id}`}
                 >
-                  <Circle className="h-4 w-4 mr-2" />
-                  Marquer comme Nouveau
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Supprimer
                 </DropdownMenuItem>
-              )}
-              {task.status !== "en_cours" && (
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    updateStatusMutation.mutate({ id: task.id, status: "en_cours" });
-                  }}
-                  data-testid={`button-status-en_cours-${task.id}`}
-                >
-                  <Clock className="h-4 w-4 mr-2" />
-                  Marquer comme En cours
-                </DropdownMenuItem>
-              )}
-              {task.status !== "termine" && (
-                <DropdownMenuItem
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    updateStatusMutation.mutate({ id: task.id, status: "termine" });
-                  }}
-                  data-testid={`button-status-termine-${task.id}`}
-                >
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
-                  Marquer comme Terminé
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation();
-                  deleteTaskMutation.mutate(task.id);
-                }}
-                className="text-red-600"
-                data-testid={`button-delete-task-${task.id}`}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Supprimer
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </CardContent>
-    </Card>
-  );
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </CardContent>
+      </Card>
+    );
   };
 
   const StatusColumn = ({
@@ -254,7 +283,11 @@ export default function Tasks() {
           <CardTitle className="flex items-center gap-2 text-lg">
             <Icon className="h-5 w-5" />
             {title}
-            <Badge variant="secondary" className="ml-auto" data-testid={`count-${status}`}>
+            <Badge
+              variant="secondary"
+              className="ml-auto"
+              data-testid={`count-${status}`}
+            >
               {tasks.length}
             </Badge>
           </CardTitle>
@@ -323,11 +356,11 @@ export default function Tasks() {
             <DialogDescription>
               Créée le{" "}
               {selectedTask?.createdAt
-                ? new Date(selectedTask.createdAt).toLocaleDateString('fr-FR', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
+                ? new Date(selectedTask.createdAt).toLocaleDateString("fr-FR", {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
                   })
                 : ""}
             </DialogDescription>
@@ -380,8 +413,8 @@ export default function Tasks() {
                       selectedTask.status === "nouveau"
                         ? "en_cours"
                         : selectedTask.status === "en_cours"
-                        ? "termine"
-                        : "nouveau",
+                          ? "termine"
+                          : "nouveau",
                   })
                 }
                 data-testid="button-next-status"
@@ -392,7 +425,9 @@ export default function Tasks() {
               </Button>
               <Button
                 variant="destructive"
-                onClick={() => selectedTask && deleteTaskMutation.mutate(selectedTask.id)}
+                onClick={() =>
+                  selectedTask && deleteTaskMutation.mutate(selectedTask.id)
+                }
                 data-testid="button-delete-task-detail"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
