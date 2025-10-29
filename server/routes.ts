@@ -1072,11 +1072,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/tasks', isAuthenticated, async (req: any, res) => {
     try {
       const { status, emailId } = req.query;
-      const userId = (req.user as any).id;
+      const user = req.user as any;
+      const isAdmin = user.role === 'admin';
+      
       const tasks = await storage.getTasks({
         status: status as string | undefined,
         emailId: emailId as string | undefined,
-        userId,
+        userId: isAdmin ? undefined : user.id, // Admins see all tasks
       });
       res.json(tasks);
     } catch (error) {
