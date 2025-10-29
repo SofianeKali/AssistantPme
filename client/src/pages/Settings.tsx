@@ -162,6 +162,11 @@ export default function Settings() {
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
   const [editingCategory, setEditingCategory] = useState<any | null>(null);
+  const [editingAccountSettings, setEditingAccountSettings] = useState<{
+    id: string;
+    scanFrequency: number;
+    retentionDays: number;
+  } | null>(null);
 
   // Fetch all system categories (categories not linked to specific accounts)
   const { data: emailCategories, isLoading: categoriesLoading } = useQuery<any>(
@@ -284,6 +289,27 @@ export default function Settings() {
     onSuccess: () => {
       toast({ title: "Compte supprimé" });
       queryClient.invalidateQueries({ queryKey: ["/api/email-accounts"] });
+    },
+  });
+
+  const updateAccountSettingsMutation = useMutation({
+    mutationFn: async (data: { id: string; scanFrequency: number; retentionDays: number }) => {
+      return await apiRequest("PATCH", `/api/email-accounts/${data.id}`, {
+        scanFrequency: data.scanFrequency,
+        retentionDays: data.retentionDays,
+      });
+    },
+    onSuccess: () => {
+      toast({ title: "Paramètres du compte mis à jour" });
+      queryClient.invalidateQueries({ queryKey: ["/api/email-accounts"] });
+      setEditingAccountSettings(null);
+    },
+    onError: () => {
+      toast({
+        title: "Erreur",
+        description: "Impossible de mettre à jour les paramètres",
+        variant: "destructive",
+      });
     },
   });
 
@@ -841,6 +867,21 @@ export default function Settings() {
                         <Button
                           variant="outline"
                           size="sm"
+                          onClick={() => {
+                            setEditingAccountSettings({
+                              id: account.id,
+                              scanFrequency: account.scanFrequency || 15,
+                              retentionDays: account.retentionDays || 90,
+                            });
+                          }}
+                          data-testid={`button-edit-settings-${account.id}`}
+                        >
+                          <SettingsIcon className="h-4 w-4 sm:mr-2" />
+                          <span className="hidden sm:inline">Paramètres</span>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={async () => {
                             // Fetch current categories for this account
                             const response = await fetch(
@@ -996,6 +1037,93 @@ export default function Settings() {
                   {updateAccountCategoriesMutation.isPending
                     ? "Enregistrement..."
                     : "Enregistrer"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Dialog for editing account settings */}
+          <Dialog
+            open={editingAccountSettings !== null}
+            onOpenChange={(open) => {
+              if (!open) {
+                setEditingAccountSettings(null);
+              }
+            }}
+          >
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Paramètres du compte</DialogTitle>
+                <DialogDescription>
+                  Configurez la fréquence de scan et la durée de rétention des emails
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="scanFrequency">Fréquence de scan (minutes)</Label>
+                  <Input
+                    id="scanFrequency"
+                    type="number"
+                    min="1"
+                    max="1440"
+                    value={editingAccountSettings?.scanFrequency || 15}
+                    onChange={(e) => {
+                      if (editingAccountSettings) {
+                        setEditingAccountSettings({
+                          ...editingAccountSettings,
+                          scanFrequency: parseInt(e.target.value) || 15,
+                        });
+                      }
+                    }}
+                    data-testid="input-scan-frequency"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Fréquence à laquelle les nouveaux emails sont scannés (1-1440 minutes)
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="retentionDays">Durée de rétention (jours)</Label>
+                  <Input
+                    id="retentionDays"
+                    type="number"
+                    min="1"
+                    max="3650"
+                    value={editingAccountSettings?.retentionDays || 90}
+                    onChange={(e) => {
+                      if (editingAccountSettings) {
+                        setEditingAccountSettings({
+                          ...editingAccountSettings,
+                          retentionDays: parseInt(e.target.value) || 90,
+                        });
+                      }
+                    }}
+                    data-testid="input-retention-days"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Durée de conservation des emails (1-3650 jours, défaut: 90 jours soit 3 mois)
+                  </p>
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setEditingAccountSettings(null)}
+                >
+                  Annuler
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (editingAccountSettings) {
+                      updateAccountSettingsMutation.mutate(editingAccountSettings);
+                    }
+                  }}
+                  disabled={updateAccountSettingsMutation.isPending}
+                  data-testid="button-save-account-settings"
+                >
+                  {updateAccountSettingsMutation.isPending ? "Enregistrement..." : "Enregistrer"}
                 </Button>
               </DialogFooter>
             </DialogContent>
