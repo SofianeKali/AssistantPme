@@ -195,6 +195,7 @@ export default function Settings() {
     generateAutoResponse: true,
     autoCreateTask: false,
     autoMarkAsProcessed: false,
+    redirectEmails: [] as string[],
   });
 
   const [alertPrompt, setAlertPrompt] = useState("");
@@ -1327,6 +1328,25 @@ export default function Settings() {
                   Marquer automatiquement les emails scannés comme traités
                 </Label>
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="redirect-emails">Emails de redirection des pièces jointes</Label>
+                <Input
+                  id="redirect-emails"
+                  placeholder="ex: finance@entreprise.fr, rh@entreprise.fr"
+                  value={newCategory.redirectEmails.join(", ")}
+                  onChange={(e) => {
+                    const emails = e.target.value
+                      .split(",")
+                      .map(email => email.trim())
+                      .filter(email => email.length > 0);
+                    setNewCategory({ ...newCategory, redirectEmails: emails });
+                  }}
+                  data-testid="input-redirect-emails"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Adresses email vers lesquelles transférer automatiquement les pièces jointes de cette catégorie (séparées par des virgules)
+                </p>
+              </div>
               <Button
                 onClick={() => addCategoryMutation.mutate(newCategory)}
                 disabled={
@@ -1620,6 +1640,25 @@ export default function Settings() {
                       Marquer automatiquement les emails scannés comme traités
                     </Label>
                   </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-redirect-emails">Emails de redirection des pièces jointes</Label>
+                    <Input
+                      id="edit-redirect-emails"
+                      placeholder="ex: finance@entreprise.fr, rh@entreprise.fr"
+                      value={(editingCategory.redirectEmails || []).join(", ")}
+                      onChange={(e) => {
+                        const emails = e.target.value
+                          .split(",")
+                          .map(email => email.trim())
+                          .filter(email => email.length > 0);
+                        setEditingCategory({ ...editingCategory, redirectEmails: emails });
+                      }}
+                      data-testid="input-edit-redirect-emails"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Adresses email vers lesquelles transférer automatiquement les pièces jointes de cette catégorie (séparées par des virgules)
+                    </p>
+                  </div>
                 </div>
               )}
               <DialogFooter>
@@ -1642,6 +1681,7 @@ export default function Settings() {
                         generateAutoResponse: editingCategory.generateAutoResponse,
                         autoCreateTask: editingCategory.autoCreateTask,
                         autoMarkAsProcessed: editingCategory.autoMarkAsProcessed,
+                        redirectEmails: editingCategory.redirectEmails || [],
                       },
                     })
                   }
@@ -1729,6 +1769,69 @@ export default function Settings() {
                   }
                   data-testid="switch-auto-scheduling"
                 />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl">
+                Extraction et stockage de documents
+              </CardTitle>
+              <CardDescription>
+                Configurez l'extraction automatique et le stockage des pièces jointes
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <Label className="text-base">
+                    Extraction automatique des documents
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Extraire et classer automatiquement les pièces jointes des emails
+                  </p>
+                </div>
+                <Switch
+                  checked={settings?.documentExtractionEnabled === true}
+                  onCheckedChange={(checked) =>
+                    updateSettingMutation.mutate({
+                      key: "documentExtractionEnabled",
+                      value: checked,
+                    })
+                  }
+                  data-testid="switch-document-extraction"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="storage-provider">Fournisseur de stockage</Label>
+                <Select
+                  value={settings?.documentStorageProvider || "google_drive"}
+                  onValueChange={(value) =>
+                    updateSettingMutation.mutate({
+                      key: "documentStorageProvider",
+                      value: value,
+                    })
+                  }
+                >
+                  <SelectTrigger id="storage-provider" data-testid="select-storage-provider">
+                    <SelectValue placeholder="Sélectionnez un fournisseur" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="google_drive" data-testid="option-google-drive">
+                      Google Drive
+                    </SelectItem>
+                    <SelectItem value="onedrive" data-testid="option-onedrive">
+                      OneDrive
+                    </SelectItem>
+                    <SelectItem value="disabled" data-testid="option-disabled">
+                      Désactivé
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Sélectionnez le service cloud pour stocker les documents extraits
+                </p>
               </div>
             </CardContent>
           </Card>
