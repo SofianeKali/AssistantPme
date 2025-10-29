@@ -1216,7 +1216,10 @@ export default function Settings() {
                             className="w-10 h-10 rounded-md flex items-center justify-center text-white"
                             style={{ backgroundColor: category.color }}
                           >
-                            <Tag className="h-5 w-5" />
+                            {(() => {
+                              const IconComponent = AVAILABLE_ICONS.find(i => i.name === category.icon)?.component || Tag;
+                              return <IconComponent className="h-5 w-5" />;
+                            })()}
                           </div>
                           <div>
                             <div className="font-medium">{category.label}</div>
