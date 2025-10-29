@@ -526,11 +526,24 @@ export default function Dashboard() {
                     )}
                     <Badge
                       variant={
-                        task.status === "nouveau" ? "secondary" : "default"
+                        task.status === "nouveau" 
+                          ? "secondary" 
+                          : task.status === "termine"
+                          ? "outline"
+                          : "default"
                       }
-                      className="text-xs mt-2"
+                      className={`text-xs mt-2 ${
+                        task.status === "termine" 
+                          ? "bg-chart-2/20 text-chart-2 border-chart-2" 
+                          : ""
+                      }`}
+                      data-testid={`badge-task-status-${task.id}`}
                     >
-                      {task.status === "nouveau" ? "Nouveau" : "En cours"}
+                      {task.status === "nouveau" 
+                        ? "Nouveau" 
+                        : task.status === "termine"
+                        ? "Terminé"
+                        : "En cours"}
                     </Badge>
                   </div>
                   <div className="flex flex-col gap-1">
