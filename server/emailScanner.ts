@@ -45,9 +45,10 @@ export class EmailScanner {
       const availableCategories = categories.map(c => ({ key: c.key, label: c.label }));
       const availableCategoryKeys = new Set(categories.map(c => c.key));
       
-      // Create a map for category settings (generateAutoResponse and autoCreateTask)
+      // Create a map for category settings (generateAutoResponse, autoCreateTask, and autoMarkAsProcessed)
       const categorySettingsMap = new Map(categories.map(c => [c.key, c.generateAutoResponse]));
       const autoCreateTaskMap = new Map(categories.map(c => [c.key, c.autoCreateTask]));
+      const autoMarkAsProcessedMap = new Map(categories.map(c => [c.key, c.autoMarkAsProcessed]));
       
       const config = {
         imap: {
@@ -147,6 +148,10 @@ export class EmailScanner {
             }
           }
 
+          // Determine if email should be automatically marked as processed
+          const shouldAutoMarkAsProcessed = autoMarkAsProcessedMap.get(emailType) === true;
+          console.log(`[IMAP] Auto-mark as processed ${shouldAutoMarkAsProcessed ? 'enabled' : 'disabled'} for category '${emailType}'`);
+          
           // Create email record
           const emailData: InsertEmail = {
             userId: account.userId, // Associate email with the user who owns the email account
@@ -162,6 +167,7 @@ export class EmailScanner {
             emailType: emailType, // Use the normalized emailType (fallback to 'autre' if category not available)
             priority: analysis.priority,
             sentiment: analysis.sentiment,
+            status: shouldAutoMarkAsProcessed ? 'traite' : 'nouveau', // Auto-mark as processed if enabled
             suggestedResponse: suggestedResponse, // Add AI-generated response
             aiAnalysis: {
               summary: analysis.summary,
