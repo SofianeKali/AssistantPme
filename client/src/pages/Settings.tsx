@@ -1309,28 +1309,103 @@ export default function Settings() {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="edit-category-color">Couleur (hex)</Label>
-                      <Input
-                        id="edit-category-color"
-                        value={editingCategory.color}
-                        onChange={(e) =>
-                          setEditingCategory({ ...editingCategory, color: e.target.value })
-                        }
-                        placeholder="#6366f1"
-                        data-testid="input-edit-category-color"
-                      />
+                      <Label htmlFor="edit-category-color">Couleur</Label>
+                      <div className="flex gap-2">
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className="w-full justify-start"
+                              data-testid="button-edit-select-color"
+                            >
+                              <div
+                                className="w-6 h-6 rounded-md mr-2 border border-border"
+                                style={{ backgroundColor: editingCategory.color }}
+                              />
+                              {editingCategory.color}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-64">
+                            <div className="space-y-3">
+                              <div>
+                                <Label className="text-sm mb-2">Couleurs prédéfinies</Label>
+                                <div className="grid grid-cols-8 gap-2 mt-2">
+                                  {PRESET_COLORS.map((color) => (
+                                    <button
+                                      key={color}
+                                      className="w-8 h-8 rounded-md border-2 hover:scale-110 transition-transform"
+                                      style={{
+                                        backgroundColor: color,
+                                        borderColor: editingCategory.color === color ? "hsl(var(--primary))" : "transparent"
+                                      }}
+                                      onClick={() => setEditingCategory({ ...editingCategory, color })}
+                                      data-testid={`edit-color-${color}`}
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+                              <div>
+                                <Label htmlFor="edit-custom-color" className="text-sm">Couleur personnalisée</Label>
+                                <div className="flex gap-2 mt-2">
+                                  <input
+                                    type="color"
+                                    id="edit-custom-color"
+                                    value={editingCategory.color}
+                                    onChange={(e) => setEditingCategory({ ...editingCategory, color: e.target.value })}
+                                    className="w-12 h-10 rounded cursor-pointer border border-border"
+                                    data-testid="input-edit-color-picker"
+                                  />
+                                  <Input
+                                    value={editingCategory.color}
+                                    onChange={(e) => setEditingCategory({ ...editingCategory, color: e.target.value })}
+                                    placeholder="#6366f1"
+                                    className="flex-1"
+                                    data-testid="input-edit-category-color"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </div>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="edit-category-icon">Icône Lucide</Label>
-                      <Input
-                        id="edit-category-icon"
-                        value={editingCategory.icon}
-                        onChange={(e) =>
-                          setEditingCategory({ ...editingCategory, icon: e.target.value })
-                        }
-                        placeholder="Mail"
-                        data-testid="input-edit-category-icon"
-                      />
+                      <Label htmlFor="edit-category-icon">Icône</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="w-full justify-start"
+                            data-testid="button-edit-select-icon"
+                          >
+                            {(() => {
+                              const IconComponent = AVAILABLE_ICONS.find(i => i.name === editingCategory.icon)?.component || Tag;
+                              return <IconComponent className="w-5 h-5 mr-2" />;
+                            })()}
+                            {editingCategory.icon}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80">
+                          <div className="space-y-2">
+                            <Label className="text-sm">Sélectionnez une icône</Label>
+                            <div className="grid grid-cols-6 gap-2 max-h-64 overflow-y-auto">
+                              {AVAILABLE_ICONS.map(({ name, component: IconComponent }) => (
+                                <button
+                                  key={name}
+                                  className={`p-3 rounded-md border-2 hover:bg-accent transition-colors ${
+                                    editingCategory.icon === name ? "border-primary bg-accent" : "border-transparent"
+                                  }`}
+                                  onClick={() => setEditingCategory({ ...editingCategory, icon: name })}
+                                  title={name}
+                                  data-testid={`edit-icon-${name}`}
+                                >
+                                  <IconComponent className="w-5 h-5" />
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
