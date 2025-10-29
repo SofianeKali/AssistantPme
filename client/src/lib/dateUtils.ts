@@ -1,4 +1,4 @@
-import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subWeeks, subMonths, addWeeks, addMonths } from "date-fns";
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subWeeks, subMonths, addWeeks, addMonths, isToday, isYesterday } from "date-fns";
 import { fr } from "date-fns/locale";
 
 export type PeriodType = "week" | "month";
@@ -45,5 +45,23 @@ export function getPeriodDates(periodType: PeriodType, offset: number): { start:
       start: startOfMonth(targetDate),
       end: endOfMonth(targetDate),
     };
+  }
+}
+
+/**
+ * Format email date for display in list:
+ * - Today: show time only (e.g., "14:30")
+ * - Yesterday: show "Hier"
+ * - Older: show date (e.g., "15 oct")
+ */
+export function formatEmailDate(date: Date | string): string {
+  const emailDate = typeof date === 'string' ? new Date(date) : date;
+  
+  if (isToday(emailDate)) {
+    return format(emailDate, "HH:mm");
+  } else if (isYesterday(emailDate)) {
+    return "Hier";
+  } else {
+    return format(emailDate, "dd MMM", { locale: fr });
   }
 }

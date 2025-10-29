@@ -26,6 +26,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { formatEmailDate } from "@/lib/dateUtils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -764,9 +765,7 @@ export default function Emails() {
                       </div>
                       <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
                         <span className="text-xs text-muted-foreground whitespace-nowrap">
-                          {format(new Date(email.receivedAt), "dd MMM", {
-                            locale: fr,
-                          })}
+                          {formatEmailDate(email.receivedAt)}
                         </span>
                         {email.status !== "traite" && (
                           <Button
