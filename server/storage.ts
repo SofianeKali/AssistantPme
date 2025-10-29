@@ -906,15 +906,30 @@ export class DatabaseStorage implements IStorage {
       });
     }
     
-    // Répartition des emails reçus par type
-    const emailDistribution = await db
+    // Répartition des emails reçus par catégorie (avec couleurs configurées)
+    const emailDistributionRaw = await db
       .select({
-        type: emails.emailType,
+        emailType: emails.emailType,
         count: sql<number>`count(*)`,
       })
       .from(emails)
       .where(gte(emails.receivedAt, startOfMonth))
       .groupBy(emails.emailType);
+    
+    // Get all categories to map emailType (key) to category data
+    const allCategories = await this.getAllEmailCategories();
+    const categoryMap = new Map(allCategories.map(c => [c.key, c]));
+    
+    const emailDistribution = emailDistributionRaw.map(item => {
+      const categoryKey = item.emailType || 'autre';
+      const category = categoryMap.get(categoryKey);
+      return {
+        name: category?.label || 'Autre',
+        value: Number(item.count),
+        color: category?.color || '#94a3b8',
+        icon: category?.icon || 'Folder'
+      };
+    });
     
     // Taux de traitement par catégorie
     const categoryProcessing = [];
@@ -977,10 +992,7 @@ export class DatabaseStorage implements IStorage {
     return {
       emailEvolution,
       appointmentsByWeek,
-      emailDistribution: emailDistribution.map(item => ({
-        name: (item.type || 'Autre').charAt(0).toUpperCase() + (item.type || 'autre').slice(1),
-        value: Number(item.count)
-      })),
+      emailDistribution, // Now includes name, value, color, and icon
       categoryProcessing,
       emailFunnel: [
         { name: 'Reçus', count: Number(received?.count || 0) },

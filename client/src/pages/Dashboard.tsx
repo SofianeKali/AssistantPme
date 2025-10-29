@@ -522,23 +522,22 @@ export default function Dashboard() {
             <CardTitle>Répartition des emails reçus</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
+            <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
                   data={charts?.emailDistribution || []}
-                  cx="50%"
+                  cx="40%"
                   cy="50%"
                   innerRadius={60}
-                  outerRadius={80}
+                  outerRadius={90}
                   paddingAngle={2}
                   dataKey="value"
-                  label={(entry) => `${entry.name}`}
                 >
                   {charts?.emailDistribution?.map(
                     (entry: any, index: number) => (
                       <Cell
                         key={`cell-${index}`}
-                        fill={CHART_COLORS[index % CHART_COLORS.length]}
+                        fill={entry.color || CHART_COLORS[index % CHART_COLORS.length]}
                       />
                     ),
                   )}
@@ -550,7 +549,19 @@ export default function Dashboard() {
                     borderRadius: "6px",
                   }}
                 />
-                <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                <Legend 
+                  layout="vertical"
+                  verticalAlign="middle" 
+                  align="right"
+                  iconType="circle"
+                  formatter={(value, entry: any) => {
+                    const count = entry.payload?.value || 0;
+                    return `${value} (${count})`;
+                  }}
+                  wrapperStyle={{
+                    paddingLeft: "20px"
+                  }}
+                />
               </PieChart>
             </ResponsiveContainer>
           </CardContent>
