@@ -4,6 +4,8 @@ import { analyzeEmail, generateAppointmentSuggestions, generateEmailResponse, ge
 import type { IStorage } from './storage';
 import type { EmailAccount, InsertEmail, InsertDocument, InsertAppointment } from '../shared/schema';
 import { uploadFileToDrive, getOrCreateFolder, getOrCreateSubfolder } from './googleDrive';
+import { forwardAttachments } from './emailForwarder';
+import type { EmailAttachment } from './emailSender';
 
 // Utility function to safely extract text from AddressObject
 function getAddressText(address: AddressObject | AddressObject[] | undefined): string {
@@ -40,15 +42,24 @@ export class EmailScanner {
     const result: ScanResult = { scanned: 0, created: 0, errors: 0 };
 
     try {
+      // Fetch global settings for document extraction
+      const settings = await this.storage.getAllSettings();
+      const documentExtractionEnabled = settings.documentExtractionEnabled === true;
+      const documentStorageProvider = settings.documentStorageProvider || 'google_drive';
+      const isDocumentStorageEnabled = documentStorageProvider !== 'disabled';
+
+      console.log(`[IMAP] Document extraction: ${documentExtractionEnabled ? 'enabled' : 'disabled'}, Storage provider: ${documentStorageProvider}`);
+
       // Fetch email categories for this account (system + custom categories)
       const categories = await this.storage.getEmailCategoriesForAccount(account.id);
       const availableCategories = categories.map(c => ({ key: c.key, label: c.label }));
       const availableCategoryKeys = new Set(categories.map(c => c.key));
       
-      // Create a map for category settings (generateAutoResponse, autoCreateTask, and autoMarkAsProcessed)
+      // Create a map for category settings (generateAutoResponse, autoCreateTask, autoMarkAsProcessed, and redirectEmails)
       const categorySettingsMap = new Map(categories.map(c => [c.key, c.generateAutoResponse]));
       const autoCreateTaskMap = new Map(categories.map(c => [c.key, c.autoCreateTask]));
       const autoMarkAsProcessedMap = new Map(categories.map(c => [c.key, c.autoMarkAsProcessed]));
+      const redirectEmailsMap = new Map(categories.map(c => [c.key, c.redirectEmails || []]));
       
       const config = {
         imap: {
@@ -221,9 +232,41 @@ export class EmailScanner {
             }
           }
 
-          // Process attachments
-          if (mail.attachments && mail.attachments.length > 0) {
-            console.log(`[IMAP] Processing ${mail.attachments.length} attachments...`);
+          // Forward attachments if category has redirectEmails configured
+          const redirectEmails = redirectEmailsMap.get(emailType) || [];
+          if (redirectEmails.length > 0 && mail.attachments && mail.attachments.length > 0) {
+            console.log(`[IMAP] Category '${emailType}' has ${redirectEmails.length} redirect email(s) configured`);
+            
+            // Convert mailparser attachments to EmailAttachment format
+            const emailAttachments: EmailAttachment[] = mail.attachments.map(att => ({
+              filename: att.filename || `attachment-${Date.now()}`,
+              content: att.content,
+              contentType: att.contentType,
+            }));
+
+            try {
+              const forwardResult = await forwardAttachments(this.storage, {
+                fromAccount: account,
+                recipientEmails: redirectEmails,
+                originalSubject: mail.subject || 'Sans objet',
+                originalFrom: getAddressText(mail.from) || 'Inconnu',
+                attachments: emailAttachments,
+              });
+
+              if (!forwardResult.success) {
+                console.error(`[IMAP] Attachment forwarding encountered ${forwardResult.errors.length} error(s)`);
+              } else {
+                console.log(`[IMAP] Successfully forwarded attachments to all recipients`);
+              }
+            } catch (forwardError) {
+              console.error(`[IMAP] Exception during attachment forwarding:`, forwardError);
+              // Continue processing even if forwarding fails
+            }
+          }
+
+          // Process attachments (only if document extraction is enabled)
+          if (mail.attachments && mail.attachments.length > 0 && documentExtractionEnabled && isDocumentStorageEnabled && documentStorageProvider === 'google_drive') {
+            console.log(`[IMAP] Processing ${mail.attachments.length} attachments for Google Drive...`);
             
             try {
               // Get or create main Google Drive folder
