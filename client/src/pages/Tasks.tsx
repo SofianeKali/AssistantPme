@@ -284,8 +284,18 @@ export default function Tasks() {
             <Icon className="h-5 w-5" />
             {title}
             <Badge
-              variant="secondary"
-              className="ml-auto"
+              variant={
+                status === "nouveau" 
+                  ? "secondary" 
+                  : status === "termine"
+                  ? "outline"
+                  : "default"
+              }
+              className={`ml-auto ${
+                status === "termine" 
+                  ? "bg-chart-2/20 text-chart-2 border-chart-2" 
+                  : ""
+              }`}
               data-testid={`count-${status}`}
             >
               {tasks.length}
