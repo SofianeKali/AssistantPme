@@ -193,6 +193,8 @@ export default function Settings() {
   });
 
   const [alertPrompt, setAlertPrompt] = useState("");
+  const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
+  const [editingRuleData, setEditingRuleData] = useState<any | null>(null);
 
   const { data: alertRules, isLoading: alertRulesLoading } = useQuery({
     queryKey: ["/api/alert-rules"],
@@ -446,6 +448,28 @@ export default function Settings() {
       toast({
         title: "Erreur",
         description: "Impossible de supprimer la règle d'alerte",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateAlertRuleMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      return await apiRequest("PATCH", `/api/alert-rules/${id}`, data);
+    },
+    onSuccess: (data: any) => {
+      toast({
+        title: "Règle d'alerte mise à jour",
+        description: `"${data.name}" a été mise à jour avec succès`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/alert-rules"] });
+      setEditingRuleId(null);
+      setEditingRuleData(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de mettre à jour la règle d'alerte",
         variant: "destructive",
       });
     },
@@ -1720,6 +1744,20 @@ export default function Settings() {
                           <Button
                             variant="ghost"
                             size="icon"
+                            onClick={() => {
+                              setEditingRuleId(rule.id);
+                              setEditingRuleData({
+                                prompt: rule.prompt,
+                                checkIntervalMinutes: rule.checkIntervalMinutes || 60,
+                              });
+                            }}
+                            data-testid={`button-edit-rule-${rule.id}`}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() =>
                               deleteAlertRuleMutation.mutate(rule.id)
                             }
@@ -1740,6 +1778,83 @@ export default function Settings() {
               )}
             </CardContent>
           </Card>
+
+          {/* Edit Alert Rule Dialog */}
+          <Dialog open={editingRuleId !== null} onOpenChange={(open) => {
+            if (!open) {
+              setEditingRuleId(null);
+              setEditingRuleData(null);
+            }
+          }}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Modifier la règle d'alerte</DialogTitle>
+                <DialogDescription>
+                  Modifiez le prompt ou l'intervalle de vérification de la règle
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-prompt">Prompt en langage naturel</Label>
+                  <textarea
+                    id="edit-prompt"
+                    value={editingRuleData?.prompt || ""}
+                    onChange={(e) => setEditingRuleData({
+                      ...editingRuleData,
+                      prompt: e.target.value
+                    })}
+                    placeholder="Décrivez votre règle d'alerte en français"
+                    className="w-full min-h-[120px] p-3 rounded-md border border-input bg-background text-sm resize-none"
+                    data-testid="input-edit-rule-prompt"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-interval">Intervalle de vérification (minutes)</Label>
+                  <Input
+                    id="edit-interval"
+                    type="number"
+                    min="5"
+                    max="1440"
+                    value={editingRuleData?.checkIntervalMinutes || 60}
+                    onChange={(e) => setEditingRuleData({
+                      ...editingRuleData,
+                      checkIntervalMinutes: parseInt(e.target.value) || 60
+                    })}
+                    data-testid="input-edit-rule-interval"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Fréquence à laquelle cette règle sera vérifiée (entre 5 minutes et 24 heures)
+                  </p>
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setEditingRuleId(null);
+                      setEditingRuleData(null);
+                    }}
+                    data-testid="button-cancel-edit-rule"
+                  >
+                    Annuler
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      if (editingRuleId && editingRuleData) {
+                        updateAlertRuleMutation.mutate({
+                          id: editingRuleId,
+                          data: editingRuleData
+                        });
+                      }
+                    }}
+                    disabled={updateAlertRuleMutation.isPending || !editingRuleData?.prompt?.trim()}
+                    data-testid="button-save-edit-rule"
+                  >
+                    {updateAlertRuleMutation.isPending ? "Enregistrement..." : "Enregistrer"}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </TabsContent>
 
         {/* General Tab */}

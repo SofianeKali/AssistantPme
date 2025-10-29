@@ -919,6 +919,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/alerts/:id/emails', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const emailIds = await storage.getAlertEmails(req.params.id);
+      const emails = [];
+      
+      // Only return emails that belong to the authenticated user
+      for (const emailId of emailIds) {
+        const email = await storage.getEmailById(emailId);
+        if (email && email.userId === userId) {
+          emails.push(email);
+        }
+      }
+      
+      // If no emails were found for this user, either the alert doesn't exist
+      // or the user doesn't have permission to view it
+      if (emailIds.length > 0 && emails.length === 0) {
+        return res.status(403).json({ message: "Accès non autorisé à cette alerte" });
+      }
+      
+      res.json(emails);
+    } catch (error) {
+      console.error("Error fetching alert emails:", error);
+      res.status(500).json({ message: "Failed to fetch alert emails" });
+    }
+  });
+
   app.post('/api/alerts/:id/resolve', isAuthenticated, async (req: any, res) => {
     try {
       const userId = (req.user as any).id;

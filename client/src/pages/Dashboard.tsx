@@ -347,7 +347,14 @@ export default function Dashboard() {
                 {alerts.slice(0, 5).map((alert: any) => (
                   <div
                     key={alert.id}
-                    className="flex items-start gap-3 p-3 rounded-md border border-border hover-elevate"
+                    onClick={() => {
+                      if (alert.emailCount > 0) {
+                        setLocation(`/emails?alertId=${alert.id}`);
+                      }
+                    }}
+                    className={`flex items-start gap-3 p-3 rounded-md border border-border hover-elevate ${
+                      alert.emailCount > 0 ? "cursor-pointer active-elevate-2" : ""
+                    }`}
                     data-testid={`alert-${alert.id}`}
                   >
                     <AlertTriangle
@@ -360,7 +367,14 @@ export default function Dashboard() {
                       }`}
                     />
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium">{alert.title}</div>
+                      <div className="text-sm font-medium flex items-center gap-2">
+                        {alert.title}
+                        {alert.emailCount > 0 && (
+                          <Badge variant="secondary" className="text-xs">
+                            {alert.emailCount} email{alert.emailCount > 1 ? "s" : ""}
+                          </Badge>
+                        )}
+                      </div>
                       <div className="text-xs text-muted-foreground mt-1">
                         {alert.message}
                       </div>
@@ -381,6 +395,9 @@ export default function Dashboard() {
                           ? "Attention"
                           : "Info"}
                     </Badge>
+                    {alert.emailCount > 0 && (
+                      <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                    )}
                   </div>
                 ))}
               </div>
