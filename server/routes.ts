@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { setupLocalAuth, hashPassword } from "./localAuth";
 import { isAdmin } from "./middleware";
-import { analyzeEmail, generateEmailResponse, generateAppointmentSuggestions } from "./openai";
+import { analyzeEmail, generateEmailResponse, generateAppointmentSuggestions, analyzeSearchPrompt } from "./openai";
 import { insertEmailAccountSchema, insertTagSchema, insertEmailSchema, insertAlertSchema, insertUserSchema } from "@shared/schema";
 import { EmailScanner } from "./emailScanner";
 import { processDocument } from "./ocrService";
@@ -339,6 +339,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching email category stats:", error);
       res.status(500).json({ message: "Failed to fetch email category stats" });
+    }
+  });
+
+  // Analyze AI search prompt (separate from search execution)
+  app.post('/api/emails/ai-search/analyze', isAuthenticated, async (req, res) => {
+    try {
+      const { prompt } = req.body;
+      
+      if (!prompt || typeof prompt !== 'string') {
+        return res.status(400).json({ message: "Prompt is required" });
+      }
+
+      // Get available categories for the AI analysis
+      const categories = await storage.getAllEmailCategories();
+      const availableCategories = categories.map(cat => ({
+        key: cat.name.toLowerCase(),
+        label: cat.label
+      }));
+
+      // Analyze the search prompt with AI (only once)
+      const criteria = await analyzeSearchPrompt(prompt, availableCategories);
+      
+      console.log(`[AI Search] Analyzed prompt: "${prompt}" →`, criteria);
+
+      res.json({
+        criteria,
+        prompt
+      });
+    } catch (error) {
+      console.error("Error analyzing search prompt:", error);
+      res.status(500).json({ message: "Failed to analyze search prompt" });
+    }
+  });
+
+  // Execute AI search with already-analyzed criteria
+  app.post('/api/emails/ai-search', isAuthenticated, async (req, res) => {
+    try {
+      const { criteria, limit = 20, offset = 0, prompt } = req.body;
+      
+      if (!criteria || typeof criteria !== 'object') {
+        return res.status(400).json({ message: "Search criteria are required" });
+      }
+
+      // Perform the search with provided criteria
+      const result = await storage.searchEmailsWithAI({
+        ...criteria,
+        limit,
+        offset
+      });
+
+      console.log(`[AI Search] Executed search with ${Object.keys(criteria).length} criteria → ${result.total} results`);
+
+      res.json({
+        emails: result.emails,
+        total: result.total,
+        limit,
+        offset,
+        criteria,
+        prompt
+      });
+    } catch (error) {
+      console.error("Error performing AI search:", error);
+      res.status(500).json({ message: "Failed to perform AI search" });
     }
   });
 

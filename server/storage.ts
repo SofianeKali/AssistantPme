@@ -394,6 +394,116 @@ export class DatabaseStorage implements IStorage {
     return Number(result[0]?.count || 0);
   }
 
+  async searchEmailsWithAI(criteria: {
+    from?: string;
+    subject?: string;
+    keywords?: string[];
+    dateFrom?: string;
+    dateTo?: string;
+    categories?: string[];
+    priority?: string;
+    sentiment?: string;
+    status?: string;
+    hasAttachments?: boolean;
+    isRead?: boolean;
+    requiresResponse?: boolean;
+    limit?: number;
+    offset?: number;
+  }): Promise<{ emails: Email[]; total: number }> {
+    const conditions = [];
+
+    // From field (name or email)
+    if (criteria.from) {
+      conditions.push(like(emails.from, `%${criteria.from}%`));
+    }
+
+    // Subject keywords
+    if (criteria.subject) {
+      conditions.push(like(emails.subject, `%${criteria.subject}%`));
+    }
+
+    // Body keywords
+    if (criteria.keywords && criteria.keywords.length > 0) {
+      const keywordConditions = criteria.keywords.map(keyword =>
+        like(emails.body, `%${keyword}%`)
+      );
+      conditions.push(or(...keywordConditions)!);
+    }
+
+    // Date range
+    if (criteria.dateFrom) {
+      const dateFrom = new Date(criteria.dateFrom);
+      dateFrom.setHours(0, 0, 0, 0);
+      conditions.push(gte(emails.receivedAt, dateFrom));
+    }
+    if (criteria.dateTo) {
+      const dateTo = new Date(criteria.dateTo);
+      dateTo.setHours(23, 59, 59, 999);
+      conditions.push(lte(emails.receivedAt, dateTo));
+    }
+
+    // Categories
+    if (criteria.categories && criteria.categories.length > 0) {
+      if (criteria.categories.length === 1) {
+        conditions.push(eq(emails.emailType, criteria.categories[0]));
+      } else {
+        const categoryConditions = criteria.categories.map(cat =>
+          eq(emails.emailType, cat)
+        );
+        conditions.push(or(...categoryConditions)!);
+      }
+    }
+
+    // Priority
+    if (criteria.priority) {
+      conditions.push(eq(emails.priority, criteria.priority));
+    }
+
+    // Sentiment
+    if (criteria.sentiment) {
+      conditions.push(eq(emails.sentiment, criteria.sentiment));
+    }
+
+    // Status
+    if (criteria.status) {
+      conditions.push(eq(emails.status, criteria.status));
+    }
+
+    // Boolean filters
+    if (criteria.hasAttachments !== undefined) {
+      conditions.push(eq(emails.hasAttachments, criteria.hasAttachments));
+    }
+    if (criteria.isRead !== undefined) {
+      conditions.push(eq(emails.isRead, criteria.isRead));
+    }
+    if (criteria.requiresResponse !== undefined) {
+      conditions.push(eq(emails.requiresResponse, criteria.requiresResponse));
+    }
+
+    // Build query
+    let query = db.select().from(emails);
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
+    }
+    query = query.orderBy(desc(emails.receivedAt)) as any;
+
+    // Get total count
+    let countQuery = db.select({ count: sql<number>`count(*)` }).from(emails);
+    if (conditions.length > 0) {
+      countQuery = countQuery.where(and(...conditions)) as any;
+    }
+    
+    const [emailResults, countResults] = await Promise.all([
+      (criteria.limit ? query.limit(criteria.limit).offset(criteria.offset || 0) : query) as Promise<Email[]>,
+      countQuery
+    ]);
+
+    return {
+      emails: emailResults,
+      total: Number(countResults[0]?.count || 0)
+    };
+  }
+
   async getEmailById(id: string, userId?: string): Promise<Email | undefined> {
     // If userId is provided, filter by it (legacy behavior)
     // Otherwise, return email regardless of owner (shared inbox)

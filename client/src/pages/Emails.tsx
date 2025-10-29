@@ -54,6 +54,10 @@ export default function Emails() {
   const [alertId, setAlertId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize] = useState(20); // Number of emails per page
+  const [showAISearchDialog, setShowAISearchDialog] = useState(false);
+  const [aiSearchPrompt, setAISearchPrompt] = useState("");
+  const [aiSearchActive, setAISearchActive] = useState(false);
+  const [aiSearchCriteria, setAISearchCriteria] = useState<any>(null);
   const { toast } = useToast();
 
   // Load email categories dynamically
@@ -89,6 +93,8 @@ export default function Emails() {
   const { data: emailsData, isLoading } = useQuery({
     queryKey: alertId 
       ? ["/api/alerts", alertId, "emails"]
+      : aiSearchActive
+      ? ["/api/emails/ai-search", aiSearchCriteria, page, pageSize]
       : ["/api/emails", { type: typeFilter, status: statusFilter, search, page, pageSize }],
     queryFn: async () => {
       // If alertId is set, fetch emails for this alert
@@ -104,6 +110,27 @@ export default function Emails() {
         // For alert emails, return in the same format as paginated emails
         const emails = await res.json();
         return { emails, total: emails.length, limit: emails.length, offset: 0 };
+      }
+      
+      // If AI search is active, use already-analyzed criteria
+      if (aiSearchActive && aiSearchCriteria) {
+        const res = await fetch("/api/emails/ai-search", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            criteria: aiSearchCriteria,
+            prompt: aiSearchPrompt,
+            limit: pageSize,
+            offset: (page - 1) * pageSize
+          })
+        });
+
+        if (!res.ok) {
+          throw new Error(`${res.status}: ${res.statusText}`);
+        }
+
+        return res.json();
       }
       
       // Otherwise, fetch emails with filters and pagination
@@ -151,6 +178,64 @@ export default function Emails() {
       }
     }
   }, [emailsData, page, pageSize]);
+
+  // Handler for AI search
+  const handleAISearch = async () => {
+    if (!aiSearchPrompt.trim()) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez entrer un prompt de recherche",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Analyze the prompt with AI (only once)
+      const res = await fetch("/api/emails/ai-search/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ prompt: aiSearchPrompt })
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to analyze search prompt");
+      }
+
+      const { criteria } = await res.json();
+      
+      // Store the extracted criteria
+      setAISearchCriteria(criteria);
+      setAISearchActive(true);
+      setShowAISearchDialog(false);
+      setPage(1);
+      // Clear normal filters when AI search is active
+      setTypeFilter("all");
+      setStatusFilter("all");
+      setSearch("");
+
+      toast({
+        title: "Recherche IA activée",
+        description: `${Object.keys(criteria).length} critères extraits de votre recherche`,
+      });
+    } catch (error) {
+      console.error("Error analyzing search prompt:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'analyser votre recherche. Veuillez réessayer.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handler to clear AI search
+  const clearAISearch = () => {
+    setAISearchActive(false);
+    setAISearchPrompt("");
+    setAISearchCriteria(null);
+    setPage(1);
+  };
 
   const generateResponseMutation = useMutation({
     mutationFn: async ({
@@ -523,9 +608,20 @@ export default function Emails() {
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
             data-testid="input-search-email"
-            disabled={!!alertId}
+            disabled={!!alertId || aiSearchActive}
           />
         </div>
+        <Button
+          variant={aiSearchActive ? "default" : "outline"}
+          size="sm"
+          onClick={() => setShowAISearchDialog(true)}
+          disabled={!!alertId}
+          data-testid="button-ai-search"
+          className="flex items-center gap-2"
+        >
+          <Sparkles className="h-4 w-4" />
+          {aiSearchActive ? "Recherche IA active" : "Recherche IA"}
+        </Button>
         <Select value={typeFilter} onValueChange={setTypeFilter} disabled={!!alertId}>
           <SelectTrigger
             className="w-full sm:w-48"
@@ -559,6 +655,65 @@ export default function Emails() {
           </SelectContent>
         </Select>
       </div>
+
+      {/* AI Search Criteria Display */}
+      {aiSearchActive && aiSearchCriteria && (
+        <Card className="p-3">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">Recherche IA: "{aiSearchPrompt}"</span>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearAISearch}
+                data-testid="button-clear-ai-search"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+              {aiSearchCriteria.from && (
+                <Badge variant="secondary" data-testid="criteria-from">De: {aiSearchCriteria.from}</Badge>
+              )}
+              {aiSearchCriteria.subject && (
+                <Badge variant="secondary" data-testid="criteria-subject">Sujet: {aiSearchCriteria.subject}</Badge>
+              )}
+              {aiSearchCriteria.categories && aiSearchCriteria.categories.length > 0 && (
+                <Badge variant="secondary" data-testid="criteria-categories">
+                  Catégories: {aiSearchCriteria.categories.join(", ")}
+                </Badge>
+              )}
+              {aiSearchCriteria.priority && (
+                <Badge variant="secondary" data-testid="criteria-priority">Priorité: {aiSearchCriteria.priority}</Badge>
+              )}
+              {aiSearchCriteria.status && (
+                <Badge variant="secondary" data-testid="criteria-status">Statut: {aiSearchCriteria.status}</Badge>
+              )}
+              {aiSearchCriteria.dateFrom && (
+                <Badge variant="secondary" data-testid="criteria-date-from">
+                  Depuis: {new Date(aiSearchCriteria.dateFrom).toLocaleDateString('fr-FR')}
+                </Badge>
+              )}
+              {aiSearchCriteria.dateTo && (
+                <Badge variant="secondary" data-testid="criteria-date-to">
+                  Jusqu'au: {new Date(aiSearchCriteria.dateTo).toLocaleDateString('fr-FR')}
+                </Badge>
+              )}
+              {aiSearchCriteria.isRead !== undefined && (
+                <Badge variant="secondary" data-testid="criteria-is-read">
+                  {aiSearchCriteria.isRead ? "Lus" : "Non lus"}
+                </Badge>
+              )}
+              {aiSearchCriteria.hasAttachments && (
+                <Badge variant="secondary" data-testid="criteria-attachments">Avec pièces jointes</Badge>
+              )}
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Bulk Actions Bar */}
       {selectedEmailIds.length > 0 && (
@@ -890,6 +1045,73 @@ export default function Emails() {
           </div>
         </div>
       )}
+
+      {/* AI Search Dialog */}
+      <Dialog
+        open={showAISearchDialog}
+        onOpenChange={setShowAISearchDialog}
+      >
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              Recherche Intelligente par IA
+            </DialogTitle>
+            <DialogDescription>
+              Décrivez ce que vous recherchez en langage naturel. Par exemple: "emails non lus de Marie reçus cette semaine" ou "factures urgentes non payées"
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">
+                Que recherchez-vous ?
+              </label>
+              <Textarea
+                value={aiSearchPrompt}
+                onChange={(e) => setAISearchPrompt(e.target.value)}
+                placeholder="Ex: emails avec pièces jointes de Jean reçus hier"
+                rows={3}
+                data-testid="textarea-ai-search-prompt"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                    handleAISearch();
+                  }
+                }}
+              />
+            </div>
+            <div className="bg-muted p-3 rounded-md text-sm space-y-2">
+              <p className="font-medium">Exemples de recherches :</p>
+              <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                <li>emails non lus de Marie</li>
+                <li>factures urgentes cette semaine</li>
+                <li>emails avec pièces jointes de Jean</li>
+                <li>devis non traités du mois dernier</li>
+                <li>emails nécessitant une réponse</li>
+              </ul>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowAISearchDialog(false);
+                  setAISearchPrompt("");
+                }}
+                data-testid="button-cancel-ai-search"
+              >
+                Annuler
+              </Button>
+              <Button
+                onClick={handleAISearch}
+                disabled={!aiSearchPrompt.trim()}
+                data-testid="button-submit-ai-search"
+              >
+                <Sparkles className="h-4 w-4 mr-2" />
+                Rechercher
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Email Detail Dialog */}
       <Dialog

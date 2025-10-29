@@ -545,3 +545,77 @@ ${emailContent.body.substring(0, 2000)}`
     };
   }
 }
+
+export async function analyzeSearchPrompt(prompt: string, availableCategories: Array<{ key: string; label: string }> = []): Promise<{
+  from?: string;
+  subject?: string;
+  keywords?: string[];
+  dateFrom?: string;
+  dateTo?: string;
+  categories?: string[];
+  priority?: string;
+  sentiment?: string;
+  status?: string;
+  hasAttachments?: boolean;
+  isRead?: boolean;
+  requiresResponse?: boolean;
+}> {
+  try {
+    const categoryList = availableCategories.map(cat => `"${cat.key}" (${cat.label})`).join(', ');
+    
+    const response = await openai.chat.completions.create({
+      model: "gpt-5",
+      messages: [
+        {
+          role: "system",
+          content: `You are an AI assistant specialized in parsing natural language search queries for emails in a French SME management system.
+
+Analyze the user's search prompt and extract structured search criteria. Return a JSON object with the following fields (all optional):
+
+- from: sender email or name (string)
+- subject: subject keywords (string)
+- keywords: array of important keywords to search in the email body
+- dateFrom: start date in ISO format (YYYY-MM-DD)
+- dateTo: end date in ISO format (YYYY-MM-DD)
+- categories: array of email types/categories from: ${categoryList || 'devis, facture, rdv, autre'}
+- priority: one of "urgent", "high", "normal", "low"
+- sentiment: one of "positive", "neutral", "negative"
+- status: one of "nouveau", "en_cours", "traite", "archive"
+- hasAttachments: boolean, true if user wants emails with attachments
+- isRead: boolean, true if user wants read emails, false for unread
+- requiresResponse: boolean, true if user wants emails that require a response
+
+IMPORTANT DATE INTERPRETATION:
+- "aujourd'hui" / "today" = current date
+- "hier" / "yesterday" = yesterday
+- "cette semaine" / "this week" = start of current week (Monday) to today
+- "la semaine dernière" / "last week" = previous week Monday to Sunday
+- "ce mois" / "this month" = start of current month to today
+- "le mois dernier" / "last month" = previous month
+
+EXAMPLES:
+- "emails non lus de Marie" → { "from": "Marie", "isRead": false }
+- "factures urgentes cette semaine" → { "categories": ["facture"], "priority": "urgent", "dateFrom": "2025-10-27" }
+- "emails avec pièces jointes de Jean reçus hier" → { "from": "Jean", "hasAttachments": true, "dateFrom": "2025-10-28", "dateTo": "2025-10-28" }
+- "devis non traités" → { "categories": ["devis"], "status": "nouveau" }
+
+Return ONLY a JSON object. Include only the fields that are explicitly mentioned or strongly implied in the search query.`
+        },
+        {
+          role: "user",
+          content: `Current date: ${new Date().toISOString().split('T')[0]}\n\nSearch query: ${prompt}`
+        }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.3,
+    });
+
+    const result = JSON.parse(response.choices[0].message.content || "{}");
+    console.log('[AI Search] Analyzed prompt:', prompt, '→', result);
+    
+    return result;
+  } catch (error) {
+    console.error("Error analyzing search prompt:", error);
+    return {};
+  }
+}
