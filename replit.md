@@ -10,6 +10,19 @@ I like an iterative development approach.
 I want the agent to prioritize robust error handling and logging.
 I prefer to see a clear plan before implementation.
 
+## Recent Changes
+### October 29, 2025 - AI-Powered Email Search
+- **Implemented AI Search Feature**: Natural language search for emails using GPT-5
+  - Separated prompt analysis (once) from data retrieval (pagination-friendly)
+  - Route `/api/emails/ai-search/analyze`: Analyzes user prompt with OpenAI (called once)
+  - Route `/api/emails/ai-search`: Executes search with cached criteria (used for pagination)
+  - Frontend caches extracted criteria client-side to avoid redundant GPT-5 calls
+  - Search UI with Sparkles icon button, elegant dialog, and criteria badges
+  - Button variant changes to indicate active AI search state
+  - Fixed bug: corrected `cat.name` to `cat.key` in category mapping
+  - Fixed OpenAI temperature parameter (changed from 0.3 to 0)
+  - Production-ready with controlled API costs and fast pagination
+
 ## System Architecture
 The application uses a modern web stack:
 - **Frontend**: React, TypeScript, Tailwind CSS, and Shadcn UI provide a responsive and aesthetically pleasing user interface. The design system incorporates a professional blue color scheme, Inter typography for UI, and JetBrains Mono for code/data, supporting both dark and light modes. Visual icon and color pickers enhance UX for category management. Sidebar menus include real-time count badges.

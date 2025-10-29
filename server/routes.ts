@@ -354,7 +354,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get available categories for the AI analysis
       const categories = await storage.getAllEmailCategories();
       const availableCategories = categories.map(cat => ({
-        key: cat.name.toLowerCase(),
+        key: cat.key,
         label: cat.label
       }));
 
