@@ -67,6 +67,7 @@ export const emailAccounts = pgTable("email_accounts", {
   password: text("password").notNull(), // Stored encrypted, returned decrypted
   isActive: boolean("is_active").notNull().default(true),
   scanFrequency: integer("scan_frequency").notNull().default(15), // minutes
+  retentionDays: integer("retention_days").notNull().default(90), // Email retention period in days (default 3 months)
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -109,6 +110,7 @@ export const emailCategories = pgTable("email_categories", {
   generateAutoResponse: boolean("generate_auto_response").notNull().default(true), // Whether to generate AI auto-response
   autoCreateTask: boolean("auto_create_task").notNull().default(false), // Whether to automatically create tasks from emails in this category
   autoMarkAsProcessed: boolean("auto_mark_as_processed").notNull().default(false), // Whether to automatically mark emails as processed (traité) when scanned
+  redirectEmails: text("redirect_emails").array().default(sql`'{}'`), // Email addresses to forward attachments to
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

@@ -92,12 +92,40 @@ async function initializeDefaultCategories() {
   }
 }
 
+// Initialize default settings for document storage
+async function initializeDefaultSettings() {
+  const defaultSettings = [
+    {
+      key: 'documentStorageProvider',
+      value: 'disabled', // disabled, google_drive, onedrive
+      description: 'Provider for document storage (disabled by default)',
+    },
+    {
+      key: 'documentExtractionEnabled',
+      value: false,
+      description: 'Enable/disable automatic document extraction from email attachments',
+    },
+  ];
+
+  for (const setting of defaultSettings) {
+    const existing = await storage.getSetting(setting.key);
+    if (!existing) {
+      await storage.upsertSetting({ key: setting.key, value: setting.value, description: setting.description });
+      console.log(`[Init] Created default setting: ${setting.key}`);
+    }
+  }
+}
+
 (async () => {
   const server = await registerRoutes(app);
 
   // Initialize default email categories if they don't exist
   await initializeDefaultCategories();
   console.log('[App] Default categories initialized');
+
+  // Initialize default settings if they don't exist
+  await initializeDefaultSettings();
+  console.log('[App] Default settings initialized');
 
   // Start email scheduler for automatic email scanning
   const emailScheduler = new EmailScheduler(storage);
