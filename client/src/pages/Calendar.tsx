@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, MapPin, Sparkles, Pencil, Trash2 } from "lucide-react";
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths } from "date-fns";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, addWeeks, subWeeks, addDays, subDays, startOfDay, endOfDay } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -30,8 +30,11 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 
+type ViewMode = "day" | "week" | "month";
+
 export default function Calendar() {
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [viewMode, setViewMode] = useState<ViewMode>("month");
+  const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -56,10 +59,34 @@ export default function Calendar() {
   });
   const { toast } = useToast();
 
+  // Calculate date range based on view mode
+  const getDateRange = () => {
+    switch (viewMode) {
+      case "day":
+        return {
+          start: startOfDay(currentDate),
+          end: endOfDay(currentDate),
+        };
+      case "week":
+        return {
+          start: startOfWeek(currentDate, { weekStartsOn: 1 }),
+          end: endOfWeek(currentDate, { weekStartsOn: 1 }),
+        };
+      case "month":
+      default:
+        return {
+          start: startOfMonth(currentDate),
+          end: endOfMonth(currentDate),
+        };
+    }
+  };
+
+  const dateRange = getDateRange();
+
   const { data: appointments = [], isLoading } = useQuery<any[]>({
     queryKey: ["/api/appointments", {
-      start: startOfMonth(currentMonth).toISOString(),
-      end: endOfMonth(currentMonth).toISOString(),
+      start: dateRange.start.toISOString(),
+      end: dateRange.end.toISOString(),
     }],
   });
 
@@ -136,9 +163,59 @@ export default function Calendar() {
     },
   });
 
-  const monthStart = startOfMonth(currentMonth);
-  const monthEnd = endOfMonth(currentMonth);
-  const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
+  // Navigation functions
+  const handlePrevious = () => {
+    switch (viewMode) {
+      case "day":
+        setCurrentDate(subDays(currentDate, 1));
+        break;
+      case "week":
+        setCurrentDate(subWeeks(currentDate, 1));
+        break;
+      case "month":
+        setCurrentDate(subMonths(currentDate, 1));
+        break;
+    }
+  };
+
+  const handleNext = () => {
+    switch (viewMode) {
+      case "day":
+        setCurrentDate(addDays(currentDate, 1));
+        break;
+      case "week":
+        setCurrentDate(addWeeks(currentDate, 1));
+        break;
+      case "month":
+        setCurrentDate(addMonths(currentDate, 1));
+        break;
+    }
+  };
+
+  const handleToday = () => {
+    setCurrentDate(new Date());
+  };
+
+  const getFormattedDateRange = () => {
+    switch (viewMode) {
+      case "day":
+        return format(currentDate, "dd MMMM yyyy", { locale: fr });
+      case "week": {
+        const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+        const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
+        return `${format(weekStart, "dd", { locale: fr })} - ${format(weekEnd, "dd MMMM yyyy", { locale: fr })}`;
+      }
+      case "month":
+        return format(currentDate, "MMMM yyyy", { locale: fr });
+    }
+  };
+
+  // For month view: calculate grid including leading/trailing days
+  const monthStart = startOfMonth(currentDate);
+  const monthEnd = endOfMonth(currentDate);
+  const gridStart = startOfWeek(monthStart, { weekStartsOn: 1 });
+  const gridEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
+  const daysInGrid = eachDayOfInterval({ start: gridStart, end: gridEnd });
 
   const handleEdit = () => {
     if (selectedAppointment) {
@@ -257,56 +334,92 @@ export default function Calendar() {
         </Button>
       </div>
 
-      {/* Calendar Navigation */}
+      {/* Calendar Navigation & View Modes */}
       <Card className="p-6">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
           <h2 className="text-xl font-semibold">
-            {format(currentMonth, "MMMM yyyy", { locale: fr })}
+            {getFormattedDateRange()}
           </h2>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-              data-testid="button-prev-month"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setCurrentMonth(new Date())}
-              data-testid="button-today"
-            >
-              Aujourd'hui
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-              data-testid="button-next-month"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            {/* View Mode Selector */}
+            <div className="flex gap-1 bg-muted p-1 rounded-md">
+              <Button
+                variant={viewMode === "day" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("day")}
+                data-testid="button-view-day"
+                className="text-xs sm:text-sm"
+              >
+                Jour
+              </Button>
+              <Button
+                variant={viewMode === "week" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("week")}
+                data-testid="button-view-week"
+                className="text-xs sm:text-sm"
+              >
+                Semaine
+              </Button>
+              <Button
+                variant={viewMode === "month" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setViewMode("month")}
+                data-testid="button-view-month"
+                className="text-xs sm:text-sm"
+              >
+                Mois
+              </Button>
+            </div>
+            {/* Navigation Controls */}
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handlePrevious}
+                data-testid="button-prev"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleToday}
+                data-testid="button-today"
+                className="text-xs sm:text-sm"
+              >
+                Aujourd'hui
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleNext}
+                data-testid="button-next"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
 
-        {/* Calendar Grid */}
-        <div className="grid grid-cols-7 gap-2">
-          {/* Day Headers */}
-          {["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"].map((day) => (
-            <div key={day} className="text-center text-xs font-medium text-muted-foreground pb-2">
-              {day}
-            </div>
-          ))}
+        {/* Calendar View - Conditional Rendering */}
+        <>
+        {viewMode === "month" && (
+          <div className="grid grid-cols-7 gap-2">
+            {/* Day Headers */}
+            {["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"].map((day) => (
+              <div key={day} className="text-center text-xs font-medium text-muted-foreground pb-2">
+                {day}
+              </div>
+            ))}
 
-          {/* Calendar Days */}
-          {isLoading ? (
-            [...Array(35)].map((_, i) => <Skeleton key={i} className="h-24" />)
-          ) : (
-            daysInMonth.map((day) => {
+            {/* Calendar Days */}
+            {isLoading ? (
+              [...Array(35)].map((_, i) => <Skeleton key={i} className="h-24" />)
+            ) : (
+              daysInGrid.map((day) => {
               const dayAppointments = getAppointmentsForDate(day);
               const isToday = isSameDay(day, new Date());
-              const isCurrentMonth = isSameMonth(day, currentMonth);
+              const isCurrentMonth = isSameMonth(day, currentDate);
 
               return (
                 <button
@@ -350,7 +463,181 @@ export default function Calendar() {
               );
             })
           )}
-        </div>
+          </div>
+        )}
+
+        {/* Week View */}
+        {viewMode === "week" && (
+          <div className="space-y-2">
+            {isLoading ? (
+              [...Array(7)].map((_, i) => <Skeleton key={i} className="h-32" />)
+            ) : (
+              (() => {
+                const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+                const weekDays = eachDayOfInterval({
+                  start: weekStart,
+                  end: endOfWeek(currentDate, { weekStartsOn: 1 }),
+                });
+
+                return weekDays.map((day) => {
+                  const dayAppointments = getAppointmentsForDate(day);
+                  const isToday = isSameDay(day, new Date());
+
+                  return (
+                    <div
+                      key={day.toISOString()}
+                      className={`p-4 rounded-md border ${isToday ? "border-primary border-2 bg-primary/5" : "border-border bg-card"}`}
+                      data-testid={`week-day-${format(day, "yyyy-MM-dd")}`}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className={`font-semibold ${isToday ? "text-primary" : ""}`}>
+                          {format(day, "EEEE dd MMMM", { locale: fr })}
+                        </h3>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleOpenCreateDialog(day)}
+                          data-testid={`button-add-week-${format(day, "yyyy-MM-dd")}`}
+                        >
+                          <CalendarIcon className="h-3 w-3 mr-1" />
+                          Ajouter
+                        </Button>
+                      </div>
+                      <div className="space-y-2">
+                        {dayAppointments.length > 0 ? (
+                          dayAppointments.map((apt: any) => (
+                            <div
+                              key={apt.id}
+                              className="p-3 rounded-md bg-muted hover-elevate cursor-pointer"
+                              onClick={() => setSelectedAppointment(apt)}
+                              data-testid={`week-appointment-${apt.id}`}
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="text-sm font-medium truncate">{apt.title}</h4>
+                                  <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                                    <Clock className="h-3 w-3" />
+                                    <span>
+                                      {format(new Date(apt.startTime), "HH:mm")} - {format(new Date(apt.endTime), "HH:mm")}
+                                    </span>
+                                    {apt.location && (
+                                      <>
+                                        <MapPin className="h-3 w-3 ml-2" />
+                                        <span className="truncate">{apt.location}</span>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-sm text-muted-foreground text-center py-4">
+                            Aucun rendez-vous
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                });
+              })()
+            )}
+          </div>
+        )}
+
+        {/* Day View */}
+        {viewMode === "day" && (
+          <div className="space-y-4">
+            {isLoading ? (
+              <Skeleton className="h-96" />
+            ) : (
+              <div>
+                <div className="flex items-center justify-between mb-4 p-4 bg-muted rounded-md">
+                  <h3 className="font-semibold text-lg">
+                    {format(currentDate, "EEEE dd MMMM yyyy", { locale: fr })}
+                  </h3>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => handleOpenCreateDialog(currentDate)}
+                    data-testid="button-add-day-appointment"
+                  >
+                    <CalendarIcon className="h-4 w-4 mr-2" />
+                    Nouveau rendez-vous
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  {(() => {
+                    const dayAppointments = getAppointmentsForDate(currentDate).sort((a: any, b: any) =>
+                      new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+                    );
+
+                    if (dayAppointments.length === 0) {
+                      return (
+                        <div className="text-center py-12 border border-dashed rounded-md">
+                          <CalendarIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                          <p className="text-muted-foreground">Aucun rendez-vous pour cette journée</p>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleOpenCreateDialog(currentDate)}
+                            className="mt-4"
+                            data-testid="button-add-day-empty"
+                          >
+                            Créer un rendez-vous
+                          </Button>
+                        </div>
+                      );
+                    }
+
+                    return dayAppointments.map((apt: any) => (
+                      <div
+                        key={apt.id}
+                        className="p-4 rounded-md border border-border hover-elevate cursor-pointer"
+                        onClick={() => setSelectedAppointment(apt)}
+                        data-testid={`day-appointment-${apt.id}`}
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h4 className="text-base font-semibold">{apt.title}</h4>
+                              {apt.status && (
+                                <Badge variant="outline" className="text-xs">
+                                  {apt.status}
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="space-y-1 text-sm text-muted-foreground">
+                              <div className="flex items-center gap-2">
+                                <Clock className="h-4 w-4" />
+                                <span>
+                                  {format(new Date(apt.startTime), "HH:mm")} - {format(new Date(apt.endTime), "HH:mm")}
+                                </span>
+                              </div>
+                              {apt.location && (
+                                <div className="flex items-center gap-2">
+                                  <MapPin className="h-4 w-4" />
+                                  <span>{apt.location}</span>
+                                </div>
+                              )}
+                              {apt.description && (
+                                <p className="mt-2 text-sm">{apt.description}</p>
+                              )}
+                            </div>
+                          </div>
+                          <Badge className={`${getTagColor(apt.tag)} flex-shrink-0`}>
+                            {apt.tag}
+                          </Badge>
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        </>
       </Card>
 
       {/* Upcoming Appointments */}

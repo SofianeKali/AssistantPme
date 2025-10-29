@@ -11,6 +11,32 @@ I want the agent to prioritize robust error handling and logging.
 I prefer to see a clear plan before implementation.
 
 ## Recent Changes
+### October 29, 2025 - Modes de Vue Calendrier (Jour/Semaine/Mois)
+- **Implémentation complète et validée des trois modes de vue pour le calendrier** :
+  - Vue Mois : grille mensuelle classique (7×n) avec aperçu des rendez-vous (2 max + compteur overflow), jours de remplissage pour alignement correct avec en-têtes
+  - Vue Semaine : liste des 7 jours de la semaine (lundi-dimanche) avec tous les rendez-vous détaillés par jour
+  - Vue Jour : vue détaillée d'une journée avec tous les rendez-vous triés chronologiquement
+  - Boutons de sélection de mode (Jour/Semaine/Mois) avec état actif visuellement marqué (toggle group)
+  - Navigation adaptative : précédent/suivant/aujourd'hui ajustés selon le mode de vue (jour ±1, semaine ±7, mois ±1 mois)
+  - Récupération de données optimisée : seuls les rendez-vous de la période visible sont chargés (query key dynamique avec start/end)
+  - Format d'affichage adaptatif : titre de période change selon le mode (ex: "21 - 27 octobre 2024" pour la semaine, "octobre 2025" pour le mois)
+  - Boutons d'ajout de rendez-vous contextuels dans chaque vue
+  - Design responsive avec adaptation mobile/desktop
+  - Grille mois : calcul de gridStart (startOfWeek(startOfMonth)) à gridEnd (endOfWeek(endOfMonth)) pour alignement parfait avec en-têtes de jour
+  - Validation e2e : tous les modes, navigation, mise en évidence de la date du jour testés et validés
+
+### October 29, 2025 - Résolution en Masse des Alertes
+- **Implémentation de la sélection et résolution groupée d'alertes** :
+  - Checkboxes pour sélectionner individuellement les alertes
+  - Checkbox "Tout sélectionner" avec état indéterminé
+  - Compteur d'alertes sélectionnées
+  - Bouton "Résoudre la sélection" pour traiter plusieurs alertes simultanément
+  - API backend `/api/alerts/bulk-resolve` avec filtre sur alertes non résolues
+  - Réinitialisation automatique de la sélection lors du changement d'onglet
+  - Validation côté serveur pour éviter la double-résolution
+  - Messages toast avec nombre exact d'alertes résolues
+  - Invalidation automatique du cache après résolution
+
 ### October 29, 2025 - Email Reply Attachments Support
 - **Implemented Attachment Support for Email Replies**:
   - Added multer middleware for multipart file uploads (15 MB per file, 25 MB total)
