@@ -725,7 +725,7 @@ export default function Dashboard() {
                   <Bar
                     dataKey="termine"
                     stackId="a"
-                    fill={COLORS.chart1}
+                    fill={COLORS.chart2}
                     radius={[4, 4, 0, 0]}
                     name="Terminé"
                   />
