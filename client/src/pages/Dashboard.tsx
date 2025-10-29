@@ -755,8 +755,8 @@ export default function Dashboard() {
   function renderEmailEvolutionChart() {
     return (
       <Card key="email-evolution">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle>Évolution des emails traités</CardTitle>
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4">
+          <CardTitle className="shrink-0">Évolution des emails traités</CardTitle>
           <ChartPeriodControls
             periodType={emailEvolutionPeriod}
             onPeriodTypeChange={(type) => setEmailEvolutionPeriod(type)}
@@ -810,8 +810,8 @@ export default function Dashboard() {
   function renderEmailDistributionChart() {
     return (
       <Card key="email-distribution">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle>Répartition des emails reçus</CardTitle>
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4">
+          <CardTitle className="shrink-0">Répartition des emails reçus</CardTitle>
           <ChartPeriodControls
             periodType={emailDistributionPeriod}
             onPeriodTypeChange={(type) => setEmailDistributionPeriod(type)}
@@ -870,8 +870,8 @@ export default function Dashboard() {
   function renderAppointmentsChart() {
     return (
       <Card key="appointments">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle>Évolution des RDV</CardTitle>
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4">
+          <CardTitle className="shrink-0">Évolution des RDV</CardTitle>
           <ChartPeriodControls
             periodType={appointmentsPeriod}
             onPeriodTypeChange={(type) => setAppointmentsPeriod(type)}
@@ -921,8 +921,8 @@ export default function Dashboard() {
   function renderCategoryProcessingChart() {
     return (
       <Card key="category-processing">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle>Taux de traitement par catégorie</CardTitle>
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4">
+          <CardTitle className="shrink-0">Taux de traitement par catégorie</CardTitle>
           <ChartPeriodControls
             periodType={categoryProcessingPeriod}
             onPeriodTypeChange={(type) => setCategoryProcessingPeriod(type)}
@@ -983,8 +983,8 @@ export default function Dashboard() {
   function renderTasksEvolutionChart() {
     return (
       <Card key="tasks-evolution">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle>Évolution des tâches</CardTitle>
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4">
+          <CardTitle className="shrink-0">Évolution des tâches</CardTitle>
           <ChartPeriodControls
             periodType={tasksPeriod}
             onPeriodTypeChange={(type) => setTasksPeriod(type)}
@@ -1050,8 +1050,8 @@ export default function Dashboard() {
   function renderAlertsEvolutionChart() {
     return (
       <Card key="alerts-evolution">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle>Evolution des alertes</CardTitle>
+        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4">
+          <CardTitle className="shrink-0">Evolution des alertes</CardTitle>
           <ChartPeriodControls
             periodType={alertsPeriod}
             onPeriodTypeChange={(type) => setAlertsPeriod(type)}

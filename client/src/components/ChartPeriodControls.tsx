@@ -28,10 +28,10 @@ export function ChartPeriodControls({
   testIdPrefix,
 }: ChartPeriodControlsProps) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
       <Select value={periodType} onValueChange={onPeriodTypeChange}>
         <SelectTrigger
-          className="w-32"
+          className="w-full sm:w-32"
           data-testid={`select-period-${testIdPrefix}`}
         >
           <SelectValue />
@@ -51,7 +51,7 @@ export function ChartPeriodControls({
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
-        <span className="text-sm text-muted-foreground min-w-[200px] text-center">
+        <span className="text-sm text-muted-foreground min-w-0 flex-1 text-center px-2 truncate sm:min-w-[200px]">
           {periodLabel}
         </span>
         <Button
