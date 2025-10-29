@@ -4,6 +4,22 @@
 IzyInbox is an intelligent web application designed to automate administrative tasks for SMEs. It leverages AI for email analysis and automates the management of quotes, invoices, appointments, and documents. The core purpose is to streamline administrative workflows, enhance efficiency, and provide actionable insights for small and medium-sized businesses. The project aims to become a leading solution for smart automation for busy managers, with ambitions for broad market adoption.
 
 ## Recent Changes (October 29, 2025)
+- **Visual Icon and Color Pickers for Categories**:
+  - Replaced text input fields with interactive visual pickers using Shadcn Popover components
+  - **Color Picker Features**:
+    - Grid of 16 preset colors with visual preview and hover effects
+    - HTML5 color picker for custom color selection
+    - Hex text input for manual entry
+    - Live preview of selected color in trigger button
+  - **Icon Picker Features**:
+    - Grid display of 35+ Lucide icons (Mail, FileText, Calendar, DollarSign, Package, etc.)
+    - Visual selection with highlight of currently selected icon
+    - Live preview of selected icon in trigger button
+  - Both pickers integrated in category creation form and edit dialog
+  - Improved UX: users can now visually select colors and icons instead of typing names
+  - End-to-end tested and validated by architect
+  - Fixed duplicate color in PRESET_COLORS array to eliminate React warnings
+
 - **Category Edit Feature**:
   - Added "Modifier" button next to "Supprimer" button in category list
   - Created edit dialog to modify existing category settings:
