@@ -67,6 +67,7 @@ export default function Settings() {
   );
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
+  const [editingCategory, setEditingCategory] = useState<any | null>(null);
 
   // Fetch all system categories (categories not linked to specific accounts)
   const { data: emailCategories, isLoading: categoriesLoading } = useQuery<any>(
@@ -217,6 +218,24 @@ export default function Settings() {
       toast({
         title: "Erreur",
         description: "Impossible d'ajouter la catégorie",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateCategoryMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      return await apiRequest("PATCH", `/api/email-categories/${id}`, data);
+    },
+    onSuccess: () => {
+      toast({ title: "Catégorie modifiée avec succès" });
+      queryClient.invalidateQueries({ queryKey: ["/api/email-categories"] });
+      setEditingCategory(null);
+    },
+    onError: () => {
+      toast({
+        title: "Erreur",
+        description: "Impossible de modifier la catégorie",
         variant: "destructive",
       });
     },
