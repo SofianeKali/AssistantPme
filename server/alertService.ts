@@ -23,8 +23,8 @@ export class AlertService {
       // 3. Check for unprocessed emails
       await this.checkUnprocessedEmails(result);
 
-      // 4. Check custom alert rules
-      await this.checkCustomAlertRules(result);
+      // 4. Check custom alert rules (respecting individual check intervals)
+      await this.checkCustomAlertRulesDueForCheck(result);
 
       console.log(`[Alerts] Alert generation complete - Created: ${result.created}, Errors: ${result.errors}`);
     } catch (error) {
@@ -33,6 +33,55 @@ export class AlertService {
     }
 
     return result;
+  }
+
+  private async checkCustomAlertRulesDueForCheck(result: { created: number; errors: number }): Promise<void> {
+    try {
+      // Get all active custom alert rules
+      const allRules = await this.storage.getAlertRules({ isActive: true });
+      
+      if (allRules.length === 0) {
+        return;
+      }
+
+      const now = new Date();
+      const rulesDueForCheck = allRules.filter(rule => {
+        if (!rule.lastCheckedAt) {
+          // Never checked before, so it's due
+          return true;
+        }
+        
+        const minutesSinceLastCheck = (now.getTime() - rule.lastCheckedAt.getTime()) / (60 * 1000);
+        return minutesSinceLastCheck >= rule.checkIntervalMinutes;
+      });
+
+      if (rulesDueForCheck.length === 0) {
+        return;
+      }
+
+      console.log(`[Alerts] ${rulesDueForCheck.length} custom rules due for check`);
+
+      for (const rule of rulesDueForCheck) {
+        try {
+          const ruleData = rule.ruleData as any;
+          
+          if (ruleData.entityType === 'email') {
+            await this.evaluateEmailRule(rule, ruleData, result);
+          } else if (ruleData.entityType === 'appointment') {
+            await this.evaluateAppointmentRule(rule, ruleData, result);
+          }
+
+          // Update lastCheckedAt for this rule
+          await this.storage.updateAlertRule(rule.id, { lastCheckedAt: now });
+        } catch (error) {
+          console.error(`[Alerts] Error evaluating rule ${rule.id}:`, error);
+          result.errors++;
+        }
+      }
+    } catch (error) {
+      console.error('[Alerts] Error checking custom alert rules:', error);
+      result.errors++;
+    }
   }
 
   private async checkQuotesWithoutResponse(result: { created: number; errors: number }): Promise<void> {
@@ -176,37 +225,6 @@ export class AlertService {
     }
   }
 
-  private async checkCustomAlertRules(result: { created: number; errors: number }): Promise<void> {
-    try {
-      // Get all active custom alert rules
-      const rules = await this.storage.getAlertRules({ isActive: true });
-      
-      if (rules.length === 0) {
-        console.log('[Alerts] No active custom alert rules found');
-        return;
-      }
-
-      console.log(`[Alerts] Checking ${rules.length} custom alert rules`);
-
-      for (const rule of rules) {
-        try {
-          const ruleData = rule.ruleData as any;
-          
-          if (ruleData.entityType === 'email') {
-            await this.evaluateEmailRule(rule, ruleData, result);
-          } else if (ruleData.entityType === 'appointment') {
-            await this.evaluateAppointmentRule(rule, ruleData, result);
-          }
-        } catch (error) {
-          console.error(`[Alerts] Error evaluating rule ${rule.id}:`, error);
-          result.errors++;
-        }
-      }
-    } catch (error) {
-      console.error('[Alerts] Error checking custom alert rules:', error);
-      result.errors++;
-    }
-  }
 
   private async evaluateEmailRule(
     rule: any,
@@ -233,30 +251,56 @@ export class AlertService {
     // Get matching emails using optimized database query
     const matchingEmails = await this.storage.getAllEmails(emailFilters);
 
-    // Create alerts for matching emails
-    for (const email of matchingEmails) {
-      // Check if unresolved alert already exists for this email and rule
-      const existingAlerts = await this.storage.getAlerts({
-        resolved: false,
-        type: `custom_rule_${rule.id}`,
-        relatedEntityType: 'email',
-        relatedEntityId: email.id,
-      });
+    // If no emails match, do nothing
+    if (matchingEmails.length === 0) {
+      return;
+    }
 
-      if (existingAlerts.length === 0) {
-        const alertData: InsertAlert = {
-          type: `custom_rule_${rule.id}`,
-          severity: rule.severity,
-          title: rule.name,
-          message: ruleData.message,
-          relatedEntityType: 'email',
-          relatedEntityId: email.id,
-        };
+    // Check if unresolved alert already exists for this rule
+    const existingAlerts = await this.storage.getAlerts({
+      resolved: false,
+      ruleId: rule.id,
+    });
 
-        await this.storage.createAlert(alertData);
-        result.created++;
-        console.log(`[Alerts] Created custom rule alert for email: ${email.id} (rule: ${rule.name})`);
+    const emailIds = matchingEmails.map(e => e.id);
+
+    if (existingAlerts.length > 0) {
+      // Update existing alert with new emails
+      const existingAlert = existingAlerts[0];
+      const existingEmailIds = await this.storage.getAlertEmails(existingAlert.id);
+      
+      // Find new emails not already linked
+      const newEmailIds = emailIds.filter(id => !existingEmailIds.includes(id));
+      
+      if (newEmailIds.length > 0) {
+        // Link new emails to alert
+        await this.storage.linkEmailsToAlert(existingAlert.id, newEmailIds);
+        
+        // Update email count
+        const totalCount = existingEmailIds.length + newEmailIds.length;
+        await this.storage.updateAlertEmailCount(existingAlert.id, totalCount);
+        
+        console.log(`[Alerts] Updated alert ${existingAlert.id}: added ${newEmailIds.length} new emails (total: ${totalCount})`);
       }
+    } else {
+      // Create new alert for all matching emails
+      const alertData: InsertAlert = {
+        type: `custom_rule_${rule.id}`,
+        severity: rule.severity,
+        title: rule.name,
+        message: ruleData.message,
+        relatedEntityType: 'email',
+        ruleId: rule.id,
+        emailCount: emailIds.length,
+      };
+
+      const newAlert = await this.storage.createAlert(alertData);
+      
+      // Link all emails to this alert
+      await this.storage.linkEmailsToAlert(newAlert.id, emailIds);
+      
+      result.created++;
+      console.log(`[Alerts] Created grouped alert for ${emailIds.length} emails (rule: ${rule.name})`);
     }
   }
 

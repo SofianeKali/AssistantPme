@@ -6,6 +6,7 @@ import {
   appointments,
   alerts,
   alertRules,
+  alertEmails,
   tags,
   settings,
   emailResponses,
@@ -83,8 +84,11 @@ export interface IStorage {
   
   // Alerts
   createAlert(alert: InsertAlert): Promise<Alert>;
-  getAlerts(filters?: { resolved?: boolean; type?: string; relatedEntityType?: string; relatedEntityId?: string; limit?: number }): Promise<Alert[]>;
+  getAlerts(filters?: { resolved?: boolean; type?: string; relatedEntityType?: string; relatedEntityId?: string; ruleId?: string; limit?: number }): Promise<Alert[]>;
   resolveAlert(id: string, userId: string): Promise<Alert>;
+  linkEmailsToAlert(alertId: string, emailIds: string[]): Promise<void>;
+  getAlertEmails(alertId: string): Promise<string[]>;
+  updateAlertEmailCount(alertId: string, count: number): Promise<void>;
   
   // Tags
   createTag(tag: InsertTag): Promise<Tag>;
@@ -452,7 +456,7 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async getAlerts(filters?: { resolved?: boolean; type?: string; relatedEntityType?: string; relatedEntityId?: string; limit?: number }): Promise<Alert[]> {
+  async getAlerts(filters?: { resolved?: boolean; type?: string; relatedEntityType?: string; relatedEntityId?: string; ruleId?: string; limit?: number }): Promise<Alert[]> {
     let query = db.select().from(alerts);
     
     const conditions = [];
@@ -467,6 +471,9 @@ export class DatabaseStorage implements IStorage {
     }
     if (filters?.relatedEntityId) {
       conditions.push(eq(alerts.relatedEntityId, filters.relatedEntityId));
+    }
+    if (filters?.ruleId) {
+      conditions.push(eq(alerts.ruleId, filters.ruleId));
     }
     
     if (conditions.length > 0) {
@@ -493,6 +500,28 @@ export class DatabaseStorage implements IStorage {
       .where(eq(alerts.id, id))
       .returning();
     return updated;
+  }
+
+  async linkEmailsToAlert(alertId: string, emailIds: string[]): Promise<void> {
+    if (emailIds.length === 0) return;
+    
+    const values = emailIds.map(emailId => ({ alertId, emailId }));
+    await db.insert(alertEmails).values(values).onConflictDoNothing();
+  }
+
+  async getAlertEmails(alertId: string): Promise<string[]> {
+    const results = await db
+      .select({ emailId: alertEmails.emailId })
+      .from(alertEmails)
+      .where(eq(alertEmails.alertId, alertId));
+    return results.map(r => r.emailId);
+  }
+
+  async updateAlertEmailCount(alertId: string, count: number): Promise<void> {
+    await db
+      .update(alerts)
+      .set({ emailCount: count })
+      .where(eq(alerts.id, alertId));
   }
 
   // Tags

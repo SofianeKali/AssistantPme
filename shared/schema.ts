@@ -295,7 +295,9 @@ export const alerts = pgTable("alerts", {
   title: text("title").notNull(),
   message: text("message").notNull(),
   relatedEntityType: varchar("related_entity_type"), // email, document, appointment
-  relatedEntityId: varchar("related_entity_id"),
+  relatedEntityId: varchar("related_entity_id"), // Deprecated - use alertEmails junction table for multiple emails
+  ruleId: varchar("rule_id").references(() => alertRules.id, { onDelete: "cascade" }), // Rule that generated this alert
+  emailCount: integer("email_count").notNull().default(0), // Number of emails related to this alert
   isResolved: boolean("is_resolved").notNull().default(false),
   resolvedAt: timestamp("resolved_at"),
   resolvedById: varchar("resolved_by_id").references(() => users.id),
@@ -309,6 +311,15 @@ export const insertAlertSchema = createInsertSchema(alerts).omit({
 
 export type InsertAlert = z.infer<typeof insertAlertSchema>;
 export type Alert = typeof alerts.$inferSelect;
+
+// Alert Emails junction table - Links multiple emails to a single alert
+export const alertEmails = pgTable("alert_emails", {
+  alertId: varchar("alert_id").notNull().references(() => alerts.id, { onDelete: "cascade" }),
+  emailId: varchar("email_id").notNull().references(() => emails.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  pk: { columns: [table.alertId, table.emailId] }
+}));
 
 // Configuration settings
 export const settings = pgTable("settings", {
@@ -383,6 +394,8 @@ export const alertRules = pgTable("alert_rules", {
   ruleData: jsonb("rule_data").notNull(), // Règle structurée générée par l'IA
   isActive: boolean("is_active").notNull().default(true),
   severity: varchar("severity").notNull().default("warning"), // critical, warning, info
+  checkIntervalMinutes: integer("check_interval_minutes").notNull().default(60), // Intervalle de vérification en minutes
+  lastCheckedAt: timestamp("last_checked_at"), // Dernière vérification de cette règle
   createdById: varchar("created_by_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -489,11 +502,16 @@ export const appointmentTagsRelations = relations(appointmentTags, ({ one }) => 
   }),
 }));
 
-export const alertsRelations = relations(alerts, ({ one }) => ({
+export const alertsRelations = relations(alerts, ({ one, many }) => ({
   resolvedBy: one(users, {
     fields: [alerts.resolvedById],
     references: [users.id],
   }),
+  rule: one(alertRules, {
+    fields: [alerts.ruleId],
+    references: [alertRules.id],
+  }),
+  alertEmails: many(alertEmails),
 }));
 
 export const emailResponsesRelations = relations(emailResponses, ({ one }) => ({
@@ -514,10 +532,22 @@ export const remindersRelations = relations(reminders, ({ one }) => ({
   }),
 }));
 
-export const alertRulesRelations = relations(alertRules, ({ one }) => ({
+export const alertRulesRelations = relations(alertRules, ({ one, many }) => ({
   createdBy: one(users, {
     fields: [alertRules.createdById],
     references: [users.id],
+  }),
+  alerts: many(alerts),
+}));
+
+export const alertEmailsRelations = relations(alertEmails, ({ one }) => ({
+  alert: one(alerts, {
+    fields: [alertEmails.alertId],
+    references: [alerts.id],
+  }),
+  email: one(emails, {
+    fields: [alertEmails.emailId],
+    references: [emails.id],
   }),
 }));
 
