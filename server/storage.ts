@@ -44,7 +44,7 @@ import {
   type InsertTask,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, gte, lte, like, or, isNull, sql, ne } from "drizzle-orm";
+import { eq, and, desc, gte, lte, like, or, isNull, sql, ne, inArray } from "drizzle-orm";
 
 export interface IStorage {
   // User operations (required for Replit Auth)
@@ -456,7 +456,7 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async getAlerts(filters?: { userId?: string; resolved?: boolean; type?: string; relatedEntityType?: string; relatedEntityId?: string; ruleId?: string; limit?: number }): Promise<Alert[]> {
+  async getAlerts(filters?: { userId?: string; adminUserIds?: string[]; resolved?: boolean; type?: string; relatedEntityType?: string; relatedEntityId?: string; ruleId?: string; limit?: number }): Promise<Alert[]> {
     let query = db.select({
       id: alerts.id,
       type: alerts.type,
@@ -477,9 +477,20 @@ export class DatabaseStorage implements IStorage {
     
     const conditions = [];
     
-    // Filter by user - only show alerts for rules created by this user
+    // Filter by user access:
+    // - Show alerts for rules created by this user
+    // - Show alerts for rules created by any admin (if adminUserIds is provided)
     if (filters?.userId) {
-      conditions.push(eq(alertRules.createdById, filters.userId));
+      const userAccessConditions = [eq(alertRules.createdById, filters.userId)];
+      
+      // Add admin-created alerts if adminUserIds is provided
+      if (filters.adminUserIds && filters.adminUserIds.length > 0) {
+        filters.adminUserIds.forEach(adminId => {
+          userAccessConditions.push(eq(alertRules.createdById, adminId));
+        });
+      }
+      
+      conditions.push(or(...userAccessConditions));
     }
     
     if (filters?.resolved !== undefined) {
@@ -1222,7 +1233,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Sidebar counts for navigation menu
-  async getSidebarCounts(userId?: string): Promise<{
+  async getSidebarCounts(userId?: string, adminUserIds?: string[]): Promise<{
     unprocessedEmails: number;
     unresolvedAlerts: number;
     tasksNew: number;
@@ -1249,6 +1260,7 @@ export class DatabaseStorage implements IStorage {
     const unprocessedEmails = Number(unprocessedEmailsResult?.count || 0);
 
     // Count unresolved alerts - filtered by user (via alert_rules join)
+    // Include alerts created by user + alerts created by admins
     let alertQuery = db
       .select({ count: sql<number>`count(DISTINCT ${alerts.id})` })
       .from(alerts)
@@ -1256,18 +1268,26 @@ export class DatabaseStorage implements IStorage {
     
     const alertConditions = [eq(alerts.isResolved, false)];
     if (userId) {
-      alertConditions.push(eq(alertRules.createdById, userId));
+      const allowedUserIds = [userId];
+      if (adminUserIds && adminUserIds.length > 0) {
+        allowedUserIds.push(...adminUserIds);
+      }
+      alertConditions.push(inArray(alertRules.createdById, allowedUserIds));
     }
     
     alertQuery = alertQuery.where(and(...alertConditions)) as any;
     const [unresolvedAlertsResult] = await alertQuery;
     const unresolvedAlerts = Number(unresolvedAlertsResult?.count || 0);
 
-    // Count tasks with status "nouveau" - filtered by user (creator or assignee)
+    // Count tasks with status "nouveau" - filtered by user (creator or assignee + admin-created)
     let tasksNewConditions: any[] = [eq(tasks.status, 'nouveau')];
     if (userId) {
+      const allowedCreatorIds = [userId];
+      if (adminUserIds && adminUserIds.length > 0) {
+        allowedCreatorIds.push(...adminUserIds);
+      }
       const userCondition = or(
-        eq(tasks.createdById, userId),
+        inArray(tasks.createdById, allowedCreatorIds),
         eq(tasks.assignedToId, userId)
       );
       if (userCondition) {
@@ -1280,11 +1300,15 @@ export class DatabaseStorage implements IStorage {
       .where(and(...tasksNewConditions));
     const tasksNew = Number(tasksNewResult?.count || 0);
 
-    // Count tasks with status "en_cours" - filtered by user (creator or assignee)
+    // Count tasks with status "en_cours" - filtered by user (creator or assignee + admin-created)
     let tasksInProgressConditions: any[] = [eq(tasks.status, 'en_cours')];
     if (userId) {
+      const allowedCreatorIds = [userId];
+      if (adminUserIds && adminUserIds.length > 0) {
+        allowedCreatorIds.push(...adminUserIds);
+      }
       const userCondition = or(
-        eq(tasks.createdById, userId),
+        inArray(tasks.createdById, allowedCreatorIds),
         eq(tasks.assignedToId, userId)
       );
       if (userCondition) {
@@ -1458,19 +1482,28 @@ export class DatabaseStorage implements IStorage {
     return newTask;
   }
   
-  async getTasks(filters?: { status?: string; emailId?: string; userId?: string }): Promise<Task[]> {
+  async getTasks(filters?: { status?: string; emailId?: string; userId?: string; adminUserIds?: string[] }): Promise<Task[]> {
     let query = db.select().from(tasks);
     
     const conditions = [];
     
-    // Filter by user: show tasks created by OR assigned to the user
+    // Filter by user access:
+    // - Show tasks created by OR assigned to the user
+    // - Show tasks created by any admin (if adminUserIds is provided)
     if (filters?.userId) {
-      conditions.push(
-        or(
-          eq(tasks.createdById, filters.userId),
-          eq(tasks.assignedToId, filters.userId)
-        )
-      );
+      const userAccessConditions = [
+        eq(tasks.createdById, filters.userId),
+        eq(tasks.assignedToId, filters.userId)
+      ];
+      
+      // Add admin-created tasks if adminUserIds is provided
+      if (filters.adminUserIds && filters.adminUserIds.length > 0) {
+        filters.adminUserIds.forEach(adminId => {
+          userAccessConditions.push(eq(tasks.createdById, adminId));
+        });
+      }
+      
+      conditions.push(or(...userAccessConditions));
     }
     
     if (filters?.status) {

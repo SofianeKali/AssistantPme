@@ -69,8 +69,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Sidebar counts
   app.get('/api/sidebar/counts', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = (req.user as any).id;
-      const counts = await storage.getSidebarCounts(userId);
+      const user = req.user as any;
+      const isAdmin = user.role === 'admin';
+      
+      let adminUserIds: string[] | undefined = undefined;
+      
+      if (!isAdmin) {
+        // Regular users need to include admin-created items in their counts
+        const allUsers = await storage.getAllUsers();
+        adminUserIds = allUsers
+          .filter(u => u.role === 'admin')
+          .map(u => u.id);
+      }
+      
+      const counts = await storage.getSidebarCounts(
+        isAdmin ? undefined : user.id,
+        adminUserIds
+      );
       res.json(counts);
     } catch (error) {
       console.error("Error fetching sidebar counts:", error);
@@ -897,13 +912,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Alerts
   app.get('/api/alerts', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = (req.user as any).id;
+      const user = req.user as any;
+      const isAdmin = user.role === 'admin';
       const { resolved, limit } = req.query;
-      const alerts = await storage.getAlerts({
-        userId,
+      
+      let filters: any = {
         resolved: resolved === 'true',
         limit: limit ? parseInt(limit as string) : undefined,
-      });
+      };
+      
+      if (isAdmin) {
+        // Admins see all alerts - no userId filter
+        filters.userId = undefined;
+      } else {
+        // Regular users see their own alerts + alerts created by admins
+        const adminUsers = await storage.getAllUsers();
+        const adminUserIds = adminUsers
+          .filter(u => u.role === 'admin')
+          .map(u => u.id);
+        
+        filters.userId = user.id;
+        filters.adminUserIds = adminUserIds;
+      }
+      
+      const alerts = await storage.getAlerts(filters);
       res.json(alerts);
     } catch (error) {
       console.error("Error fetching alerts:", error);
@@ -1075,11 +1107,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = req.user as any;
       const isAdmin = user.role === 'admin';
       
-      const tasks = await storage.getTasks({
+      let filters: any = {
         status: status as string | undefined,
         emailId: emailId as string | undefined,
-        userId: isAdmin ? undefined : user.id, // Admins see all tasks
-      });
+      };
+      
+      if (isAdmin) {
+        // Admins see all tasks - no userId filter
+        filters.userId = undefined;
+      } else {
+        // Regular users see their own tasks + tasks created by admins
+        const adminUsers = await storage.getAllUsers();
+        const adminUserIds = adminUsers
+          .filter(u => u.role === 'admin')
+          .map(u => u.id);
+        
+        filters.userId = user.id;
+        filters.adminUserIds = adminUserIds;
+      }
+      
+      const tasks = await storage.getTasks(filters);
       res.json(tasks);
     } catch (error) {
       console.error("Error fetching tasks:", error);
