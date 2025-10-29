@@ -48,6 +48,7 @@ export default function Emails() {
   const [selectedEmailIds, setSelectedEmailIds] = useState<string[]>([]);
   const [customPrompt, setCustomPrompt] = useState<string>("");
   const [showPromptInput, setShowPromptInput] = useState<boolean>(false);
+  const [alertId, setAlertId] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Load email categories dynamically
@@ -55,25 +56,45 @@ export default function Emails() {
     queryKey: ["/api/email-categories"],
   });
 
-  // Read category and status from URL query parameters
+  // Read category, status, and alertId from URL query parameters
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const category = params.get("category");
     const status = params.get("status");
+    const alert = params.get("alertId");
+    
     if (category) {
       setTypeFilter(category);
     }
     if (status) {
       setStatusFilter(status);
     }
+    if (alert) {
+      setAlertId(alert);
+    } else {
+      setAlertId(null);
+    }
   }, [location]);
 
   const { data: rawEmails, isLoading } = useQuery({
-    queryKey: [
-      "/api/emails",
-      { type: typeFilter, status: statusFilter, search },
-    ],
+    queryKey: alertId 
+      ? ["/api/alerts", alertId, "emails"]
+      : ["/api/emails", { type: typeFilter, status: statusFilter, search }],
     queryFn: async () => {
+      // If alertId is set, fetch emails for this alert
+      if (alertId) {
+        const res = await fetch(`/api/alerts/${alertId}/emails`, { 
+          credentials: "include" 
+        });
+        
+        if (!res.ok) {
+          throw new Error(`${res.status}: ${res.statusText}`);
+        }
+        
+        return res.json();
+      }
+      
+      // Otherwise, fetch emails with filters
       const params = new URLSearchParams();
       if (typeFilter && typeFilter !== "all") params.append("type", typeFilter);
       if (statusFilter && statusFilter !== "all")
@@ -440,6 +461,32 @@ export default function Emails() {
         </p>
       </div>
 
+      {/* Alert Banner */}
+      {alertId && (
+        <Card className="p-4 bg-primary/5 border-primary/20">
+          <div className="flex items-center gap-3">
+            <Badge variant="default" className="text-xs">
+              Alerte
+            </Badge>
+            <p className="text-sm text-foreground">
+              Affichage des emails liés à une alerte spécifique
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const newUrl = window.location.pathname;
+                window.history.pushState({}, '', newUrl);
+                setAlertId(null);
+              }}
+              data-testid="button-clear-alert-filter"
+            >
+              Voir tous les emails
+            </Button>
+          </div>
+        </Card>
+      )}
+
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
@@ -450,9 +497,10 @@ export default function Emails() {
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
             data-testid="input-search-email"
+            disabled={!!alertId}
           />
         </div>
-        <Select value={typeFilter} onValueChange={setTypeFilter}>
+        <Select value={typeFilter} onValueChange={setTypeFilter} disabled={!!alertId}>
           <SelectTrigger
             className="w-full sm:w-48"
             data-testid="select-email-type"
@@ -468,7 +516,7 @@ export default function Emails() {
             ))}
           </SelectContent>
         </Select>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <Select value={statusFilter} onValueChange={setStatusFilter} disabled={!!alertId}>
           <SelectTrigger
             className="w-full sm:w-48"
             data-testid="select-email-status"
