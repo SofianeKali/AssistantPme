@@ -94,6 +94,7 @@ export default function Settings() {
     isSystem: false,
     generateAutoResponse: true,
     autoCreateTask: false,
+    autoMarkAsProcessed: false,
   });
 
   const [alertPrompt, setAlertPrompt] = useState("");
@@ -966,6 +967,25 @@ export default function Settings() {
                   Créer automatiquement une tâche pour chaque email de cette catégorie
                 </Label>
               </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="auto-mark-as-processed"
+                  checked={newCategory.autoMarkAsProcessed}
+                  onCheckedChange={(checked) =>
+                    setNewCategory({
+                      ...newCategory,
+                      autoMarkAsProcessed: checked as boolean,
+                    })
+                  }
+                  data-testid="checkbox-auto-mark-as-processed"
+                />
+                <Label
+                  htmlFor="auto-mark-as-processed"
+                  className="text-sm font-normal"
+                >
+                  Marquer automatiquement les emails scannés comme traités
+                </Label>
+              </div>
               <Button
                 onClick={() => addCategoryMutation.mutate(newCategory)}
                 disabled={
@@ -1018,7 +1038,10 @@ export default function Settings() {
                                 : "Réponse auto ✗"} •{" "}
                               {category.autoCreateTask
                                 ? "Tâches auto ✓"
-                                : "Tâches auto ✗"}
+                                : "Tâches auto ✗"} •{" "}
+                              {category.autoMarkAsProcessed
+                                ? "Traités auto ✓"
+                                : "Traités auto ✗"}
                             </div>
                           </div>
                         </div>
