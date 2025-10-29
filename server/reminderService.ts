@@ -1,6 +1,7 @@
 import { storage } from './storage';
 import { generateReminderEmail } from './openai';
-import type { InsertReminder } from '@shared/schema';
+import type { InsertReminder, Reminder } from '@shared/schema';
+import { sendEmailResponse } from './emailSender';
 
 export class ReminderService {
   private storage = storage;
@@ -107,11 +108,30 @@ export class ReminderService {
           const reminder = await this.storage.createReminder(reminderData);
           result.created++;
           
-          // TODO: Implement actual SMTP sending
-          // For now, just mark as sent for testing
-          // await this.sendReminderEmail(reminder);
-          
-          console.log(`[Reminders] Created quote reminder #${reminderNumber} for email: ${email.id}`);
+          // Send reminder via SMTP
+          try {
+            const sent = await this.sendReminderEmail(reminder, email.emailAccountId);
+            if (sent) {
+              result.sent++;
+              console.log(`[Reminders] Sent quote reminder #${reminderNumber} for email: ${email.id}`);
+            } else {
+              result.errors++;
+              console.error(`[Reminders] Failed to send quote reminder #${reminderNumber} for email: ${email.id}`);
+              // Delete failed reminder so it can be retried on next run
+              await this.storage.deleteReminder(reminder.id);
+              console.log(`[Reminders] Deleted failed reminder ${reminder.id} for retry on next run`);
+            }
+          } catch (sendError) {
+            result.errors++;
+            console.error(`[Reminders] Exception while sending quote reminder #${reminderNumber}:`, sendError);
+            // Delete failed reminder so it can be retried on next run
+            try {
+              await this.storage.deleteReminder(reminder.id);
+              console.log(`[Reminders] Deleted failed reminder ${reminder.id} for retry on next run`);
+            } catch (deleteError) {
+              console.error(`[Reminders] Failed to delete failed reminder:`, deleteError);
+            }
+          }
       }
     } catch (error) {
       console.error('[Reminders] Error checking quote reminders:', error);
@@ -201,10 +221,30 @@ export class ReminderService {
           const reminder = await this.storage.createReminder(reminderData);
           result.created++;
           
-          // TODO: Implement actual SMTP sending
-          // await this.sendReminderEmail(reminder);
-          
-          console.log(`[Reminders] Created invoice reminder #${reminderNumber} for email: ${email.id}`);
+          // Send reminder via SMTP
+          try {
+            const sent = await this.sendReminderEmail(reminder, email.emailAccountId);
+            if (sent) {
+              result.sent++;
+              console.log(`[Reminders] Sent invoice reminder #${reminderNumber} for email: ${email.id}`);
+            } else {
+              result.errors++;
+              console.error(`[Reminders] Failed to send invoice reminder #${reminderNumber} for email: ${email.id}`);
+              // Delete failed reminder so it can be retried on next run
+              await this.storage.deleteReminder(reminder.id);
+              console.log(`[Reminders] Deleted failed reminder ${reminder.id} for retry on next run`);
+            }
+          } catch (sendError) {
+            result.errors++;
+            console.error(`[Reminders] Exception while sending invoice reminder #${reminderNumber}:`, sendError);
+            // Delete failed reminder so it can be retried on next run
+            try {
+              await this.storage.deleteReminder(reminder.id);
+              console.log(`[Reminders] Deleted failed reminder ${reminder.id} for retry on next run`);
+            } catch (deleteError) {
+              console.error(`[Reminders] Failed to delete failed reminder:`, deleteError);
+            }
+          }
       }
     } catch (error) {
       console.error('[Reminders] Error checking invoice reminders:', error);
@@ -212,11 +252,43 @@ export class ReminderService {
     }
   }
 
-  // TODO: Implement SMTP email sending
-  // private async sendReminderEmail(reminder: Reminder): Promise<void> {
-  //   // Use nodemailer or similar to send email via SMTP
-  //   // Update reminder.isSent = true and reminder.sentAt
-  // }
+  /**
+   * Send reminder email via SMTP
+   * Returns true if sent successfully, false otherwise
+   */
+  private async sendReminderEmail(reminder: Reminder, accountId: string): Promise<boolean> {
+    try {
+      // Get email account for SMTP configuration
+      const emailAccount = await this.storage.getEmailAccountById(accountId);
+      if (!emailAccount) {
+        console.error(`[Reminders] Email account not found: ${accountId}`);
+        return false;
+      }
+
+      // Send email via SMTP
+      const result = await sendEmailResponse(emailAccount, {
+        to: reminder.sentToEmail,
+        subject: reminder.subject,
+        body: reminder.body,
+      });
+
+      if (result.success) {
+        // Update reminder as sent
+        await this.storage.updateReminder(reminder.id, {
+          isSent: true,
+          sentAt: new Date(),
+        });
+        console.log(`[Reminders] Reminder sent successfully: ${reminder.id}`);
+        return true;
+      } else {
+        console.error(`[Reminders] Failed to send reminder: ${result.error}`);
+        return false;
+      }
+    } catch (error) {
+      console.error(`[Reminders] Error sending reminder email:`, error);
+      return false;
+    }
+  }
 }
 
 export const reminderService = new ReminderService();

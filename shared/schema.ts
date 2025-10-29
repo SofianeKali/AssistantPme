@@ -61,10 +61,10 @@ export const emailAccounts = pgTable("email_accounts", {
   imapPort: integer("imap_port").notNull(),
   smtpHost: varchar("smtp_host").notNull(),
   smtpPort: integer("smtp_port").notNull(),
-  // TODO SECURITY: Password stored in plaintext for MVP - MUST implement encryption at rest
-  // or external secret management (Replit Secrets, AWS Secrets Manager) before production
+  // SECURITY: Password encrypted at rest using AES-256-GCM
+  // Automatically encrypted on write and decrypted on read by storage layer
   username: varchar("username").notNull(),
-  password: text("password").notNull(),
+  password: text("password").notNull(), // Stored encrypted, returned decrypted
   isActive: boolean("is_active").notNull().default(true),
   scanFrequency: integer("scan_frequency").notNull().default(15), // minutes
   createdAt: timestamp("created_at").defaultNow(),

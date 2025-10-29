@@ -48,6 +48,7 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, gte, lte, like, or, isNull, sql, ne, inArray } from "drizzle-orm";
+import { encryptPassword, decryptPassword, isEncrypted } from "./encryption";
 
 export interface IStorage {
   // User operations (required for Replit Auth)
@@ -118,6 +119,7 @@ export interface IStorage {
   getReminders(emailId?: string): Promise<Reminder[]>;
   getReminderById(id: string): Promise<Reminder | undefined>;
   updateReminder(id: string, data: Partial<Reminder>): Promise<Reminder>;
+  deleteReminder(id: string): Promise<void>;
   
   // Alert rules (règles d'alertes personnalisées)
   createAlertRule(rule: InsertAlertRule): Promise<AlertRule>;
@@ -211,24 +213,97 @@ export class DatabaseStorage implements IStorage {
 
   // Email accounts
   async createEmailAccount(account: InsertEmailAccount): Promise<EmailAccount> {
-    const [result] = await db.insert(emailAccounts).values(account).returning();
-    return result;
+    // Encrypt password before storing
+    const accountWithEncryptedPassword = {
+      ...account,
+      password: encryptPassword(account.password),
+    };
+    
+    const [result] = await db.insert(emailAccounts).values(accountWithEncryptedPassword).returning();
+    
+    // Decrypt password before returning (for immediate use)
+    return {
+      ...result,
+      password: decryptPassword(result.password),
+    };
   }
 
   async getEmailAccounts(userId?: string): Promise<EmailAccount[]> {
+    let accounts: EmailAccount[];
     if (userId) {
-      return await db.select().from(emailAccounts).where(eq(emailAccounts.userId, userId));
+      accounts = await db.select().from(emailAccounts).where(eq(emailAccounts.userId, userId));
+    } else {
+      accounts = await db.select().from(emailAccounts);
     }
-    return await db.select().from(emailAccounts);
+    
+    // Decrypt passwords before returning (and auto-migrate plaintext)
+    return await Promise.all(accounts.map(async (account) => ({
+      ...account,
+      password: await this.decryptPasswordSafeWithMigration(account.id, account.password),
+    })));
   }
 
   async getEmailAccountById(id: string): Promise<EmailAccount | undefined> {
     const [account] = await db.select().from(emailAccounts).where(eq(emailAccounts.id, id));
-    return account;
+    if (!account) return undefined;
+    
+    // Decrypt password before returning (and auto-migrate plaintext)
+    return {
+      ...account,
+      password: await this.decryptPasswordSafeWithMigration(account.id, account.password),
+    };
   }
 
   async getAllEmailAccounts(): Promise<EmailAccount[]> {
-    return await db.select().from(emailAccounts);
+    const accounts = await db.select().from(emailAccounts);
+    
+    // Decrypt passwords before returning (and auto-migrate plaintext)
+    return await Promise.all(accounts.map(async (account) => ({
+      ...account,
+      password: await this.decryptPasswordSafeWithMigration(account.id, account.password),
+    })));
+  }
+  
+  /**
+   * Safely decrypt password with automatic migration from plaintext
+   * If password is not encrypted, it will be encrypted and persisted immediately
+   */
+  private async decryptPasswordSafeWithMigration(accountId: string, password: string): Promise<string> {
+    try {
+      // Check if password is already encrypted
+      if (isEncrypted(password)) {
+        return decryptPassword(password);
+      } else {
+        // Legacy plaintext password - encrypt it now and persist
+        console.warn(`[Storage] Migrating plaintext password for account ${accountId} to encrypted format`);
+        const encryptedPassword = encryptPassword(password);
+        
+        // Update the database with encrypted password
+        await db
+          .update(emailAccounts)
+          .set({ password: encryptedPassword })
+          .where(eq(emailAccounts.id, accountId));
+        
+        console.log(`[Storage] Successfully migrated password for account ${accountId}`);
+        
+        // Return the plaintext password for immediate use
+        return password;
+      }
+    } catch (error) {
+      console.error("[Storage] Error decrypting/migrating password:", error);
+      // If decryption fails, assume it's plaintext and try to encrypt/migrate
+      try {
+        const encryptedPassword = encryptPassword(password);
+        await db
+          .update(emailAccounts)
+          .set({ password: encryptedPassword })
+          .where(eq(emailAccounts.id, accountId));
+        console.log(`[Storage] Successfully migrated password for account ${accountId} (after decryption error)`);
+      } catch (migrationError) {
+        console.error("[Storage] Failed to migrate password:", migrationError);
+      }
+      return password;
+    }
   }
 
   async deleteEmailAccount(id: string): Promise<void> {
@@ -857,6 +932,10 @@ export class DatabaseStorage implements IStorage {
       .where(eq(reminders.id, id))
       .returning();
     return result;
+  }
+
+  async deleteReminder(id: string): Promise<void> {
+    await db.delete(reminders).where(eq(reminders.id, id));
   }
 
   // Alert rules

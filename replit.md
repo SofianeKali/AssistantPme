@@ -11,6 +11,23 @@ I want the agent to prioritize robust error handling and logging.
 I prefer to see a clear plan before implementation.
 
 ## Recent Changes
+### October 29, 2025 - Chiffrement des Mots de Passe et Envoi d'Emails SMTP
+- **Implémentation critique du chiffrement des mots de passe** :
+  - Module de chiffrement AES-256-GCM pour les mots de passe des comptes email
+  - Chiffrement automatique lors de la création de comptes email
+  - Déchiffrement transparent lors de la lecture (aucun changement pour le code client)
+  - Migration en douceur : détection automatique des mots de passe non chiffrés
+  - Clé de chiffrement dérivée de SESSION_SECRET ou ENCRYPTION_KEY via PBKDF2
+  - Salt, IV et AuthTag uniques pour chaque mot de passe stocké
+  - Résout la vulnérabilité CRITIQUE de stockage en clair des mots de passe
+- **Implémentation complète de l'envoi d'emails SMTP pour les rappels** :
+  - Fonction `sendReminderEmail` utilisant le module `emailSender` existant
+  - Envoi automatique des rappels de devis (après 48h sans réponse)
+  - Envoi automatique des rappels de factures (après 15 jours d'impayé)
+  - Mise à jour automatique du statut `isSent` et `sentAt` après envoi
+  - Gestion d'erreurs robuste avec logs détaillés
+  - Support de tous les types de rappels (devis, factures)
+
 ### October 29, 2025 - Modes de Vue Calendrier (Jour/Semaine/Mois)
 - **Implémentation complète et validée des trois modes de vue pour le calendrier** :
   - Vue Mois : grille mensuelle classique (7×n) avec aperçu des rendez-vous (2 max + compteur overflow), jours de remplissage pour alignement correct avec en-têtes
