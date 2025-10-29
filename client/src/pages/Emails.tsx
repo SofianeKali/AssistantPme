@@ -337,17 +337,10 @@ export default function Emails() {
     },
   });
 
-  const getEmailTypeColor = (type: string) => {
-    switch (type) {
-      case "devis":
-        return "bg-chart-1/10 text-chart-1 border-chart-1/20";
-      case "facture":
-        return "bg-chart-3/10 text-chart-3 border-chart-3/20";
-      case "rdv":
-        return "bg-chart-2/10 text-chart-2 border-chart-2/20";
-      default:
-        return "bg-muted text-muted-foreground border-border";
-    }
+  // Helper to get category by key (emailType)
+  const getCategoryByKey = (key: string) => {
+    if (!emailCategories || !Array.isArray(emailCategories)) return null;
+    return emailCategories.find((cat: any) => cat.key === key);
   };
 
   const getPriorityColor = (priority: string) => {
@@ -694,14 +687,23 @@ export default function Emails() {
                           </span>
                         </div>
                         <div className="flex items-center gap-1 md:gap-2 flex-wrap mt-1 md:hidden">
-                          {email.emailType && (
-                            <Badge
-                              variant="outline"
-                              className={`text-xs flex-shrink-0 ${getEmailTypeColor(email.emailType)}`}
-                            >
-                              {email.emailType}
-                            </Badge>
-                          )}
+                          {email.emailType && (() => {
+                            const category = getCategoryByKey(email.emailType);
+                            const categoryColor = category?.color || "#6366f1";
+                            return (
+                              <Badge
+                                variant="outline"
+                                className="text-xs flex-shrink-0 border"
+                                style={{
+                                  backgroundColor: `${categoryColor}15`,
+                                  color: categoryColor,
+                                  borderColor: `${categoryColor}40`
+                                }}
+                              >
+                                {category?.label || email.emailType}
+                              </Badge>
+                            );
+                          })()}
                           {email.priority && email.priority !== "normal" && (
                             <Badge
                               variant="outline"
@@ -737,14 +739,23 @@ export default function Emails() {
                       </div>
                     </div>
                     <div className="hidden md:flex items-center gap-2 flex-wrap mb-2">
-                      {email.emailType && (
-                        <Badge
-                          variant="outline"
-                          className={`text-xs ${getEmailTypeColor(email.emailType)}`}
-                        >
-                          {email.emailType}
-                        </Badge>
-                      )}
+                      {email.emailType && (() => {
+                        const category = getCategoryByKey(email.emailType);
+                        const categoryColor = category?.color || "#6366f1";
+                        return (
+                          <Badge
+                            variant="outline"
+                            className="text-xs border"
+                            style={{
+                              backgroundColor: `${categoryColor}15`,
+                              color: categoryColor,
+                              borderColor: `${categoryColor}40`
+                            }}
+                          >
+                            {category?.label || email.emailType}
+                          </Badge>
+                        );
+                      })()}
                       {email.priority && email.priority !== "normal" && (
                         <Badge
                           variant="outline"
