@@ -1458,10 +1458,21 @@ export class DatabaseStorage implements IStorage {
     return newTask;
   }
   
-  async getTasks(filters?: { status?: string; emailId?: string }): Promise<Task[]> {
+  async getTasks(filters?: { status?: string; emailId?: string; userId?: string }): Promise<Task[]> {
     let query = db.select().from(tasks);
     
     const conditions = [];
+    
+    // Filter by user: show tasks created by OR assigned to the user
+    if (filters?.userId) {
+      conditions.push(
+        or(
+          eq(tasks.createdById, filters.userId),
+          eq(tasks.assignedToId, filters.userId)
+        )
+      );
+    }
+    
     if (filters?.status) {
       conditions.push(eq(tasks.status, filters.status));
     }

@@ -1069,12 +1069,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Tasks (Tâches à réaliser)
-  app.get('/api/tasks', isAuthenticated, async (req, res) => {
+  app.get('/api/tasks', isAuthenticated, async (req: any, res) => {
     try {
       const { status, emailId } = req.query;
+      const userId = (req.user as any).id;
       const tasks = await storage.getTasks({
         status: status as string | undefined,
         emailId: emailId as string | undefined,
+        userId,
       });
       res.json(tasks);
     } catch (error) {
