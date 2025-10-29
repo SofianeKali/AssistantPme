@@ -456,10 +456,32 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async getAlerts(filters?: { resolved?: boolean; type?: string; relatedEntityType?: string; relatedEntityId?: string; ruleId?: string; limit?: number }): Promise<Alert[]> {
-    let query = db.select().from(alerts);
+  async getAlerts(filters?: { userId?: string; resolved?: boolean; type?: string; relatedEntityType?: string; relatedEntityId?: string; ruleId?: string; limit?: number }): Promise<Alert[]> {
+    let query = db.select({
+      id: alerts.id,
+      type: alerts.type,
+      severity: alerts.severity,
+      title: alerts.title,
+      message: alerts.message,
+      relatedEntityType: alerts.relatedEntityType,
+      relatedEntityId: alerts.relatedEntityId,
+      ruleId: alerts.ruleId,
+      emailCount: alerts.emailCount,
+      isResolved: alerts.isResolved,
+      resolvedAt: alerts.resolvedAt,
+      resolvedById: alerts.resolvedById,
+      createdAt: alerts.createdAt,
+    })
+    .from(alerts)
+    .leftJoin(alertRules, eq(alerts.ruleId, alertRules.id));
     
     const conditions = [];
+    
+    // Filter by user - only show alerts for rules created by this user
+    if (filters?.userId) {
+      conditions.push(eq(alertRules.createdById, filters.userId));
+    }
+    
     if (filters?.resolved !== undefined) {
       conditions.push(eq(alerts.isResolved, filters.resolved));
     }

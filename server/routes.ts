@@ -894,10 +894,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Alerts
-  app.get('/api/alerts', isAuthenticated, async (req, res) => {
+  app.get('/api/alerts', isAuthenticated, async (req: any, res) => {
     try {
+      const userId = (req.user as any).id;
       const { resolved, limit } = req.query;
       const alerts = await storage.getAlerts({
+        userId,
         resolved: resolved === 'true',
         limit: limit ? parseInt(limit as string) : undefined,
       });
