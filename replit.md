@@ -22,7 +22,12 @@ The application uses a modern web stack:
 - **System Design Choices**: Global category system with flexible assignment to multiple email accounts via a junction table. Category deletion automatically transfers affected emails to a fallback "autre" category. Email read/unread status is tracked independently of processed status. Tasks associated with an email are automatically completed when the email is marked as "traité". Task assignment to users is supported. Appointment selection dialog for days with multiple appointments. Automated scanning of individual email accounts.
 
 **Key Features**:
-- **Dashboard**: High-level overview of critical alerts, monthly statistics, activity summaries, and "Tasks in Progress" card with quick status changes.
+- **Dashboard**: High-level overview of critical alerts, monthly statistics, activity summaries, and "Tasks in Progress" card with quick status changes. Features advanced data visualizations:
+  * Email distribution pie chart using category-configured colors with email counts displayed
+  * Processing rate chart with vertical bars colored by category
+  * Weekly evolution charts for Tasks (Nouveau/En cours/Terminé), Alerts (Actives/Résolues), and Appointments
+  * Week-by-week navigation for all evolution charts with previous/next week controls
+  * Category-colored visualizations throughout for consistent visual identity
 - **Email Management**: AI-powered categorization, priority/sentiment detection, auto-response generation, task assignment, and alerts. Supports bulk processing and individual email account scanning. Features read/unread status tracking and category-based automatic marking as processed.
 - **Calendar**: Monthly visualization and automated scheduling of appointments from emails, with AI-driven preparation.
 - **Document Management**: Automatic extraction, classification, and storage of email attachments on Google Drive with full-text search.
