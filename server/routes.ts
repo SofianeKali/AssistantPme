@@ -144,6 +144,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Dashboard layout preferences
+  app.get('/api/dashboard/layout', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const layout = await storage.getUserDashboardLayout(userId);
+      res.json(layout || { layout: [] });
+    } catch (error) {
+      console.error("Error fetching dashboard layout:", error);
+      res.status(500).json({ message: "Failed to fetch dashboard layout" });
+    }
+  });
+
+  app.post('/api/dashboard/layout', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { layout } = req.body;
+      
+      if (!Array.isArray(layout)) {
+        return res.status(400).json({ message: "Layout must be an array" });
+      }
+      
+      const savedLayout = await storage.upsertUserDashboardLayout(userId, layout);
+      res.json(savedLayout);
+    } catch (error) {
+      console.error("Error saving dashboard layout:", error);
+      res.status(500).json({ message: "Failed to save dashboard layout" });
+    }
+  });
+
   // Sidebar counts
   app.get('/api/sidebar/counts', isAuthenticated, async (req: any, res) => {
     try {

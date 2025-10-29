@@ -16,6 +16,7 @@ import {
   appointmentTags,
   emailCategories,
   tasks,
+  userDashboardLayout,
   type User,
   type UpsertUser,
   type EmailAccount,
@@ -42,6 +43,8 @@ import {
   type InsertEmailCategory,
   type Task,
   type InsertTask,
+  type UserDashboardLayout,
+  type InsertUserDashboardLayout,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, gte, lte, like, or, isNull, sql, ne, inArray } from "drizzle-orm";
@@ -161,6 +164,10 @@ export interface IStorage {
   getTaskEvolutionByWeek(weekOffset?: number): Promise<any>;
   getAlertEvolutionByWeek(weekOffset?: number): Promise<any>;
   getAppointmentsByWeek(weekOffset?: number): Promise<any>;
+  
+  // User Dashboard Layout
+  getUserDashboardLayout(userId: string): Promise<UserDashboardLayout | undefined>;
+  upsertUserDashboardLayout(userId: string, layout: string[]): Promise<UserDashboardLayout>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1864,6 +1871,37 @@ export class DatabaseStorage implements IStorage {
     }
 
     return completedCount;
+  }
+
+  // User Dashboard Layout
+  async getUserDashboardLayout(userId: string): Promise<UserDashboardLayout | undefined> {
+    const [layout] = await db
+      .select()
+      .from(userDashboardLayout)
+      .where(eq(userDashboardLayout.userId, userId));
+    return layout;
+  }
+
+  async upsertUserDashboardLayout(userId: string, layout: string[]): Promise<UserDashboardLayout> {
+    // Try to get existing layout
+    const existing = await this.getUserDashboardLayout(userId);
+    
+    if (existing) {
+      // Update existing
+      const [updated] = await db
+        .update(userDashboardLayout)
+        .set({ layout, updatedAt: new Date() })
+        .where(eq(userDashboardLayout.userId, userId))
+        .returning();
+      return updated;
+    } else {
+      // Insert new
+      const [created] = await db
+        .insert(userDashboardLayout)
+        .values({ userId, layout })
+        .returning();
+      return created;
+    }
   }
 }
 
