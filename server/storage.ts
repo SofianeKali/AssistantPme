@@ -9,6 +9,7 @@ import {
   alertEmails,
   tags,
   settings,
+  cloudStorageConfigs,
   emailResponses,
   reminders,
   emailTags,
@@ -35,6 +36,8 @@ import {
   type InsertTag,
   type Setting,
   type InsertSetting,
+  type CloudStorageConfig,
+  type InsertCloudStorageConfig,
   type EmailResponse,
   type InsertEmailResponse,
   type Reminder,
@@ -108,6 +111,13 @@ export interface IStorage {
   getSetting(key: string): Promise<Setting | undefined>;
   upsertSetting(setting: InsertSetting): Promise<Setting>;
   getAllSettings(): Promise<Record<string, any>>;
+  
+  // Cloud Storage Configurations
+  createCloudStorageConfig(config: InsertCloudStorageConfig): Promise<CloudStorageConfig>;
+  getCloudStorageConfig(userId: string, provider: string): Promise<CloudStorageConfig | undefined>;
+  getAllCloudStorageConfigs(userId: string): Promise<CloudStorageConfig[]>;
+  updateCloudStorageConfig(id: string, data: Partial<CloudStorageConfig>): Promise<CloudStorageConfig>;
+  deleteCloudStorageConfig(id: string): Promise<void>;
   
   // Email responses
   createEmailResponse(response: InsertEmailResponse): Promise<EmailResponse>;
@@ -898,6 +908,45 @@ export class DatabaseStorage implements IStorage {
       acc[setting.key] = setting.value;
       return acc;
     }, {} as Record<string, any>);
+  }
+
+  // Cloud Storage Configurations
+  async createCloudStorageConfig(config: InsertCloudStorageConfig): Promise<CloudStorageConfig> {
+    const [result] = await db.insert(cloudStorageConfigs).values(config).returning();
+    return result;
+  }
+
+  async getCloudStorageConfig(userId: string, provider: string): Promise<CloudStorageConfig | undefined> {
+    const [config] = await db
+      .select()
+      .from(cloudStorageConfigs)
+      .where(
+        and(
+          eq(cloudStorageConfigs.userId, userId),
+          eq(cloudStorageConfigs.provider, provider)
+        )
+      );
+    return config;
+  }
+
+  async getAllCloudStorageConfigs(userId: string): Promise<CloudStorageConfig[]> {
+    return await db
+      .select()
+      .from(cloudStorageConfigs)
+      .where(eq(cloudStorageConfigs.userId, userId));
+  }
+
+  async updateCloudStorageConfig(id: string, data: Partial<CloudStorageConfig>): Promise<CloudStorageConfig> {
+    const [result] = await db
+      .update(cloudStorageConfigs)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(cloudStorageConfigs.id, id))
+      .returning();
+    return result;
+  }
+
+  async deleteCloudStorageConfig(id: string): Promise<void> {
+    await db.delete(cloudStorageConfigs).where(eq(cloudStorageConfigs.id, id));
   }
 
   // Email responses
