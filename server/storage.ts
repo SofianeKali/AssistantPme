@@ -123,6 +123,14 @@ export interface IStorage {
   getDashboardCharts(): Promise<any>;
   getAdvancedKPIs(): Promise<any>;
   getEmailStatsByCategory(userId?: string): Promise<Record<string, number>>;
+  getSidebarCounts(): Promise<{
+    unprocessedEmails: number;
+    unresolvedAlerts: number;
+    tasksNew: number;
+    tasksInProgress: number;
+    upcomingAppointments: number;
+    documentsInUnprocessedEmails: number;
+  }>;
   
   // Email categories
   createEmailCategory(category: InsertEmailCategory): Promise<EmailCategory>;
@@ -1160,6 +1168,81 @@ export class DatabaseStorage implements IStorage {
     });
     
     return statsMap;
+  }
+
+  // Sidebar counts for navigation menu
+  async getSidebarCounts(): Promise<{
+    unprocessedEmails: number;
+    unresolvedAlerts: number;
+    tasksNew: number;
+    tasksInProgress: number;
+    upcomingAppointments: number;
+    documentsInUnprocessedEmails: number;
+  }> {
+    const now = new Date();
+
+    // Count unprocessed emails (nouveau + en_cours)
+    const [unprocessedEmailsResult] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(emails)
+      .where(
+        or(
+          eq(emails.status, 'nouveau'),
+          eq(emails.status, 'en_cours')
+        )
+      );
+    const unprocessedEmails = Number(unprocessedEmailsResult?.count || 0);
+
+    // Count unresolved alerts
+    const [unresolvedAlertsResult] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(alerts)
+      .where(eq(alerts.isResolved, false));
+    const unresolvedAlerts = Number(unresolvedAlertsResult?.count || 0);
+
+    // Count tasks with status "nouveau"
+    const [tasksNewResult] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(tasks)
+      .where(eq(tasks.status, 'nouveau'));
+    const tasksNew = Number(tasksNewResult?.count || 0);
+
+    // Count tasks with status "en_cours"
+    const [tasksInProgressResult] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(tasks)
+      .where(eq(tasks.status, 'en_cours'));
+    const tasksInProgress = Number(tasksInProgressResult?.count || 0);
+
+    // Count upcoming appointments (startTime >= now)
+    const [upcomingAppointmentsResult] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(appointments)
+      .where(gte(appointments.startTime, now));
+    const upcomingAppointments = Number(upcomingAppointmentsResult?.count || 0);
+
+    // Count documents attached to unprocessed emails
+    // This is a join between documents and emails where email status is nouveau or en_cours
+    const [documentsInUnprocessedResult] = await db
+      .select({ count: sql<number>`count(DISTINCT ${documents.id})` })
+      .from(documents)
+      .innerJoin(emails, eq(documents.emailId, emails.id))
+      .where(
+        or(
+          eq(emails.status, 'nouveau'),
+          eq(emails.status, 'en_cours')
+        )
+      );
+    const documentsInUnprocessedEmails = Number(documentsInUnprocessedResult?.count || 0);
+
+    return {
+      unprocessedEmails,
+      unresolvedAlerts,
+      tasksNew,
+      tasksInProgress,
+      upcomingAppointments,
+      documentsInUnprocessedEmails,
+    };
   }
 
   // Email categories

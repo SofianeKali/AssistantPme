@@ -66,6 +66,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Sidebar counts
+  app.get('/api/sidebar/counts', isAuthenticated, async (req, res) => {
+    try {
+      const counts = await storage.getSidebarCounts();
+      res.json(counts);
+    } catch (error) {
+      console.error("Error fetching sidebar counts:", error);
+      res.status(500).json({ message: "Failed to fetch sidebar counts" });
+    }
+  });
+
   // Email accounts
   app.get('/api/email-accounts', isAuthenticated, isAdmin, async (req, res) => {
     try {
