@@ -136,7 +136,7 @@ const PRESET_COLORS = [
   "#06b6d4", // cyan
   "#0ea5e9", // sky
   "#3b82f6", // blue
-  "#6366f1", // indigo
+  "#a855f7", // purple
 ];
 
 export default function Settings() {
