@@ -33,6 +33,36 @@ import {
   Bell,
   Settings as SettingsIcon,
   Pencil,
+  FileText,
+  Calendar,
+  DollarSign,
+  Package,
+  ShoppingCart,
+  Users,
+  Folder,
+  File,
+  Briefcase,
+  Clock,
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
+  Star,
+  Heart,
+  Home,
+  Phone,
+  MapPin,
+  Send,
+  Inbox,
+  Archive,
+  PieChart,
+  BarChart,
+  TrendingUp,
+  ShoppingBag,
+  CreditCard,
+  Zap,
+  Gift,
+  Truck,
+  Receipt,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -45,6 +75,69 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+
+// Liste d'icônes Lucide disponibles pour les catégories
+const AVAILABLE_ICONS = [
+  { name: "Mail", component: Mail },
+  { name: "FileText", component: FileText },
+  { name: "Calendar", component: Calendar },
+  { name: "DollarSign", component: DollarSign },
+  { name: "Package", component: Package },
+  { name: "ShoppingCart", component: ShoppingCart },
+  { name: "Users", component: Users },
+  { name: "Folder", component: Folder },
+  { name: "File", component: File },
+  { name: "Briefcase", component: Briefcase },
+  { name: "Clock", component: Clock },
+  { name: "CheckCircle", component: CheckCircle },
+  { name: "XCircle", component: XCircle },
+  { name: "AlertTriangle", component: AlertTriangle },
+  { name: "Star", component: Star },
+  { name: "Heart", component: Heart },
+  { name: "Home", component: Home },
+  { name: "Phone", component: Phone },
+  { name: "MapPin", component: MapPin },
+  { name: "Send", component: Send },
+  { name: "Inbox", component: Inbox },
+  { name: "Archive", component: Archive },
+  { name: "Tag", component: Tag },
+  { name: "PieChart", component: PieChart },
+  { name: "BarChart", component: BarChart },
+  { name: "TrendingUp", component: TrendingUp },
+  { name: "ShoppingBag", component: ShoppingBag },
+  { name: "CreditCard", component: CreditCard },
+  { name: "Zap", component: Zap },
+  { name: "Gift", component: Gift },
+  { name: "Truck", component: Truck },
+  { name: "Receipt", component: Receipt },
+  { name: "Bell", component: Bell },
+  { name: "AlertCircle", component: AlertCircle },
+];
+
+// Couleurs prédéfinies
+const PRESET_COLORS = [
+  "#6366f1", // indigo
+  "#8b5cf6", // violet
+  "#ec4899", // pink
+  "#f43f5e", // rose
+  "#ef4444", // red
+  "#f97316", // orange
+  "#f59e0b", // amber
+  "#eab308", // yellow
+  "#84cc16", // lime
+  "#22c55e", // green
+  "#10b981", // emerald
+  "#14b8a6", // teal
+  "#06b6d4", // cyan
+  "#0ea5e9", // sky
+  "#3b82f6", // blue
+  "#6366f1", // indigo
+];
 
 export default function Settings() {
   const { toast } = useToast();
@@ -926,28 +1019,103 @@ export default function Settings() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="category-color">Couleur (hex)</Label>
-                  <Input
-                    id="category-color"
-                    placeholder="#6366f1"
-                    value={newCategory.color}
-                    onChange={(e) =>
-                      setNewCategory({ ...newCategory, color: e.target.value })
-                    }
-                    data-testid="input-category-color"
-                  />
+                  <Label htmlFor="category-color">Couleur</Label>
+                  <div className="flex gap-2">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start"
+                          data-testid="button-select-color"
+                        >
+                          <div
+                            className="w-6 h-6 rounded-md mr-2 border border-border"
+                            style={{ backgroundColor: newCategory.color }}
+                          />
+                          {newCategory.color}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-64">
+                        <div className="space-y-3">
+                          <div>
+                            <Label className="text-sm mb-2">Couleurs prédéfinies</Label>
+                            <div className="grid grid-cols-8 gap-2 mt-2">
+                              {PRESET_COLORS.map((color) => (
+                                <button
+                                  key={color}
+                                  className="w-8 h-8 rounded-md border-2 hover:scale-110 transition-transform"
+                                  style={{
+                                    backgroundColor: color,
+                                    borderColor: newCategory.color === color ? "hsl(var(--primary))" : "transparent"
+                                  }}
+                                  onClick={() => setNewCategory({ ...newCategory, color })}
+                                  data-testid={`color-${color}`}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                          <div>
+                            <Label htmlFor="custom-color" className="text-sm">Couleur personnalisée</Label>
+                            <div className="flex gap-2 mt-2">
+                              <input
+                                type="color"
+                                id="custom-color"
+                                value={newCategory.color}
+                                onChange={(e) => setNewCategory({ ...newCategory, color: e.target.value })}
+                                className="w-12 h-10 rounded cursor-pointer border border-border"
+                                data-testid="input-color-picker"
+                              />
+                              <Input
+                                value={newCategory.color}
+                                onChange={(e) => setNewCategory({ ...newCategory, color: e.target.value })}
+                                placeholder="#6366f1"
+                                className="flex-1"
+                                data-testid="input-category-color"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="category-icon">Icône Lucide</Label>
-                  <Input
-                    id="category-icon"
-                    placeholder="Mail"
-                    value={newCategory.icon}
-                    onChange={(e) =>
-                      setNewCategory({ ...newCategory, icon: e.target.value })
-                    }
-                    data-testid="input-category-icon"
-                  />
+                  <Label htmlFor="category-icon">Icône</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start"
+                        data-testid="button-select-icon"
+                      >
+                        {(() => {
+                          const IconComponent = AVAILABLE_ICONS.find(i => i.name === newCategory.icon)?.component || Tag;
+                          return <IconComponent className="w-5 h-5 mr-2" />;
+                        })()}
+                        {newCategory.icon}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80">
+                      <div className="space-y-2">
+                        <Label className="text-sm">Sélectionnez une icône</Label>
+                        <div className="grid grid-cols-6 gap-2 max-h-64 overflow-y-auto">
+                          {AVAILABLE_ICONS.map(({ name, component: IconComponent }) => (
+                            <button
+                              key={name}
+                              className={`p-3 rounded-md border-2 hover:bg-accent transition-colors ${
+                                newCategory.icon === name ? "border-primary bg-accent" : "border-transparent"
+                              }`}
+                              onClick={() => setNewCategory({ ...newCategory, icon: name })}
+                              title={name}
+                              data-testid={`icon-${name}`}
+                            >
+                              <IconComponent className="w-5 h-5" />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
