@@ -4,6 +4,14 @@
 IzyInbox is an intelligent web application designed to automate administrative tasks for SMEs. It leverages AI for email analysis and automates the management of quotes, invoices, appointments, and documents. The core purpose is to streamline administrative workflows, enhance efficiency, and provide actionable insights for small and medium-sized businesses. The project aims to become a leading solution for smart automation for busy managers, with ambitions for broad market adoption.
 
 ## Recent Changes (October 29, 2025)
+- **Category Colors in Email Badges**:
+  - Email type badges now use the configured category colors instead of hardcoded colors
+  - Badges display category labels (e.g., "Factures") instead of raw keys (e.g., "facture")
+  - Colors update dynamically when category settings are changed
+  - Implemented via inline styles using category.color from emailCategories
+  - Applied to both mobile and desktop views in Emails page
+  - End-to-end tested and validated by architect
+
 - **Category Icon Display Fixes**:
   - **Dashboard**: Fixed bug where category icons weren't displaying correctly
     - Updated getIconComponent function to support all 35+ available icons
