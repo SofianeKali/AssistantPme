@@ -1,5 +1,5 @@
-import { sendEmailResponse } from './emailSender';
-import type { EmailAccount } from '@shared/schema';
+import { sendEmailResponse } from "./emailSender";
+import type { EmailAccount } from "@shared/schema";
 
 interface SendWelcomeEmailParams {
   to: string;
@@ -12,12 +12,18 @@ interface SendWelcomeEmailParams {
 /**
  * Send a welcome email to a newly created user with their temporary password
  */
-export async function sendWelcomeEmail(params: SendWelcomeEmailParams): Promise<void> {
+export async function sendWelcomeEmail(
+  params: SendWelcomeEmailParams,
+): Promise<void> {
   try {
     const { adminEmailAccount } = params;
-    
-    console.log(`[EmailService] Preparing to send welcome email to ${params.to} from ${adminEmailAccount.email} (SMTP)`);
-    console.log(`[EmailService] Temporary password length: ${params.temporaryPassword.length}`);
+
+    console.log(
+      `[EmailService] Preparing to send welcome email to ${params.to} from ${adminEmailAccount.email} (SMTP)`,
+    );
+    console.log(
+      `[EmailService] Temporary password length: ${params.temporaryPassword.length}`,
+    );
 
     // Create plain text version (no HTML encoding issues)
     const textContent = `
@@ -36,14 +42,14 @@ Vos identifiants de connexion :
 ⚠️ IMPORTANT : Conservez ce mot de passe en lieu sûr. Vous pouvez le changer plus tard depuis votre profil.
 
 📋 Pour vous connecter :
-1. Rendez-vous sur ${process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000'}
+1. Rendez-vous sur ${process.env.REPLIT_DEV_DOMAIN || "http://localhost:5000"}
 2. Entrez votre adresse email : ${params.to}
 3. Entrez le mot de passe temporaire ci-dessus
-4. Vous serez redirigé vers votre tableau de bord
+4. Vous serez redirigé vers votre cockpit
 
 🎯 Prochaines étapes :
 - Configurez votre compte email (Gmail, Outlook ou Yahoo)
-- Explorez le tableau de bord et les fonctionnalités d'IA
+- Explorez le cockpit et les fonctionnalités d'IA
 - Commencez à automatiser votre gestion administrative !
 
 Si vous avez des questions, n'hésitez pas à contacter votre administrateur.
@@ -148,7 +154,7 @@ Cet email a été envoyé automatiquement, merci de ne pas y répondre.
             </div>
             
             <p style="text-align: center;">
-              <a href="${process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000'}" class="button">
+              <a href="${process.env.REPLIT_DEV_DOMAIN || "http://localhost:5000"}" class="button">
                 🚀 Se connecter maintenant
               </a>
             </p>
@@ -158,13 +164,13 @@ Cet email a été envoyé automatiquement, merci de ne pas y répondre.
               <li>Cliquez sur le bouton "Se connecter" ci-dessus</li>
               <li>Entrez votre adresse email : <strong>${params.to}</strong></li>
               <li>Entrez le mot de passe temporaire ci-dessus</li>
-              <li>Vous serez redirigé vers votre tableau de bord</li>
+              <li>Vous serez redirigé vers votre cockpit</li>
             </ol>
             
             <h3>🎯 Prochaines étapes :</h3>
             <ul>
               <li>Configurez votre compte email (Gmail, Outlook ou Yahoo)</li>
-              <li>Explorez le tableau de bord et les fonctionnalités d'IA</li>
+              <li>Explorez le cockpit et les fonctionnalités d'IA</li>
               <li>Commencez à automatiser votre gestion administrative !</li>
             </ul>
             
@@ -181,21 +187,29 @@ Cet email a été envoyé automatiquement, merci de ne pas y répondre.
 
     const sendResult = await sendEmailResponse(adminEmailAccount, {
       to: params.to,
-      subject: '🎉 Bienvenue sur IzyInbox - Vos identifiants de connexion',
+      subject: "🎉 Bienvenue sur IzyInbox - Vos identifiants de connexion",
       body: htmlContent,
       textBody: textContent, // Include plain text version to avoid HTML encoding issues
     });
 
     if (!sendResult.success) {
-      console.error('[EmailService] SMTP error sending welcome email:', sendResult.error);
+      console.error(
+        "[EmailService] SMTP error sending welcome email:",
+        sendResult.error,
+      );
       throw new Error(`SMTP error: ${sendResult.error}`);
     }
 
-    console.log(`[EmailService] Welcome email sent successfully to ${params.to}`);
+    console.log(
+      `[EmailService] Welcome email sent successfully to ${params.to}`,
+    );
     console.log(`[EmailService] SMTP Message ID: ${sendResult.messageId}`);
   } catch (error) {
-    console.error('[EmailService] Error sending welcome email:', error);
-    console.error('[EmailService] Error details:', JSON.stringify(error, null, 2));
+    console.error("[EmailService] Error sending welcome email:", error);
+    console.error(
+      "[EmailService] Error details:",
+      JSON.stringify(error, null, 2),
+    );
     throw error;
   }
 }
@@ -205,20 +219,24 @@ Cet email a été envoyé automatiquement, merci de ne pas y répondre.
  */
 export function generateTemporaryPassword(): string {
   const length = 12;
-  const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
-  let password = '';
-  
+  const charset =
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+  let password = "";
+
   // Ensure at least one of each type
-  password += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[Math.floor(Math.random() * 26)]; // Uppercase
-  password += 'abcdefghijklmnopqrstuvwxyz'[Math.floor(Math.random() * 26)]; // Lowercase
-  password += '0123456789'[Math.floor(Math.random() * 10)]; // Number
-  password += '!@#$%^&*'[Math.floor(Math.random() * 8)]; // Special char
-  
+  password += "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[Math.floor(Math.random() * 26)]; // Uppercase
+  password += "abcdefghijklmnopqrstuvwxyz"[Math.floor(Math.random() * 26)]; // Lowercase
+  password += "0123456789"[Math.floor(Math.random() * 10)]; // Number
+  password += "!@#$%^&*"[Math.floor(Math.random() * 8)]; // Special char
+
   // Fill the rest randomly
   for (let i = password.length; i < length; i++) {
     password += charset[Math.floor(Math.random() * charset.length)];
   }
-  
+
   // Shuffle the password
-  return password.split('').sort(() => Math.random() - 0.5).join('');
+  return password
+    .split("")
+    .sort(() => Math.random() - 0.5)
+    .join("");
 }

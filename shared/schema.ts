@@ -565,3 +565,30 @@ export const tasksRelations = relations(tasks, ({ one }) => ({
     references: [users.id],
   }),
 }));
+
+// User Dashboard Layout Preferences
+export const userDashboardLayout = pgTable("user_dashboard_layout", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }).unique(),
+  // Array of component IDs in the order they should be displayed
+  // Example: ["categories", "chart-email-evolution", "chart-email-distribution", ...]
+  layout: jsonb("layout").notNull().default([]),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertUserDashboardLayoutSchema = createInsertSchema(userDashboardLayout).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertUserDashboardLayout = z.infer<typeof insertUserDashboardLayoutSchema>;
+export type UserDashboardLayout = typeof userDashboardLayout.$inferSelect;
+
+export const userDashboardLayoutRelations = relations(userDashboardLayout, ({ one }) => ({
+  user: one(users, {
+    fields: [userDashboardLayout.userId],
+    references: [users.id],
+  }),
+}));

@@ -52,7 +52,7 @@ interface SidebarCounts {
 
 const mainMenuItems = [
   {
-    title: "Tableau de bord",
+    title: "Mon cockpit",
     url: "/",
     icon: LayoutDashboard,
     testId: "sidebar-dashboard",
@@ -117,17 +117,17 @@ export function AppSidebar() {
   const [location] = useLocation();
   const { user } = useAuth();
   const isMobile = useIsMobile();
-  
+
   // Fetch sidebar counts
   const { data: counts } = useQuery<SidebarCounts>({
-    queryKey: ['/api/sidebar/counts'],
+    queryKey: ["/api/sidebar/counts"],
     refetchInterval: 30000, // Refetch every 30 seconds
   });
-  
+
   // Filter config menu items based on user role
-  const filteredConfigMenuItems = configMenuItems.filter(item => {
+  const filteredConfigMenuItems = configMenuItems.filter((item) => {
     if (item.adminOnly) {
-      return user?.role === 'admin';
+      return user?.role === "admin";
     }
     return true;
   });
@@ -135,17 +135,17 @@ export function AppSidebar() {
   // Helper function to get badge count for each menu item
   const getBadgeCount = (url: string): number | null => {
     if (!counts) return null;
-    
+
     switch (url) {
-      case '/emails':
+      case "/emails":
         return counts.unprocessedEmails || null;
-      case '/alerts':
+      case "/alerts":
         return counts.unresolvedAlerts || null;
-      case '/tasks':
-        return (counts.tasksNew + counts.tasksInProgress) || null;
-      case '/calendar':
+      case "/tasks":
+        return counts.tasksNew + counts.tasksInProgress || null;
+      case "/calendar":
         return counts.upcomingAppointments || null;
-      case '/documents':
+      case "/documents":
         return counts.documentsInUnprocessedEmails || null;
       default:
         return null;
@@ -184,14 +184,16 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader className="p-4 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
-          <img 
-            src={logoUrl} 
-            alt="IzyInbox Logo" 
+          <img
+            src={logoUrl}
+            alt="IzyInbox Logo"
             className="h-10 w-10 rounded-md object-contain"
           />
           <div className="flex flex-col">
             <span className="text-sm font-semibold">IzyInbox</span>
-            <span className="text-xs text-muted-foreground">Automatisation Intelligentes</span>
+            <span className="text-xs text-muted-foreground">
+              Automatisation Intelligentes
+            </span>
           </div>
         </div>
       </SidebarHeader>
@@ -202,10 +204,12 @@ export function AppSidebar() {
             <SidebarMenu>
               {mainMenuItems.map((item) => {
                 const badgeCount = getBadgeCount(item.url);
-                const isTasksMenu = item.url === '/tasks';
+                const isTasksMenu = item.url === "/tasks";
                 const tasksBadgeText = isTasksMenu ? getTasksBadgeText() : null;
-                const showBadge = isTasksMenu ? tasksBadgeText !== null : badgeCount !== null && badgeCount > 0;
-                
+                const showBadge = isTasksMenu
+                  ? tasksBadgeText !== null
+                  : badgeCount !== null && badgeCount > 0;
+
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
@@ -213,14 +217,17 @@ export function AppSidebar() {
                       isActive={location === item.url}
                       data-testid={item.testId}
                     >
-                      <Link href={item.url} className="flex items-center justify-between w-full">
+                      <Link
+                        href={item.url}
+                        className="flex items-center justify-between w-full"
+                      >
                         <div className="flex items-center gap-2">
                           <item.icon className="h-4 w-4" />
                           <span>{item.title}</span>
                         </div>
                         {showBadge && (
-                          <Badge 
-                            variant="secondary" 
+                          <Badge
+                            variant="secondary"
                             className="ml-auto text-xs"
                             data-testid={`badge-count-${item.url.slice(1)}`}
                           >
@@ -268,16 +275,27 @@ export function AppSidebar() {
               data-testid="button-user-menu"
             >
               <Avatar className="h-9 w-9">
-                <AvatarImage src={user?.profileImageUrl || undefined} className="object-cover" />
-                <AvatarFallback className="text-xs">{getUserInitials()}</AvatarFallback>
+                <AvatarImage
+                  src={user?.profileImageUrl || undefined}
+                  className="object-cover"
+                />
+                <AvatarFallback className="text-xs">
+                  {getUserInitials()}
+                </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0 text-left">
-                <div className="text-sm font-medium truncate" data-testid="text-user-name">
+                <div
+                  className="text-sm font-medium truncate"
+                  data-testid="text-user-name"
+                >
                   {user?.firstName && user?.lastName
                     ? `${user.firstName} ${user.lastName}`
                     : user?.email}
                 </div>
-                <div className="text-xs text-muted-foreground" data-testid="text-user-role">
+                <div
+                  className="text-xs text-muted-foreground"
+                  data-testid="text-user-role"
+                >
                   {getUserRole()}
                 </div>
               </div>
@@ -293,7 +311,10 @@ export function AppSidebar() {
                   <User className="h-3 w-3 text-muted-foreground" />
                   <span className="text-xs text-muted-foreground">Nom</span>
                 </div>
-                <div className="font-medium text-sm" data-testid="text-user-fullname">
+                <div
+                  className="font-medium text-sm"
+                  data-testid="text-user-fullname"
+                >
                   {user?.firstName && user?.lastName
                     ? `${user.firstName} ${user.lastName}`
                     : "Non renseigné"}
@@ -304,7 +325,10 @@ export function AppSidebar() {
                   <Mail className="h-3 w-3 text-muted-foreground" />
                   <span className="text-xs text-muted-foreground">Email</span>
                 </div>
-                <div className="font-medium text-sm truncate" data-testid="text-user-email">
+                <div
+                  className="font-medium text-sm truncate"
+                  data-testid="text-user-email"
+                >
                   {user?.email}
                 </div>
               </div>
@@ -313,7 +337,10 @@ export function AppSidebar() {
                   <Tag className="h-3 w-3 text-muted-foreground" />
                   <span className="text-xs text-muted-foreground">Rôle</span>
                 </div>
-                <div className="font-medium text-sm" data-testid="text-user-role-detail">
+                <div
+                  className="font-medium text-sm"
+                  data-testid="text-user-role-detail"
+                >
                   {getUserRole()}
                 </div>
               </div>

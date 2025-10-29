@@ -15,7 +15,7 @@
 2. [Objectifs et Vision](#2-objectifs-et-vision)
 3. [Architecture Technique](#3-architecture-technique)
 4. [Spécifications Fonctionnelles](#4-spécifications-fonctionnelles)
-   - [4.1 Dashboard (Tableau de Bord)](#41-dashboard-tableau-de-bord)
+   - [4.1 Dashboard (Mon cockpit)](#41-dashboard-tableau-de-bord)
    - [4.2 Emails](#42-emails)
    - [4.3 Calendrier](#43-calendrier)
    - [4.4 Documents](#44-documents)
@@ -58,7 +58,7 @@ IzyInbox offre une solution complète d'automatisation administrative avec :
 - **Gestion intelligente des documents** : Extraction et OCR automatiques, stockage sur Google Drive
 - **Calendrier automatisé** : Détection et planification des rendez-vous depuis les emails
 - **Système d'alertes personnalisées** : Règles créées en langage naturel
-- **Tableau de bord KPI** : Visualisation en temps réel de l'activité
+- **Mon cockpit KPI** : Visualisation en temps réel de l'activité
 
 ---
 
@@ -250,7 +250,7 @@ settings
 
 ## 4. Spécifications Fonctionnelles
 
-### 4.1 Dashboard (Tableau de Bord)
+### 4.1 Dashboard (Mon cockpit)
 
 **Route :** `/`
 
@@ -260,7 +260,7 @@ Fournir une vue d'ensemble rapide et actionnale de l'activité administrative de
 #### 4.1.2 Structure de l'Écran
 
 **A. En-tête**
-- Titre : "Tableau de bord"
+- Titre : "Mon cockpit"
 - Sous-titre : "Vue d'ensemble de votre activité administrative"
 
 **B. KPIs Principaux (Cartes cliquables)**
@@ -2179,7 +2179,7 @@ IzyInbox est une solution complète et innovante pour l'automatisation administr
 **Phase 3 (Moyen terme) :**
 - Intégration CRM (Salesforce, HubSpot)
 - Intégration ERP (Odoo, SAP)
-- Tableau de bord personnalisable (widgets drag-and-drop)
+- Mon cockpit personnalisable (widgets drag-and-drop)
 - Multi-langue (EN, ES, DE)
 
 **Phase 4 (Long terme) :**
