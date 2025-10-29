@@ -139,6 +139,593 @@ const PRESET_COLORS = [
   "#a855f7", // purple
 ];
 
+// Cloud Storage Configuration Component
+function CloudStorageConfigForm() {
+  const { toast } = useToast();
+  const [editingConfig, setEditingConfig] = useState<any | null>(null);
+  const [newConfig, setNewConfig] = useState({
+    provider: "",
+    credentials: {
+      clientId: "",
+      clientSecret: "",
+      refreshToken: "",
+      tenantId: "", // For OneDrive
+    },
+  });
+
+  const { data: cloudConfigs, isLoading: configsLoading } = useQuery({
+    queryKey: ["/api/cloud-storage-configs"],
+  });
+
+  const createConfigMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await apiRequest("POST", "/api/cloud-storage-configs", data);
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Configuration cloud ajoutée avec succès" });
+      queryClient.invalidateQueries({ queryKey: ["/api/cloud-storage-configs"] });
+      setNewConfig({
+        provider: "",
+        credentials: {
+          clientId: "",
+          clientSecret: "",
+          refreshToken: "",
+          tenantId: "",
+        },
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible d'ajouter la configuration",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateConfigMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const response = await apiRequest("PATCH", `/api/cloud-storage-configs/${id}`, data);
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Configuration cloud mise à jour" });
+      queryClient.invalidateQueries({ queryKey: ["/api/cloud-storage-configs"] });
+      setEditingConfig(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de mettre à jour la configuration",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteConfigMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/cloud-storage-configs/${id}`);
+    },
+    onSuccess: () => {
+      toast({ title: "Configuration cloud supprimée" });
+      queryClient.invalidateQueries({ queryKey: ["/api/cloud-storage-configs"] });
+    },
+    onError: () => {
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer la configuration",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleCreateConfig = () => {
+    if (!newConfig.provider) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez sélectionner un fournisseur",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    createConfigMutation.mutate(newConfig);
+  };
+
+  const handleUpdateConfig = () => {
+    if (editingConfig) {
+      updateConfigMutation.mutate({
+        id: editingConfig.id,
+        data: {
+          credentials: editingConfig.credentials,
+        },
+      });
+    }
+  };
+
+  if (configsLoading) {
+    return <Skeleton className="h-[400px] w-full" />;
+  }
+
+  const googleConfig = (cloudConfigs as any[])?.find((c: any) => c.provider === "google_drive");
+  const onedriveConfig = (cloudConfigs as any[])?.find((c: any) => c.provider === "onedrive");
+
+  return (
+    <div className="space-y-6">
+      {/* Google Drive Configuration */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl">Google Drive</CardTitle>
+          <CardDescription>
+            Configurez vos identifiants OAuth pour Google Drive
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {googleConfig ? (
+            <div className="space-y-4">
+              <Alert>
+                <CheckCircle className="h-4 w-4" />
+                <AlertTitle>Configuré</AlertTitle>
+                <AlertDescription>
+                  Votre compte Google Drive est connecté et actif.
+                </AlertDescription>
+              </Alert>
+              {editingConfig?.provider === "google_drive" ? (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="google-client-id">Client ID</Label>
+                    <Input
+                      id="google-client-id"
+                      value={editingConfig.credentials.clientId || ""}
+                      onChange={(e) =>
+                        setEditingConfig({
+                          ...editingConfig,
+                          credentials: {
+                            ...editingConfig.credentials,
+                            clientId: e.target.value,
+                          },
+                        })
+                      }
+                      data-testid="input-google-client-id"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="google-client-secret">Client Secret</Label>
+                    <Input
+                      id="google-client-secret"
+                      type="password"
+                      value={editingConfig.credentials.clientSecret || ""}
+                      onChange={(e) =>
+                        setEditingConfig({
+                          ...editingConfig,
+                          credentials: {
+                            ...editingConfig.credentials,
+                            clientSecret: e.target.value,
+                          },
+                        })
+                      }
+                      data-testid="input-google-client-secret"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="google-refresh-token">Refresh Token</Label>
+                    <Input
+                      id="google-refresh-token"
+                      type="password"
+                      value={editingConfig.credentials.refreshToken || ""}
+                      onChange={(e) =>
+                        setEditingConfig({
+                          ...editingConfig,
+                          credentials: {
+                            ...editingConfig.credentials,
+                            refreshToken: e.target.value,
+                          },
+                        })
+                      }
+                      data-testid="input-google-refresh-token"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleUpdateConfig}
+                      disabled={updateConfigMutation.isPending}
+                      data-testid="button-save-google-config"
+                    >
+                      <Save className="mr-2 h-4 w-4" />
+                      Enregistrer
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setEditingConfig(null)}
+                      data-testid="button-cancel-google-edit"
+                    >
+                      Annuler
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setEditingConfig(googleConfig)}
+                    data-testid="button-edit-google-config"
+                  >
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Modifier
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => deleteConfigMutation.mutate(googleConfig.id)}
+                    disabled={deleteConfigMutation.isPending}
+                    data-testid="button-delete-google-config"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Supprimer
+                  </Button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {newConfig.provider === "google_drive" ? (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="new-google-client-id">Client ID</Label>
+                    <Input
+                      id="new-google-client-id"
+                      value={newConfig.credentials.clientId}
+                      onChange={(e) =>
+                        setNewConfig({
+                          ...newConfig,
+                          credentials: {
+                            ...newConfig.credentials,
+                            clientId: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder="Votre Client ID Google"
+                      data-testid="input-new-google-client-id"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="new-google-client-secret">Client Secret</Label>
+                    <Input
+                      id="new-google-client-secret"
+                      type="password"
+                      value={newConfig.credentials.clientSecret}
+                      onChange={(e) =>
+                        setNewConfig({
+                          ...newConfig,
+                          credentials: {
+                            ...newConfig.credentials,
+                            clientSecret: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder="Votre Client Secret Google"
+                      data-testid="input-new-google-client-secret"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="new-google-refresh-token">Refresh Token</Label>
+                    <Input
+                      id="new-google-refresh-token"
+                      type="password"
+                      value={newConfig.credentials.refreshToken}
+                      onChange={(e) =>
+                        setNewConfig({
+                          ...newConfig,
+                          credentials: {
+                            ...newConfig.credentials,
+                            refreshToken: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder="Votre Refresh Token Google"
+                      data-testid="input-new-google-refresh-token"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleCreateConfig}
+                      disabled={createConfigMutation.isPending}
+                      data-testid="button-create-google-config"
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Ajouter
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() =>
+                        setNewConfig({
+                          provider: "",
+                          credentials: {
+                            clientId: "",
+                            clientSecret: "",
+                            refreshToken: "",
+                            tenantId: "",
+                          },
+                        })
+                      }
+                      data-testid="button-cancel-google-new"
+                    >
+                      Annuler
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button
+                  onClick={() =>
+                    setNewConfig({ ...newConfig, provider: "google_drive" })
+                  }
+                  data-testid="button-configure-google"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Configurer Google Drive
+                </Button>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* OneDrive Configuration */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl">OneDrive</CardTitle>
+          <CardDescription>
+            Configurez vos identifiants OAuth pour OneDrive
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {onedriveConfig ? (
+            <div className="space-y-4">
+              <Alert>
+                <CheckCircle className="h-4 w-4" />
+                <AlertTitle>Configuré</AlertTitle>
+                <AlertDescription>
+                  Votre compte OneDrive est connecté et actif.
+                </AlertDescription>
+              </Alert>
+              {editingConfig?.provider === "onedrive" ? (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="onedrive-client-id">Client ID</Label>
+                    <Input
+                      id="onedrive-client-id"
+                      value={editingConfig.credentials.clientId || ""}
+                      onChange={(e) =>
+                        setEditingConfig({
+                          ...editingConfig,
+                          credentials: {
+                            ...editingConfig.credentials,
+                            clientId: e.target.value,
+                          },
+                        })
+                      }
+                      data-testid="input-onedrive-client-id"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="onedrive-client-secret">Client Secret</Label>
+                    <Input
+                      id="onedrive-client-secret"
+                      type="password"
+                      value={editingConfig.credentials.clientSecret || ""}
+                      onChange={(e) =>
+                        setEditingConfig({
+                          ...editingConfig,
+                          credentials: {
+                            ...editingConfig.credentials,
+                            clientSecret: e.target.value,
+                          },
+                        })
+                      }
+                      data-testid="input-onedrive-client-secret"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="onedrive-refresh-token">Refresh Token</Label>
+                    <Input
+                      id="onedrive-refresh-token"
+                      type="password"
+                      value={editingConfig.credentials.refreshToken || ""}
+                      onChange={(e) =>
+                        setEditingConfig({
+                          ...editingConfig,
+                          credentials: {
+                            ...editingConfig.credentials,
+                            refreshToken: e.target.value,
+                          },
+                        })
+                      }
+                      data-testid="input-onedrive-refresh-token"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="onedrive-tenant-id">Tenant ID (optionnel)</Label>
+                    <Input
+                      id="onedrive-tenant-id"
+                      value={editingConfig.credentials.tenantId || ""}
+                      onChange={(e) =>
+                        setEditingConfig({
+                          ...editingConfig,
+                          credentials: {
+                            ...editingConfig.credentials,
+                            tenantId: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder="common (par défaut)"
+                      data-testid="input-onedrive-tenant-id"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleUpdateConfig}
+                      disabled={updateConfigMutation.isPending}
+                      data-testid="button-save-onedrive-config"
+                    >
+                      <Save className="mr-2 h-4 w-4" />
+                      Enregistrer
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setEditingConfig(null)}
+                      data-testid="button-cancel-onedrive-edit"
+                    >
+                      Annuler
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setEditingConfig(onedriveConfig)}
+                    data-testid="button-edit-onedrive-config"
+                  >
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Modifier
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => deleteConfigMutation.mutate(onedriveConfig.id)}
+                    disabled={deleteConfigMutation.isPending}
+                    data-testid="button-delete-onedrive-config"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Supprimer
+                  </Button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {newConfig.provider === "onedrive" ? (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="new-onedrive-client-id">Client ID</Label>
+                    <Input
+                      id="new-onedrive-client-id"
+                      value={newConfig.credentials.clientId}
+                      onChange={(e) =>
+                        setNewConfig({
+                          ...newConfig,
+                          credentials: {
+                            ...newConfig.credentials,
+                            clientId: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder="Votre Client ID OneDrive"
+                      data-testid="input-new-onedrive-client-id"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="new-onedrive-client-secret">Client Secret</Label>
+                    <Input
+                      id="new-onedrive-client-secret"
+                      type="password"
+                      value={newConfig.credentials.clientSecret}
+                      onChange={(e) =>
+                        setNewConfig({
+                          ...newConfig,
+                          credentials: {
+                            ...newConfig.credentials,
+                            clientSecret: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder="Votre Client Secret OneDrive"
+                      data-testid="input-new-onedrive-client-secret"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="new-onedrive-refresh-token">Refresh Token</Label>
+                    <Input
+                      id="new-onedrive-refresh-token"
+                      type="password"
+                      value={newConfig.credentials.refreshToken}
+                      onChange={(e) =>
+                        setNewConfig({
+                          ...newConfig,
+                          credentials: {
+                            ...newConfig.credentials,
+                            refreshToken: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder="Votre Refresh Token OneDrive"
+                      data-testid="input-new-onedrive-refresh-token"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="new-onedrive-tenant-id">Tenant ID (optionnel)</Label>
+                    <Input
+                      id="new-onedrive-tenant-id"
+                      value={newConfig.credentials.tenantId}
+                      onChange={(e) =>
+                        setNewConfig({
+                          ...newConfig,
+                          credentials: {
+                            ...newConfig.credentials,
+                            tenantId: e.target.value,
+                          },
+                        })
+                      }
+                      placeholder="common (par défaut)"
+                      data-testid="input-new-onedrive-tenant-id"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleCreateConfig}
+                      disabled={createConfigMutation.isPending}
+                      data-testid="button-create-onedrive-config"
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Ajouter
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() =>
+                        setNewConfig({
+                          provider: "",
+                          credentials: {
+                            clientId: "",
+                            clientSecret: "",
+                            refreshToken: "",
+                            tenantId: "",
+                          },
+                        })
+                      }
+                      data-testid="button-cancel-onedrive-new"
+                    >
+                      Annuler
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button
+                  onClick={() =>
+                    setNewConfig({ ...newConfig, provider: "onedrive" })
+                  }
+                  data-testid="button-configure-onedrive"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Configurer OneDrive
+                </Button>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export default function Settings() {
   const { toast } = useToast();
 
@@ -336,6 +923,7 @@ export default function Settings() {
         generateAutoResponse: true,
         autoCreateTask: false,
         autoMarkAsProcessed: false,
+        redirectEmails: [],
       });
     },
     onError: () => {
@@ -570,6 +1158,13 @@ export default function Settings() {
             className="text-xs sm:text-sm"
           >
             Automatisation
+          </TabsTrigger>
+          <TabsTrigger
+            value="cloud"
+            data-testid="tab-cloud"
+            className="text-xs sm:text-sm"
+          >
+            Stockage Cloud
           </TabsTrigger>
           {(user as any)?.role === "admin" && (
             <TabsTrigger
@@ -1835,6 +2430,20 @@ export default function Settings() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Cloud Storage Tab */}
+        <TabsContent value="cloud" className="space-y-6">
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertTitle>Configuration personnelle du stockage cloud</AlertTitle>
+            <AlertDescription>
+              Connectez vos propres comptes Google Drive ou OneDrive pour stocker les documents extraits des emails. 
+              Ces configurations sont personnelles et sécurisées.
+            </AlertDescription>
+          </Alert>
+
+          <CloudStorageConfigForm />
         </TabsContent>
 
         {/* Alerts Tab */}
