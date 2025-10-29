@@ -213,6 +213,7 @@ export default function Settings() {
         isSystem: false,
         generateAutoResponse: true,
         autoCreateTask: false,
+        autoMarkAsProcessed: false,
       });
     },
     onError: () => {
@@ -1100,6 +1101,164 @@ export default function Settings() {
               )}
             </CardContent>
           </Card>
+
+          {/* Edit Category Dialog */}
+          <Dialog open={!!editingCategory} onOpenChange={(open) => !open && setEditingCategory(null)}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Modifier la catégorie</DialogTitle>
+                <DialogDescription>
+                  Modifiez les paramètres de la catégorie
+                </DialogDescription>
+              </DialogHeader>
+              {editingCategory && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-category-key">Clé (identifiant unique)</Label>
+                      <Input
+                        id="edit-category-key"
+                        value={editingCategory.key}
+                        onChange={(e) =>
+                          setEditingCategory({ ...editingCategory, key: e.target.value })
+                        }
+                        placeholder="ex: devis, facture"
+                        data-testid="input-edit-category-key"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-category-label">Libellé</Label>
+                      <Input
+                        id="edit-category-label"
+                        value={editingCategory.label}
+                        onChange={(e) =>
+                          setEditingCategory({ ...editingCategory, label: e.target.value })
+                        }
+                        placeholder="ex: Devis, Facture"
+                        data-testid="input-edit-category-label"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-category-color">Couleur (hex)</Label>
+                      <Input
+                        id="edit-category-color"
+                        value={editingCategory.color}
+                        onChange={(e) =>
+                          setEditingCategory({ ...editingCategory, color: e.target.value })
+                        }
+                        placeholder="#6366f1"
+                        data-testid="input-edit-category-color"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-category-icon">Icône Lucide</Label>
+                      <Input
+                        id="edit-category-icon"
+                        value={editingCategory.icon}
+                        onChange={(e) =>
+                          setEditingCategory({ ...editingCategory, icon: e.target.value })
+                        }
+                        placeholder="Mail"
+                        data-testid="input-edit-category-icon"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="edit-generate-auto-response"
+                      checked={editingCategory.generateAutoResponse}
+                      onCheckedChange={(checked) =>
+                        setEditingCategory({
+                          ...editingCategory,
+                          generateAutoResponse: checked as boolean,
+                        })
+                      }
+                      data-testid="checkbox-edit-generate-auto-response"
+                    />
+                    <Label
+                      htmlFor="edit-generate-auto-response"
+                      className="text-sm font-normal"
+                    >
+                      Générer une réponse automatique pour cette catégorie
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="edit-auto-create-task"
+                      checked={editingCategory.autoCreateTask}
+                      onCheckedChange={(checked) =>
+                        setEditingCategory({
+                          ...editingCategory,
+                          autoCreateTask: checked as boolean,
+                        })
+                      }
+                      data-testid="checkbox-edit-auto-create-task"
+                    />
+                    <Label
+                      htmlFor="edit-auto-create-task"
+                      className="text-sm font-normal"
+                    >
+                      Créer automatiquement une tâche pour chaque email de cette catégorie
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="edit-auto-mark-as-processed"
+                      checked={editingCategory.autoMarkAsProcessed}
+                      onCheckedChange={(checked) =>
+                        setEditingCategory({
+                          ...editingCategory,
+                          autoMarkAsProcessed: checked as boolean,
+                        })
+                      }
+                      data-testid="checkbox-edit-auto-mark-as-processed"
+                    />
+                    <Label
+                      htmlFor="edit-auto-mark-as-processed"
+                      className="text-sm font-normal"
+                    >
+                      Marquer automatiquement les emails scannés comme traités
+                    </Label>
+                  </div>
+                </div>
+              )}
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setEditingCategory(null)}
+                  data-testid="button-cancel-edit-category"
+                >
+                  Annuler
+                </Button>
+                <Button
+                  onClick={() =>
+                    updateCategoryMutation.mutate({
+                      id: editingCategory.id,
+                      data: {
+                        key: editingCategory.key,
+                        label: editingCategory.label,
+                        color: editingCategory.color,
+                        icon: editingCategory.icon,
+                        generateAutoResponse: editingCategory.generateAutoResponse,
+                        autoCreateTask: editingCategory.autoCreateTask,
+                        autoMarkAsProcessed: editingCategory.autoMarkAsProcessed,
+                      },
+                    })
+                  }
+                  disabled={
+                    updateCategoryMutation.isPending ||
+                    !editingCategory?.key ||
+                    !editingCategory?.label
+                  }
+                  data-testid="button-save-edit-category"
+                >
+                  Enregistrer
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </TabsContent>
 
         {/* Automation Tab */}
