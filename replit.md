@@ -45,7 +45,7 @@ The application uses a modern web stack:
   * **Évolution des alertes**: Stacked bar chart monitoring alert trends (Actives/Résolues) with period controls
   * Category-colored visualizations throughout for consistent visual identity
   * Weeks calculated from Monday to Sunday, months use standard calendar boundaries
-- **Email Management**: AI-powered categorization, priority/sentiment detection, auto-response generation, task assignment, and alerts. Supports bulk processing and individual email account scanning. Features read/unread status tracking and category-based automatic marking as processed. Smart date display shows time for today's emails (e.g., "14:30"), "Hier" for yesterday, and date format (e.g., "15 oct") for older emails.
+- **Email Management**: AI-powered categorization, priority/sentiment detection, auto-response generation, task assignment, and alerts. Supports bulk processing and individual email account scanning. Features read/unread status tracking and category-based automatic marking as processed. Smart date display shows time for today's emails (e.g., "14:30"), "Hier" for yesterday, and date format (e.g., "15 oct") for older emails. Email list supports pagination (20 emails per page) with intuitive navigation controls.
 - **Calendar**: Monthly visualization and automated scheduling of appointments from emails, with AI-driven preparation.
 - **Document Management**: Automatic extraction, classification, and storage of email attachments on Google Drive with full-text search.
 - **Alert System**: Configurable custom alerts using natural language prompts interpreted by GPT-5. Alert cards are clickable and redirect to the Email Management page with automatic filtering to show only emails related to the specific alert.

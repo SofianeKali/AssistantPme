@@ -21,6 +21,8 @@ import {
   Check,
   X,
   MailCheck,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -50,6 +52,8 @@ export default function Emails() {
   const [customPrompt, setCustomPrompt] = useState<string>("");
   const [showPromptInput, setShowPromptInput] = useState<boolean>(false);
   const [alertId, setAlertId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(20); // Number of emails per page
   const { toast } = useToast();
 
   // Load email categories dynamically
@@ -77,10 +81,15 @@ export default function Emails() {
     }
   }, [location]);
 
-  const { data: rawEmails, isLoading } = useQuery({
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [typeFilter, statusFilter, search, alertId]);
+
+  const { data: emailsData, isLoading } = useQuery({
     queryKey: alertId 
       ? ["/api/alerts", alertId, "emails"]
-      : ["/api/emails", { type: typeFilter, status: statusFilter, search }],
+      : ["/api/emails", { type: typeFilter, status: statusFilter, search, page, pageSize }],
     queryFn: async () => {
       // If alertId is set, fetch emails for this alert
       if (alertId) {
@@ -92,15 +101,19 @@ export default function Emails() {
           throw new Error(`${res.status}: ${res.statusText}`);
         }
         
-        return res.json();
+        // For alert emails, return in the same format as paginated emails
+        const emails = await res.json();
+        return { emails, total: emails.length, limit: emails.length, offset: 0 };
       }
       
-      // Otherwise, fetch emails with filters
+      // Otherwise, fetch emails with filters and pagination
       const params = new URLSearchParams();
       if (typeFilter && typeFilter !== "all") params.append("type", typeFilter);
       if (statusFilter && statusFilter !== "all")
         params.append("status", statusFilter);
       if (search) params.append("search", search);
+      params.append("limit", pageSize.toString());
+      params.append("offset", ((page - 1) * pageSize).toString());
 
       const url = `/api/emails${params.toString() ? `?${params.toString()}` : ""}`;
       const res = await fetch(url, { credentials: "include" });
@@ -114,8 +127,8 @@ export default function Emails() {
   });
 
   // Sort emails: unprocessed (nouveau) first, then by received date
-  const emails = rawEmails
-    ? [...rawEmails].sort((a, b) => {
+  const emails = emailsData?.emails
+    ? [...emailsData.emails].sort((a, b) => {
         // First, sort by status: "nouveau" comes first
         if (a.status === "nouveau" && b.status !== "nouveau") return -1;
         if (a.status !== "nouveau" && b.status === "nouveau") return 1;
@@ -126,6 +139,18 @@ export default function Emails() {
         );
       })
     : [];
+
+  const totalPages = emailsData ? Math.ceil(emailsData.total / pageSize) : 0;
+
+  // Clamp page to valid range when total changes
+  useEffect(() => {
+    if (emailsData && emailsData.total > 0) {
+      const maxPage = Math.ceil(emailsData.total / pageSize);
+      if (page > maxPage) {
+        setPage(maxPage);
+      }
+    }
+  }, [emailsData, page, pageSize]);
 
   const generateResponseMutation = useMutation({
     mutationFn: async ({
@@ -827,6 +852,44 @@ export default function Emails() {
           </div>
         )}
       </Card>
+
+      {/* Pagination Controls */}
+      {!alertId && emailsData && (totalPages > 1 || page > 1) && (
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 px-2 py-4">
+          <div className="text-sm text-muted-foreground">
+            {emailsData.total > 0 ? (
+              <>Affichage de {((page - 1) * pageSize) + 1} à {Math.min(page * pageSize, emailsData.total)} sur {emailsData.total} emails</>
+            ) : (
+              <>Aucun email trouvé</>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+              data-testid="button-prev-page"
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Précédent
+            </Button>
+            <div className="text-sm text-muted-foreground px-2">
+              Page {page} sur {Math.max(1, totalPages)}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+              data-testid="button-next-page"
+            >
+              Suivant
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Email Detail Dialog */}
       <Dialog

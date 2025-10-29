@@ -287,7 +287,7 @@ export class DatabaseStorage implements IStorage {
     return await query;
   }
 
-  async getAllEmails(filters?: { type?: string; status?: string; priority?: string; search?: string; olderThanHours?: number; limit?: number }): Promise<Email[]> {
+  async getAllEmails(filters?: { type?: string; status?: string; priority?: string; search?: string; olderThanHours?: number; limit?: number; offset?: number }): Promise<Email[]> {
     let query = db.select().from(emails);
     
     const conditions = [];
@@ -338,7 +338,60 @@ export class DatabaseStorage implements IStorage {
       query = query.limit(filters.limit) as any;
     }
     
+    if (filters?.offset) {
+      query = query.offset(filters.offset) as any;
+    }
+    
     return await query;
+  }
+
+  async getEmailsCount(filters?: { type?: string; status?: string; priority?: string; search?: string; olderThanHours?: number }): Promise<number> {
+    let query = db.select({ count: sql<number>`count(*)` }).from(emails);
+    
+    const conditions = [];
+    if (filters?.type && filters.type !== 'all') {
+      conditions.push(eq(emails.emailType, filters.type));
+    }
+    if (filters?.status && filters.status !== 'all') {
+      // Handle grouped statuses
+      if (filters.status === 'non_traite') {
+        conditions.push(or(
+          eq(emails.status, 'nouveau'),
+          eq(emails.status, 'en_cours')
+        )!);
+      } else if (filters.status === 'traite') {
+        conditions.push(or(
+          eq(emails.status, 'traite'),
+          eq(emails.status, 'archive')
+        )!);
+      } else {
+        // Individual status filter
+        conditions.push(eq(emails.status, filters.status));
+      }
+    }
+    if (filters?.priority) {
+      conditions.push(eq(emails.priority, filters.priority));
+    }
+    if (filters?.olderThanHours !== undefined) {
+      const ageThreshold = new Date(Date.now() - filters.olderThanHours * 60 * 60 * 1000);
+      conditions.push(lte(emails.receivedAt, ageThreshold));
+    }
+    if (filters?.search) {
+      conditions.push(
+        or(
+          like(emails.subject, `%${filters.search}%`),
+          like(emails.body, `%${filters.search}%`),
+          like(emails.from, `%${filters.search}%`)
+        )!
+      );
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
+    }
+    
+    const result = await query;
+    return Number(result[0]?.count || 0);
   }
 
   async getEmailById(id: string, userId?: string): Promise<Email | undefined> {

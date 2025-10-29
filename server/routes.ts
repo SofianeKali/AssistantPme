@@ -299,13 +299,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // All authenticated users can see all emails (PME shared inbox)
   app.get('/api/emails', isAuthenticated, async (req, res) => {
     try {
-      const { type, status, search } = req.query;
-      const emails = await storage.getAllEmails({
+      const { type, status, search, limit, offset } = req.query;
+      
+      const filters = {
         type: type as string,
         status: status as string,
         search: search as string,
+        limit: limit ? parseInt(limit as string) : undefined,
+        offset: offset ? parseInt(offset as string) : undefined,
+      };
+      
+      const [emails, total] = await Promise.all([
+        storage.getAllEmails(filters),
+        storage.getEmailsCount({
+          type: filters.type,
+          status: filters.status,
+          search: filters.search,
+        }),
+      ]);
+      
+      res.json({
+        emails,
+        total,
+        limit: filters.limit || total,
+        offset: filters.offset || 0,
       });
-      res.json(emails);
     } catch (error) {
       console.error("Error fetching emails:", error);
       res.status(500).json({ message: "Failed to fetch emails" });
