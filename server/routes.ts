@@ -1350,8 +1350,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // User management (admin only)
-  app.get('/api/users', isAuthenticated, isAdmin, async (req, res) => {
+  // User management
+  // GET /api/users - accessible to all authenticated users (for task assignment)
+  // Only returns safe user fields (no passwordHash)
+  app.get('/api/users', isAuthenticated, async (req, res) => {
     try {
       const users = await storage.getAllUsers();
       // Remove sensitive fields before sending response
