@@ -40,6 +40,8 @@ import {
   ResponsiveContainer,
   Label,
 } from "recharts";
+import { ChartPeriodControls, PeriodType } from "@/components/ChartPeriodControls";
+import { getPeriodLabel } from "@/lib/dateUtils";
 
 // Map icon names to Lucide components
 const getIconComponent = (iconName: string): LucideIcon => {
@@ -103,29 +105,28 @@ export default function Dashboard() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   
-  // Week offsets for navigation
-  const [tasksWeekOffset, setTasksWeekOffset] = useState(0);
-  const [alertsWeekOffset, setAlertsWeekOffset] = useState(0);
-  const [appointmentsWeekOffset, setAppointmentsWeekOffset] = useState(0);
+  // Period controls for all charts
+  const [emailDistributionPeriod, setEmailDistributionPeriod] = useState<PeriodType>('week');
+  const [emailDistributionOffset, setEmailDistributionOffset] = useState(0);
+  
+  const [emailEvolutionPeriod, setEmailEvolutionPeriod] = useState<PeriodType>('week');
+  const [emailEvolutionOffset, setEmailEvolutionOffset] = useState(0);
+  
+  const [categoryProcessingPeriod, setCategoryProcessingPeriod] = useState<PeriodType>('week');
+  const [categoryProcessingOffset, setCategoryProcessingOffset] = useState(0);
+  
+  const [tasksPeriod, setTasksPeriod] = useState<PeriodType>('week');
+  const [tasksOffset, setTasksOffset] = useState(0);
+  
+  const [alertsPeriod, setAlertsPeriod] = useState<PeriodType>('week');
+  const [alertsOffset, setAlertsOffset] = useState(0);
+  
+  const [appointmentsPeriod, setAppointmentsPeriod] = useState<PeriodType>('week');
+  const [appointmentsOffset, setAppointmentsOffset] = useState(0);
 
   const { data: stats, isLoading } = useQuery<any>({
     queryKey: ["/api/dashboard/stats"],
   });
-
-  const { data: charts, isLoading: chartsLoading } = useQuery<any>({
-    queryKey: ["/api/dashboard/charts"],
-  });
-
-  const { data: categoryStats, isLoading: categoryStatsLoading } =
-    useQuery<any>({
-      queryKey: ["/api/emails/stats/by-category"],
-    });
-
-  const { data: emailCategories, isLoading: categoriesLoading } = useQuery<any>(
-    {
-      queryKey: ["/api/email-categories"],
-    },
-  );
 
   const { data: alerts, isLoading: alertsLoading } = useQuery<any>({
     queryKey: ["/api/alerts", { limit: 5, resolved: false }],
@@ -144,27 +145,51 @@ export default function Dashboard() {
     },
   });
   
-  // Weekly evolution queries
-  const { data: tasksEvolution, isLoading: tasksEvolutionLoading } = useQuery<any>({
-    queryKey: ["/api/dashboard/tasks-evolution", tasksWeekOffset],
+  // All chart queries with period controls
+  const { data: emailDistribution, isLoading: emailDistributionLoading } = useQuery<any>({
+    queryKey: ["/api/dashboard/email-distribution", emailDistributionPeriod, emailDistributionOffset],
     queryFn: async () => {
-      const response = await fetch(`/api/dashboard/tasks-evolution?weekOffset=${tasksWeekOffset}`);
+      const response = await fetch(`/api/dashboard/email-distribution?periodType=${emailDistributionPeriod}&offset=${emailDistributionOffset}`);
+      return response.json();
+    },
+  });
+
+  const { data: emailEvolution, isLoading: emailEvolutionLoading } = useQuery<any>({
+    queryKey: ["/api/dashboard/email-evolution", emailEvolutionPeriod, emailEvolutionOffset],
+    queryFn: async () => {
+      const response = await fetch(`/api/dashboard/email-evolution?periodType=${emailEvolutionPeriod}&offset=${emailEvolutionOffset}`);
+      return response.json();
+    },
+  });
+
+  const { data: categoryProcessing, isLoading: categoryProcessingLoading } = useQuery<any>({
+    queryKey: ["/api/dashboard/category-processing", categoryProcessingPeriod, categoryProcessingOffset],
+    queryFn: async () => {
+      const response = await fetch(`/api/dashboard/category-processing?periodType=${categoryProcessingPeriod}&offset=${categoryProcessingOffset}`);
+      return response.json();
+    },
+  });
+
+  const { data: tasksEvolution, isLoading: tasksEvolutionLoading } = useQuery<any>({
+    queryKey: ["/api/dashboard/tasks-evolution", tasksPeriod, tasksOffset],
+    queryFn: async () => {
+      const response = await fetch(`/api/dashboard/tasks-evolution?periodType=${tasksPeriod}&offset=${tasksOffset}`);
       return response.json();
     },
   });
 
   const { data: alertsEvolution, isLoading: alertsEvolutionLoading } = useQuery<any>({
-    queryKey: ["/api/dashboard/alerts-evolution", alertsWeekOffset],
+    queryKey: ["/api/dashboard/alerts-evolution", alertsPeriod, alertsOffset],
     queryFn: async () => {
-      const response = await fetch(`/api/dashboard/alerts-evolution?weekOffset=${alertsWeekOffset}`);
+      const response = await fetch(`/api/dashboard/alerts-evolution?periodType=${alertsPeriod}&offset=${alertsOffset}`);
       return response.json();
     },
   });
 
   const { data: appointmentsWeek, isLoading: appointmentsWeekLoading } = useQuery<any>({
-    queryKey: ["/api/dashboard/appointments-week", appointmentsWeekOffset],
+    queryKey: ["/api/dashboard/appointments-week", appointmentsPeriod, appointmentsOffset],
     queryFn: async () => {
-      const response = await fetch(`/api/dashboard/appointments-week?weekOffset=${appointmentsWeekOffset}`);
+      const response = await fetch(`/api/dashboard/appointments-week?periodType=${appointmentsPeriod}&offset=${appointmentsOffset}`);
       return response.json();
     },
   });
@@ -228,7 +253,7 @@ export default function Dashboard() {
     },
   });
 
-  if (isLoading || chartsLoading) {
+  if (isLoading) {
     return (
       <div className="p-6 space-y-6">
         <div>
@@ -444,150 +469,108 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Email Categories */}
-      <div>
-        <h2 className="text-xl font-semibold mb-4">
-          Emails non traités par catégorie
-        </h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {categoryStatsLoading || categoriesLoading
-            ? [...Array(4)].map((_, i) => <Skeleton key={i} className="h-32" />)
-            : emailCategories &&
-              (() => {
-                const uniqueCategories = emailCategories.reduce(
-                  (acc: any[], category: any) => {
-                    const existing = acc.find((c) => c.key === category.key);
-                    if (!existing) {
-                      acc.push(category);
-                    } else if (category.isSystem && !existing.isSystem) {
-                      const index = acc.indexOf(existing);
-                      acc[index] = category;
-                    }
-                    return acc;
-                  },
-                  [],
-                );
-
-                return uniqueCategories.map((category: any) => {
-                  const IconComponent = getIconComponent(category.icon);
-                  return (
-                    <Card
-                      key={category.key}
-                      className="hover-elevate cursor-pointer"
-                      onClick={() =>
-                        setLocation(
-                          `/emails?category=${category.key}&status=nouveau`,
-                        )
-                      }
-                      data-testid={`category-block-${category.key}`}
-                    >
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          {category.label}
-                        </CardTitle>
-                        <div
-                          className="w-8 h-8 rounded-md flex items-center justify-center"
-                          style={{
-                            backgroundColor: category.color + "20",
-                            color: category.color,
-                          }}
-                        >
-                          <IconComponent className="h-4 w-4" />
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-semibold">
-                          {categoryStats?.[category.key] || 0}
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Non traités
-                        </p>
-                      </CardContent>
-                    </Card>
-                  );
-                });
-              })()}
-        </div>
-      </div>
 
       {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Évolution des emails traités */}
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
             <CardTitle>Évolution des emails traités</CardTitle>
+            <ChartPeriodControls
+              periodType={emailEvolutionPeriod}
+              onPeriodTypeChange={(type) => setEmailEvolutionPeriod(type)}
+              offset={emailEvolutionOffset}
+              onOffsetChange={setEmailEvolutionOffset}
+              periodLabel={getPeriodLabel(emailEvolutionPeriod, emailEvolutionOffset)}
+              testIdPrefix="email-evolution"
+            />
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={charts?.emailEvolution || []}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="hsl(var(--border))"
-                />
-                <XAxis
-                  dataKey="day"
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "6px",
-                  }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="count"
-                  stroke={COLORS.primary}
-                  strokeWidth={2}
-                  dot={{ fill: COLORS.primary }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            {emailEvolutionLoading ? (
+              <Skeleton className="h-[250px]" />
+            ) : (
+              <ResponsiveContainer width="100%" height={250}>
+                <LineChart data={emailEvolution || []}>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="hsl(var(--border))"
+                  />
+                  <XAxis
+                    dataKey="day"
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                  />
+                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "6px",
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="count"
+                    stroke={COLORS.primary}
+                    strokeWidth={2}
+                    dot={{ fill: COLORS.primary }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
 
         {/* Répartition des emails reçus */}
-        <Card>
-          <CardHeader>
+        <Card data-testid="card-email-distribution">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
             <CardTitle>Répartition des emails reçus</CardTitle>
+            <ChartPeriodControls
+              periodType={emailDistributionPeriod}
+              onPeriodTypeChange={(type) => setEmailDistributionPeriod(type)}
+              offset={emailDistributionOffset}
+              onOffsetChange={setEmailDistributionOffset}
+              periodLabel={getPeriodLabel(emailDistributionPeriod, emailDistributionOffset)}
+              testIdPrefix="email-distribution"
+            />
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <PieChart>
-                <Pie
-                  data={charts?.emailDistribution || []}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={2}
-                  dataKey="value"
-                  label={(entry) => `${entry.name} (${entry.value})`}
-                  labelLine={true}
-                >
-                  {charts?.emailDistribution?.map(
-                    (entry: any, index: number) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={entry.color || CHART_COLORS[index % CHART_COLORS.length]}
-                      />
-                    ),
-                  )}
-                </Pie>
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "6px",
-                  }}
-                />
-                <Legend verticalAlign="bottom" height={36} iconType="circle" />
-              </PieChart>
-            </ResponsiveContainer>
+            {emailDistributionLoading ? (
+              <Skeleton className="h-[250px]" />
+            ) : (
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie
+                    data={emailDistribution || []}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={2}
+                    dataKey="value"
+                    label={(entry) => `${entry.name} (${entry.value})`}
+                    labelLine={true}
+                  >
+                    {emailDistribution?.map(
+                      (entry: any, index: number) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={entry.color || CHART_COLORS[index % CHART_COLORS.length]}
+                        />
+                      ),
+                    )}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "6px",
+                    }}
+                  />
+                  <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
 
@@ -595,25 +578,14 @@ export default function Dashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
             <CardTitle>Évolution des RDV</CardTitle>
-            <div className="flex gap-1">
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => setAppointmentsWeekOffset(appointmentsWeekOffset + 1)}
-                data-testid="button-appointments-prev-week"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => setAppointmentsWeekOffset(Math.max(0, appointmentsWeekOffset - 1))}
-                disabled={appointmentsWeekOffset === 0}
-                data-testid="button-appointments-next-week"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
+            <ChartPeriodControls
+              periodType={appointmentsPeriod}
+              onPeriodTypeChange={(type) => setAppointmentsPeriod(type)}
+              offset={appointmentsOffset}
+              onOffsetChange={setAppointmentsOffset}
+              periodLabel={getPeriodLabel(appointmentsPeriod, appointmentsOffset)}
+              testIdPrefix="appointments"
+            />
           </CardHeader>
           <CardContent>
             {appointmentsWeekLoading ? (
@@ -651,42 +623,54 @@ export default function Dashboard() {
 
         {/* Taux de traitement par catégorie */}
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
             <CardTitle>Taux de traitement par catégorie</CardTitle>
+            <ChartPeriodControls
+              periodType={categoryProcessingPeriod}
+              onPeriodTypeChange={(type) => setCategoryProcessingPeriod(type)}
+              offset={categoryProcessingOffset}
+              onOffsetChange={setCategoryProcessingOffset}
+              periodLabel={getPeriodLabel(categoryProcessingPeriod, categoryProcessingOffset)}
+              testIdPrefix="category-processing"
+            />
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={charts?.categoryProcessing || []}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="hsl(var(--border))"
-                />
-                <XAxis
-                  dataKey="category"
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                />
-                <YAxis
-                  domain={[0, 100]}
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                  unit="%"
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "6px",
-                  }}
-                  formatter={(value: any) => [`${value}%`, "Taux"]}
-                />
-                <Bar dataKey="rate" radius={[4, 4, 0, 0]}>
-                  {charts?.categoryProcessing?.map((entry: any, index: number) => (
-                    <Cell key={`cell-${index}`} fill={entry.color || COLORS.chart3} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            {categoryProcessingLoading ? (
+              <Skeleton className="h-[250px]" />
+            ) : (
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={categoryProcessing || []}>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="hsl(var(--border))"
+                  />
+                  <XAxis
+                    dataKey="category"
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                  />
+                  <YAxis
+                    domain={[0, 100]}
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                    unit="%"
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "6px",
+                    }}
+                    formatter={(value: any) => [`${value}%`, "Taux"]}
+                  />
+                  <Bar dataKey="rate" radius={[4, 4, 0, 0]}>
+                    {categoryProcessing?.map((entry: any, index: number) => (
+                      <Cell key={`cell-${index}`} fill={entry.color || COLORS.chart3} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
 
@@ -694,25 +678,14 @@ export default function Dashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
             <CardTitle>Évolution des tâches</CardTitle>
-            <div className="flex gap-1">
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => setTasksWeekOffset(tasksWeekOffset + 1)}
-                data-testid="button-tasks-prev-week"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => setTasksWeekOffset(Math.max(0, tasksWeekOffset - 1))}
-                disabled={tasksWeekOffset === 0}
-                data-testid="button-tasks-next-week"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
+            <ChartPeriodControls
+              periodType={tasksPeriod}
+              onPeriodTypeChange={(type) => setTasksPeriod(type)}
+              offset={tasksOffset}
+              onOffsetChange={setTasksOffset}
+              periodLabel={getPeriodLabel(tasksPeriod, tasksOffset)}
+              testIdPrefix="tasks"
+            />
           </CardHeader>
           <CardContent>
             {tasksEvolutionLoading ? (
@@ -766,25 +739,14 @@ export default function Dashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
             <CardTitle>Evolution des alertes</CardTitle>
-            <div className="flex gap-1">
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => setAlertsWeekOffset(alertsWeekOffset + 1)}
-                data-testid="button-alerts-prev-week"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => setAlertsWeekOffset(Math.max(0, alertsWeekOffset - 1))}
-                disabled={alertsWeekOffset === 0}
-                data-testid="button-alerts-next-week"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
+            <ChartPeriodControls
+              periodType={alertsPeriod}
+              onPeriodTypeChange={(type) => setAlertsPeriod(type)}
+              offset={alertsOffset}
+              onOffsetChange={setAlertsOffset}
+              periodLabel={getPeriodLabel(alertsPeriod, alertsOffset)}
+              testIdPrefix="alerts"
+            />
           </CardHeader>
           <CardContent>
             {alertsEvolutionLoading ? (
