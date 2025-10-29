@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -16,6 +16,8 @@ import {
   ArrowRight,
   ChevronLeft,
   ChevronRight,
+  GripVertical,
+  RotateCcw,
 } from "lucide-react";
 import * as LucideIcons from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +47,23 @@ import {
   PeriodType,
 } from "@/components/ChartPeriodControls";
 import { getPeriodLabel } from "@/lib/dateUtils";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 // Map icon names to Lucide components
 const getIconComponent = (iconName: string): LucideIcon => {
@@ -103,6 +122,49 @@ const CHART_COLORS = [
   COLORS.chart3,
   COLORS.chart4,
 ];
+
+// Default order of dashboard components
+const DEFAULT_LAYOUT = [
+  "categories",
+  "email-evolution",
+  "email-distribution",
+  "appointments",
+  "category-processing",
+  "tasks-evolution",
+  "alerts-evolution",
+];
+
+// Sortable wrapper component
+function SortableItem({ id, children }: { id: string; children: React.ReactNode }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="relative group">
+      <div
+        {...attributes}
+        {...listeners}
+        className="absolute top-2 left-2 z-10 cursor-move opacity-0 group-hover:opacity-100 transition-opacity p-1 bg-background/80 rounded border border-border"
+        data-testid={`drag-handle-${id}`}
+      >
+        <GripVertical className="h-4 w-4 text-muted-foreground" />
+      </div>
+      {children}
+    </div>
+  );
+}
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
