@@ -15,11 +15,11 @@ export default function Alerts() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
-  const { data: activeAlerts, isLoading: activeLoading } = useQuery({
+  const { data: activeAlerts, isLoading: activeLoading } = useQuery<any[]>({
     queryKey: ["/api/alerts", { resolved: false }],
   });
 
-  const { data: resolvedAlerts, isLoading: resolvedLoading } = useQuery({
+  const { data: resolvedAlerts, isLoading: resolvedLoading } = useQuery<any[]>({
     queryKey: ["/api/alerts", { resolved: true }],
   });
 

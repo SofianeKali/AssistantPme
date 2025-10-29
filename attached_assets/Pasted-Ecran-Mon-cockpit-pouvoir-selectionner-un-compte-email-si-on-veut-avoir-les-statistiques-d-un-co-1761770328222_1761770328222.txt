@@ -1,0 +1,24 @@
+Ecran "Mon cockpit" : pouvoir selectionner un compte email si on veut avoir les statistiques d'un compte email particulier. Il faut aussi pouvoir selectionner tous comptes email configurés
+Ecran "Emails : 
+- implémenter une recherche par prompt : pouvoir saisir un prompt et grace à l'IA recherhcer dans le contenu des emails. exemple: quels sont les emails contenant une facture en pièce jointe dont le montant est supérieur à 100€
+- Afficher l'heure de réception de l'email uniquement pour les emails reçus dans la journée.
+- Ajouter une icone à coté de l'enveloppe qui marque un email comme traité ou non, au survol de cette nouvelle icone afficher le résumé déjà fait par l'IA de l'email en question
+- Ajouter une pagination des emails affichées
+- Fixer la hauteur de la boite de dialogue qui permet de répondre à un email 
+- Pouvoir insérer une pièce jointe pour répondre à un email
+- Ajouter un bouton fermer dans la boite de dialogue de reponse aux emails
+Ecran des alertes :
+- Si tous les emails concernés par une alertes sont traités l'alerte est résolue
+- Pouvoir selectonner plusieurs alertes et les marquer comme réolues
+- Ajoute une notification Push sur les mobiles à la creation d'une alerte 
+Ecran Calendrier :
+- Pouvoir changer la périodicité du calendrier pour afficher le calendrier du jour, celui de la semaine ou celui du mois
+Ecran configurations :
+	Onglet Comptes Email :
+	- Fréquence de scan configurable 
+	- Durée de rétention des emails configurble avec une durée par défaut de 3 mois
+	Onglet Catégories :
+	- Pouvoir rensiegner une ou plusieurs adresses email de redirection. Suite à la réception d'un email appartenant à une catégorie qui contient un email de redirection, se l'email contient une piece jointe, transférer cette pièce jointe vers l'adresse email de redirection rensiegnée
+	Onglet Automatisation :
+	- Possibilité de configurer le drive sur lequel est ièce jointes sont extraites. On doit supporter Google Drive et One Drive. On doit pouvoir désactiver l'extraction des pièces jointes. Par défaut l'extraction des pièces jointes est désactivée
+	

@@ -23,6 +23,13 @@ import * as LucideIcons from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -184,6 +191,9 @@ export default function Dashboard() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
+  // Email account filter
+  const [selectedEmailAccount, setSelectedEmailAccount] = useState<string>("all");
+
   // Period controls for all charts
   const [emailDistributionPeriod, setEmailDistributionPeriod] =
     useState<PeriodType>("week");
@@ -207,8 +217,21 @@ export default function Dashboard() {
     useState<PeriodType>("week");
   const [appointmentsOffset, setAppointmentsOffset] = useState(0);
 
+  // Fetch email accounts for filter
+  const { data: emailAccounts } = useQuery<any[]>({
+    queryKey: ["/api/email-accounts"],
+  });
+
   const { data: stats, isLoading } = useQuery<any>({
-    queryKey: ["/api/dashboard/stats"],
+    queryKey: ["/api/dashboard/stats", selectedEmailAccount],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (selectedEmailAccount && selectedEmailAccount !== "all") {
+        params.append("emailAccountId", selectedEmailAccount);
+      }
+      const response = await fetch(`/api/dashboard/stats?${params.toString()}`);
+      return response.json();
+    },
   });
 
   const { data: alerts, isLoading: alertsLoading } = useQuery<any>({
@@ -235,10 +258,17 @@ export default function Dashboard() {
         "/api/dashboard/email-distribution",
         emailDistributionPeriod,
         emailDistributionOffset,
+        selectedEmailAccount,
       ],
       queryFn: async () => {
+        const params = new URLSearchParams();
+        params.append("periodType", emailDistributionPeriod);
+        params.append("offset", emailDistributionOffset.toString());
+        if (selectedEmailAccount && selectedEmailAccount !== "all") {
+          params.append("emailAccountId", selectedEmailAccount);
+        }
         const response = await fetch(
-          `/api/dashboard/email-distribution?periodType=${emailDistributionPeriod}&offset=${emailDistributionOffset}`,
+          `/api/dashboard/email-distribution?${params.toString()}`,
         );
         return response.json();
       },
@@ -250,10 +280,17 @@ export default function Dashboard() {
         "/api/dashboard/email-evolution",
         emailEvolutionPeriod,
         emailEvolutionOffset,
+        selectedEmailAccount,
       ],
       queryFn: async () => {
+        const params = new URLSearchParams();
+        params.append("periodType", emailEvolutionPeriod);
+        params.append("offset", emailEvolutionOffset.toString());
+        if (selectedEmailAccount && selectedEmailAccount !== "all") {
+          params.append("emailAccountId", selectedEmailAccount);
+        }
         const response = await fetch(
-          `/api/dashboard/email-evolution?periodType=${emailEvolutionPeriod}&offset=${emailEvolutionOffset}`,
+          `/api/dashboard/email-evolution?${params.toString()}`,
         );
         return response.json();
       },
@@ -265,10 +302,17 @@ export default function Dashboard() {
         "/api/dashboard/category-processing",
         categoryProcessingPeriod,
         categoryProcessingOffset,
+        selectedEmailAccount,
       ],
       queryFn: async () => {
+        const params = new URLSearchParams();
+        params.append("periodType", categoryProcessingPeriod);
+        params.append("offset", categoryProcessingOffset.toString());
+        if (selectedEmailAccount && selectedEmailAccount !== "all") {
+          params.append("emailAccountId", selectedEmailAccount);
+        }
         const response = await fetch(
-          `/api/dashboard/category-processing?periodType=${categoryProcessingPeriod}&offset=${categoryProcessingOffset}`,
+          `/api/dashboard/category-processing?${params.toString()}`,
         );
         return response.json();
       },
@@ -276,10 +320,16 @@ export default function Dashboard() {
 
   const { data: tasksEvolution, isLoading: tasksEvolutionLoading } =
     useQuery<any>({
-      queryKey: ["/api/dashboard/tasks-evolution", tasksPeriod, tasksOffset],
+      queryKey: ["/api/dashboard/tasks-evolution", tasksPeriod, tasksOffset, selectedEmailAccount],
       queryFn: async () => {
+        const params = new URLSearchParams();
+        params.append("periodType", tasksPeriod);
+        params.append("offset", tasksOffset.toString());
+        if (selectedEmailAccount && selectedEmailAccount !== "all") {
+          params.append("emailAccountId", selectedEmailAccount);
+        }
         const response = await fetch(
-          `/api/dashboard/tasks-evolution?periodType=${tasksPeriod}&offset=${tasksOffset}`,
+          `/api/dashboard/tasks-evolution?${params.toString()}`,
         );
         return response.json();
       },
@@ -287,10 +337,16 @@ export default function Dashboard() {
 
   const { data: alertsEvolution, isLoading: alertsEvolutionLoading } =
     useQuery<any>({
-      queryKey: ["/api/dashboard/alerts-evolution", alertsPeriod, alertsOffset],
+      queryKey: ["/api/dashboard/alerts-evolution", alertsPeriod, alertsOffset, selectedEmailAccount],
       queryFn: async () => {
+        const params = new URLSearchParams();
+        params.append("periodType", alertsPeriod);
+        params.append("offset", alertsOffset.toString());
+        if (selectedEmailAccount && selectedEmailAccount !== "all") {
+          params.append("emailAccountId", selectedEmailAccount);
+        }
         const response = await fetch(
-          `/api/dashboard/alerts-evolution?periodType=${alertsPeriod}&offset=${alertsOffset}`,
+          `/api/dashboard/alerts-evolution?${params.toString()}`,
         );
         return response.json();
       },
@@ -302,10 +358,17 @@ export default function Dashboard() {
         "/api/dashboard/appointments-week",
         appointmentsPeriod,
         appointmentsOffset,
+        selectedEmailAccount,
       ],
       queryFn: async () => {
+        const params = new URLSearchParams();
+        params.append("periodType", appointmentsPeriod);
+        params.append("offset", appointmentsOffset.toString());
+        if (selectedEmailAccount && selectedEmailAccount !== "all") {
+          params.append("emailAccountId", selectedEmailAccount);
+        }
         const response = await fetch(
-          `/api/dashboard/appointments-week?periodType=${appointmentsPeriod}&offset=${appointmentsOffset}`,
+          `/api/dashboard/appointments-week?${params.toString()}`,
         );
         return response.json();
       },
@@ -315,7 +378,17 @@ export default function Dashboard() {
   const { data: categoryStats, isLoading: categoryStatsLoading } = useQuery<
     Record<string, number>
   >({
-    queryKey: ["/api/emails/stats/by-category"],
+    queryKey: ["/api/emails/stats/by-category", selectedEmailAccount],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (selectedEmailAccount && selectedEmailAccount !== "all") {
+        params.append("emailAccountId", selectedEmailAccount);
+      }
+      const response = await fetch(
+        `/api/emails/stats/by-category?${params.toString()}`,
+      );
+      return response.json();
+    },
   });
 
   const { data: categories, isLoading: categoriesLoading } = useQuery<any>({
@@ -1126,24 +1199,60 @@ export default function Dashboard() {
   return (
     <div className="p-6 space-y-6 max-w-[1400px] mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-semibold text-foreground mb-2">
-            Tableau de bord
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Vue d'ensemble de votre activité administrative
-          </p>
+      <div className="flex flex-col gap-4 mb-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-semibold text-foreground mb-2">
+              Mon cockpit
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Vue d'ensemble de votre activité administrative
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={resetLayout}
+            data-testid="button-reset-layout"
+          >
+            <RotateCcw className="h-4 w-4 mr-2" />
+            Réinitialiser l'ordre
+          </Button>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={resetLayout}
-          data-testid="button-reset-layout"
-        >
-          <RotateCcw className="h-4 w-4 mr-2" />
-          Réinitialiser l'ordre
-        </Button>
+        
+        {/* Email Account Filter */}
+        <div className="flex items-center gap-3">
+          <label className="text-sm font-medium text-foreground">
+            Compte email :
+          </label>
+          <Select
+            value={selectedEmailAccount}
+            onValueChange={setSelectedEmailAccount}
+          >
+            <SelectTrigger
+              className="w-72"
+              data-testid="select-email-account"
+            >
+              <SelectValue placeholder="Sélectionner un compte" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous les comptes</SelectItem>
+              {emailAccounts?.map((account: any) => (
+                <SelectItem key={account.id} value={account.id}>
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-4 w-4" />
+                    <span>{account.email}</span>
+                    {!account.isActive && (
+                      <Badge variant="secondary" className="text-xs">
+                        Inactif
+                      </Badge>
+                    )}
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Draggable sections */}
