@@ -4,6 +4,17 @@
 IzyInbox is an intelligent web application designed to automate administrative tasks for SMEs. It leverages AI for email analysis and automates the management of quotes, invoices, appointments, and documents. The core purpose is to streamline administrative workflows, enhance efficiency, and provide actionable insights for small and medium-sized businesses. The project aims to become a leading solution for smart automation for busy managers, with ambitions for broad market adoption.
 
 ## Recent Changes (October 29, 2025)
+- **Category Edit Feature**:
+  - Added "Modifier" button next to "Supprimer" button in category list
+  - Created edit dialog to modify existing category settings:
+    - Update label, color, icon, and key
+    - Toggle automation flags: auto-response, auto-task creation, auto-mark as processed
+  - PATCH /api/email-categories/:id endpoint used for updates
+  - Dialog properly resets on cancel and closes on successful save
+  - Cache invalidation ensures UI reflects changes immediately
+  - End-to-end tested and validated by architect
+  - Provides complete category management workflow (create, read, update, delete)
+
 - **Auto-Mark Scanned Emails as Processed (Category-Based)**:
   - Added `autoMarkAsProcessed` boolean field to emailCategories schema with default false value
   - Enhanced Settings > Catégories UI with new checkbox: "Marquer automatiquement les emails scannés comme traités"
