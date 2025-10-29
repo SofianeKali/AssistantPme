@@ -1622,6 +1622,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Cloud Storage Configurations - Users can manage their own configurations
+  app.get('/api/cloud-storage-configs', isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const configs = await storage.getAllCloudStorageConfigs(userId);
+      res.json(configs);
+    } catch (error) {
+      console.error("Error fetching cloud storage configs:", error);
+      res.status(500).json({ message: "Failed to fetch cloud storage configurations" });
+    }
+  });
+
+  app.post('/api/cloud-storage-configs', isAuthenticated, async (req, res) => {
+    try {
+      const { insertCloudStorageConfigSchema } = await import("@shared/schema");
+      const userId = req.user!.id;
+      
+      // Validate and ensure userId matches authenticated user
+      const validatedData = insertCloudStorageConfigSchema.parse({
+        ...req.body,
+        userId
+      });
+      
+      // Check if config already exists for this provider
+      const existingConfig = await storage.getCloudStorageConfig(userId, validatedData.provider);
+      if (existingConfig) {
+        return res.status(400).json({ 
+          message: `Configuration already exists for ${validatedData.provider}. Please update the existing configuration.` 
+        });
+      }
+      
+      const config = await storage.createCloudStorageConfig(validatedData);
+      res.json(config);
+    } catch (error) {
+      console.error("Error creating cloud storage config:", error);
+      res.status(400).json({ message: "Invalid cloud storage configuration data" });
+    }
+  });
+
+  app.patch('/api/cloud-storage-configs/:id', isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const configId = req.params.id;
+      
+      // Verify ownership - get all configs for this user
+      const userConfigs = await storage.getAllCloudStorageConfigs(userId);
+      const configToUpdate = userConfigs.find(c => c.id === configId);
+      
+      if (!configToUpdate) {
+        return res.status(404).json({ message: "Cloud storage configuration not found" });
+      }
+      
+      const updated = await storage.updateCloudStorageConfig(configId, req.body);
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating cloud storage config:", error);
+      res.status(500).json({ message: "Failed to update cloud storage configuration" });
+    }
+  });
+
+  app.delete('/api/cloud-storage-configs/:id', isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const configId = req.params.id;
+      
+      // Verify ownership
+      const userConfigs = await storage.getAllCloudStorageConfigs(userId);
+      const configToDelete = userConfigs.find(c => c.id === configId);
+      
+      if (!configToDelete) {
+        return res.status(404).json({ message: "Cloud storage configuration not found" });
+      }
+      
+      await storage.deleteCloudStorageConfig(configId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting cloud storage config:", error);
+      res.status(500).json({ message: "Failed to delete cloud storage configuration" });
+    }
+  });
+
   // Email scanning endpoints
   app.post('/api/email-scan', isAuthenticated, async (req, res) => {
     try {
