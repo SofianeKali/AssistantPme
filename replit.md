@@ -4,6 +4,16 @@
 IzyInbox is an intelligent web application designed to automate administrative tasks for SMEs. It leverages AI for email analysis and automates the management of quotes, invoices, appointments, and documents. The core purpose is to streamline administrative workflows, enhance efficiency, and provide actionable insights for small and medium-sized businesses. The project aims to become a leading solution for smart automation for busy managers, with ambitions for broad market adoption.
 
 ## Recent Changes (October 29, 2025)
+- **Category Deletion with Email Transfer**:
+  - Enhanced category deletion to automatically transfer affected emails to "autre" category before deletion
+  - Protected "autre" category from deletion (required fallback for email reassignment)
+  - Added system category initialization on server startup (autre, devis, facture, rdv)
+  - Fixed bug: user-created categories now correctly marked as isSystem: false (deletable)
+  - DELETE /api/email-categories/:id returns 400 when attempting to delete "autre"
+  - Storage method prevents data loss by reassigning all emails before category removal
+  - End-to-end tested: category deletion, email transfer, and protection of "autre"
+  - Architect validated with suggestions for future DB transaction wrapper
+
 - **Category Colors in Email Badges**:
   - Email type badges now use the configured category colors instead of hardcoded colors
   - Badges display category labels (e.g., "Factures") instead of raw keys (e.g., "facture")
