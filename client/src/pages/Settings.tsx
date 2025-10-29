@@ -32,6 +32,7 @@ import {
   AlertCircle,
   Bell,
   Settings as SettingsIcon,
+  Pencil,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -1064,20 +1065,30 @@ export default function Settings() {
                             </div>
                           </div>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() =>
-                            deleteCategoryMutation.mutate(category.id)
-                          }
-                          disabled={
-                            category.isSystem ||
-                            deleteCategoryMutation.isPending
-                          }
-                          data-testid={`button-delete-category-${category.key}`}
-                        >
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setEditingCategory(category)}
+                            data-testid={`button-edit-category-${category.key}`}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() =>
+                              deleteCategoryMutation.mutate(category.id)
+                            }
+                            disabled={
+                              category.isSystem ||
+                              deleteCategoryMutation.isPending
+                            }
+                            data-testid={`button-delete-category-${category.key}`}
+                          >
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                          </Button>
+                        </div>
                       </div>
                     ))
                   ) : (
