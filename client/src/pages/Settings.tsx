@@ -2443,6 +2443,138 @@ export default function Settings() {
             </AlertDescription>
           </Alert>
 
+          {/* Documentation Guide */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl">Guide de configuration</CardTitle>
+              <CardDescription>
+                Suivez ces étapes pour obtenir vos identifiants OAuth
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Google Drive Instructions */}
+              <div className="space-y-3">
+                <h3 className="font-semibold text-base flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                    <span className="text-sm font-bold text-primary">1</span>
+                  </div>
+                  Configuration Google Drive
+                </h3>
+                <div className="ml-10 space-y-2 text-sm">
+                  <p className="font-medium">Étape 1 : Créer un projet Google Cloud</p>
+                  <ol className="list-decimal list-inside space-y-1 text-muted-foreground ml-4">
+                    <li>Accédez à <a href="https://console.cloud.google.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Google Cloud Console</a></li>
+                    <li>Cliquez sur "Nouveau projet" et donnez-lui un nom (ex: "IzyInbox")</li>
+                    <li>Sélectionnez votre projet une fois créé</li>
+                  </ol>
+
+                  <p className="font-medium mt-4">Étape 2 : Activer l'API Google Drive</p>
+                  <ol className="list-decimal list-inside space-y-1 text-muted-foreground ml-4">
+                    <li>Dans le menu, allez dans "APIs & Services" → "Library"</li>
+                    <li>Recherchez "Google Drive API"</li>
+                    <li>Cliquez sur "Enable" pour activer l'API</li>
+                  </ol>
+
+                  <p className="font-medium mt-4">Étape 3 : Créer des identifiants OAuth 2.0</p>
+                  <ol className="list-decimal list-inside space-y-1 text-muted-foreground ml-4">
+                    <li>Allez dans "APIs & Services" → "Credentials"</li>
+                    <li>Cliquez sur "Create Credentials" → "OAuth client ID"</li>
+                    <li>Configurez l'écran de consentement si demandé (type: External)</li>
+                    <li>Type d'application : "Desktop app" ou "Web application"</li>
+                    <li>Notez le <strong>Client ID</strong> et le <strong>Client Secret</strong></li>
+                  </ol>
+
+                  <p className="font-medium mt-4">Étape 4 : Obtenir le Refresh Token</p>
+                  <ol className="list-decimal list-inside space-y-1 text-muted-foreground ml-4">
+                    <li>Utilisez l'OAuth Playground : <a href="https://developers.google.com/oauthplayground" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">OAuth 2.0 Playground</a></li>
+                    <li>Cliquez sur l'icône ⚙️ en haut à droite</li>
+                    <li>Cochez "Use your own OAuth credentials"</li>
+                    <li>Entrez votre Client ID et Client Secret</li>
+                    <li>Dans la liste de gauche, sélectionnez "Drive API v3" → scope <code className="bg-muted px-1 rounded">/auth/drive</code></li>
+                    <li>Cliquez sur "Authorize APIs" et connectez-vous avec votre compte Google</li>
+                    <li>Cliquez sur "Exchange authorization code for tokens"</li>
+                    <li>Copiez le <strong>Refresh Token</strong></li>
+                  </ol>
+
+                  <Alert className="mt-4">
+                    <Info className="h-4 w-4" />
+                    <AlertDescription className="text-xs">
+                      Le Refresh Token vous permet d'accéder à votre Google Drive sans avoir à vous reconnecter à chaque fois.
+                      Conservez-le de manière sécurisée.
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              </div>
+
+              {/* OneDrive Instructions */}
+              <div className="space-y-3 pt-4 border-t">
+                <h3 className="font-semibold text-base flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                    <span className="text-sm font-bold text-primary">2</span>
+                  </div>
+                  Configuration OneDrive
+                </h3>
+                <div className="ml-10 space-y-2 text-sm">
+                  <p className="font-medium">Étape 1 : Créer une application Azure AD</p>
+                  <ol className="list-decimal list-inside space-y-1 text-muted-foreground ml-4">
+                    <li>Accédez au <a href="https://portal.azure.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Portail Azure</a></li>
+                    <li>Recherchez "Azure Active Directory" ou "Microsoft Entra ID"</li>
+                    <li>Allez dans "App registrations" → "New registration"</li>
+                    <li>Nom : "IzyInbox" (ou autre)</li>
+                    <li>Supported account types : "Accounts in any organizational directory and personal Microsoft accounts"</li>
+                    <li>Cliquez sur "Register"</li>
+                  </ol>
+
+                  <p className="font-medium mt-4">Étape 2 : Obtenir les identifiants</p>
+                  <ol className="list-decimal list-inside space-y-1 text-muted-foreground ml-4">
+                    <li>Dans votre application, notez le <strong>Application (client) ID</strong></li>
+                    <li>Notez le <strong>Directory (tenant) ID</strong></li>
+                    <li>Allez dans "Certificates & secrets"</li>
+                    <li>Cliquez sur "New client secret"</li>
+                    <li>Ajoutez une description et choisissez une durée de validité</li>
+                    <li>Copiez immédiatement la <strong>Value</strong> du secret (Client Secret)</li>
+                  </ol>
+
+                  <p className="font-medium mt-4">Étape 3 : Configurer les permissions</p>
+                  <ol className="list-decimal list-inside space-y-1 text-muted-foreground ml-4">
+                    <li>Allez dans "API permissions"</li>
+                    <li>Cliquez sur "Add a permission" → "Microsoft Graph"</li>
+                    <li>Sélectionnez "Delegated permissions"</li>
+                    <li>Ajoutez les permissions : <code className="bg-muted px-1 rounded">Files.ReadWrite</code> et <code className="bg-muted px-1 rounded">Files.ReadWrite.All</code></li>
+                    <li>Cliquez sur "Add permissions"</li>
+                  </ol>
+
+                  <p className="font-medium mt-4">Étape 4 : Obtenir le Refresh Token</p>
+                  <ol className="list-decimal list-inside space-y-1 text-muted-foreground ml-4">
+                    <li>Configurez une URI de redirection : "Authentication" → "Add a platform" → "Web"</li>
+                    <li>Redirect URI : <code className="bg-muted px-1 rounded">http://localhost</code></li>
+                    <li>Utilisez un outil comme Postman ou générez une URL d'autorisation :</li>
+                    <li className="ml-4">
+                      <code className="bg-muted px-1 rounded text-xs break-all">
+                        https://login.microsoftonline.com/common/oauth2/v2.0/authorize?
+                        client_id=VOTRE_CLIENT_ID&
+                        response_type=code&
+                        redirect_uri=http://localhost&
+                        scope=Files.ReadWrite offline_access
+                      </code>
+                    </li>
+                    <li>Connectez-vous et autorisez l'accès</li>
+                    <li>Récupérez le code dans l'URL de redirection</li>
+                    <li>Échangez le code contre un refresh token avec une requête POST</li>
+                  </ol>
+
+                  <Alert className="mt-4">
+                    <Info className="h-4 w-4" />
+                    <AlertDescription className="text-xs">
+                      La configuration OneDrive est plus technique. Assurez-vous d'avoir les permissions nécessaires sur votre tenant Azure.
+                      Le Tenant ID correspond à votre organisation Microsoft.
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <CloudStorageConfigForm />
         </TabsContent>
 
