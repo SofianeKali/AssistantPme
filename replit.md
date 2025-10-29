@@ -27,12 +27,12 @@ The application uses a modern web stack:
     - Mobile/Tablet (< 1024px): Single column, stacked vertically
     - Desktop/Large screens (≥ 1024px): 2-column grid with charts side-by-side
     - Categories section spans full width on all screens (contains 4-column internal grid)
-  * **Drag-and-Drop Layout Customization**: All dashboard sections (category cards and 6 charts) support manual reorganization via drag-and-drop using @dnd-kit/sortable library
+  * **Drag-and-Drop Layout Customization**: All dashboard sections support manual reorganization via drag-and-drop using @dnd-kit/sortable library
     - Persistent user preferences stored in `userDashboardLayouts` table with per-user layout configuration
     - Visual drag handles (GripVertical icon) appear on hover for intuitive interaction
     - Reset button to restore default layout order
-    - Fixed sections: Tasks and Alerts cards remain at the top (not draggable)
-    - Draggable sections (7 total): Categories, Email Evolution, Email Distribution, Appointments, Category Processing, Tasks Evolution, Alerts Evolution
+    - Draggable sections (9 total): Tasks, Alerts, Categories, Email Evolution, Email Distribution, Appointments, Category Processing, Tasks Evolution, Alerts Evolution
+    - All sections can be freely reorganized, including Tasks and Alerts cards
     - Drag-and-drop works seamlessly across grid layout (2 columns on large screens)
   * **Configurable Period System**: All 6 dashboard charts support independent week/month period selection with temporal navigation (previous/next controls) and precise period labels (e.g., "Semaine du 21 au 27 octobre 2024" or "Octobre 2024")
   * **Évolution des emails traités**: Line chart showing processed email trends over configurable periods

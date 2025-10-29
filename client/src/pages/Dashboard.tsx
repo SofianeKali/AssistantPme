@@ -125,6 +125,8 @@ const CHART_COLORS = [
 
 // Default order of dashboard components
 const DEFAULT_LAYOUT = [
+  "tasks",
+  "alerts",
   "categories",
   "email-evolution",
   "email-distribution",
@@ -323,10 +325,28 @@ export default function Dashboard() {
     queryKey: ["/api/dashboard/layout"],
   });
 
-  // Load saved layout on mount
+  // Load saved layout on mount and merge with DEFAULT_LAYOUT
   useEffect(() => {
-    if (savedLayout?.layout && Array.isArray(savedLayout.layout) && savedLayout.layout.length > 0) {
-      setLayout(savedLayout.layout);
+    if (savedLayout?.layout && Array.isArray(savedLayout.layout)) {
+      if (savedLayout.layout.length === 0) {
+        // New user with no saved layout - use default
+        setLayout(DEFAULT_LAYOUT);
+      } else {
+        // Existing user with saved layout - merge with defaults
+        // Filter out invalid/deprecated sections from saved layout
+        const validSections = savedLayout.layout.filter((id: string) => 
+          DEFAULT_LAYOUT.includes(id)
+        );
+        
+        // Add any new sections from DEFAULT_LAYOUT that aren't in saved layout
+        const newSections = DEFAULT_LAYOUT.filter((id: string) => 
+          !savedLayout.layout.includes(id)
+        );
+        
+        // Merge: existing sections in saved order + new sections at the end
+        const mergedLayout = [...validSections, ...newSections];
+        setLayout(mergedLayout);
+      }
     }
   }, [savedLayout]);
 
@@ -443,6 +463,8 @@ export default function Dashboard() {
   // Render functions for each dashboard section
   const renderSection = (sectionId: string) => {
     const sections: Record<string, JSX.Element> = {
+      "tasks": renderTasksSection(),
+      "alerts": renderAlertsSection(),
       "categories": renderCategoriesSection(),
       "email-evolution": renderEmailEvolutionChart(),
       "email-distribution": renderEmailDistributionChart(),
@@ -454,6 +476,193 @@ export default function Dashboard() {
     
     return sections[sectionId] || null;
   };
+
+  function renderTasksSection() {
+    return (
+      <Card key="tasks">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <CardTitle className="text-xl">Tâches en cours</CardTitle>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setLocation("/tasks")}
+            data-testid="button-view-all-tasks"
+          >
+            Voir tout
+          </Button>
+        </CardHeader>
+        <CardContent>
+          {tasksLoading ? (
+            <div className="space-y-3">
+              {[...Array(3)].map((_, i) => (
+                <Skeleton key={i} className="h-20" />
+              ))}
+            </div>
+          ) : tasks && tasks.length > 0 ? (
+            <div className="space-y-3">
+              {tasks.slice(0, 5).map((task: any) => (
+                <div
+                  key={task.id}
+                  className="flex items-start gap-3 p-3 rounded-md border border-border hover-elevate"
+                  data-testid={`task-${task.id}`}
+                >
+                  {task.status === "nouveau" ? (
+                    <Circle className="h-5 w-5 mt-0.5 text-chart-3" />
+                  ) : (
+                    <Clock className="h-5 w-5 mt-0.5 text-primary" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium">{task.title}</div>
+                    {task.description && (
+                      <div className="text-xs text-muted-foreground mt-1 line-clamp-1">
+                        {task.description}
+                      </div>
+                    )}
+                    <Badge
+                      variant={
+                        task.status === "nouveau" ? "secondary" : "default"
+                      }
+                      className="text-xs mt-2"
+                    >
+                      {task.status === "nouveau" ? "Nouveau" : "En cours"}
+                    </Badge>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    {task.status === "nouveau" && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() =>
+                          updateTaskStatusMutation.mutate({
+                            taskId: task.id,
+                            status: "en_cours",
+                          })
+                        }
+                        data-testid={`button-start-task-${task.id}`}
+                      >
+                        <Clock className="h-3 w-3" />
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() =>
+                        updateTaskStatusMutation.mutate({
+                          taskId: task.id,
+                          status: "termine",
+                        })
+                      }
+                      data-testid={`button-complete-task-${task.id}`}
+                    >
+                      <CheckCircle2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-sm text-muted-foreground">
+              Aucune tâche en cours
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  function renderAlertsSection() {
+    return (
+      <Card key="alerts">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <CardTitle className="text-xl">Alertes actives</CardTitle>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => generateAlertsMutation.mutate()}
+              disabled={generateAlertsMutation.isPending}
+              data-testid="button-generate-alerts"
+            >
+              <RefreshCw className={`h-4 w-4 ${generateAlertsMutation.isPending ? "animate-spin" : ""}`} />
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setLocation("/alerts")}
+              data-testid="button-view-all-alerts"
+            >
+              Voir tout
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {alertsLoading ? (
+            <div className="space-y-3">
+              {[...Array(3)].map((_, i) => (
+                <Skeleton key={i} className="h-16" />
+              ))}
+            </div>
+          ) : alerts && alerts.length > 0 ? (
+            <div className="space-y-3">
+              {alerts.map((alert: any) => (
+                <div
+                  key={alert.id}
+                  className={`flex items-center gap-3 p-3 rounded-md border border-border hover-elevate ${alert.emailCount > 0 ? "cursor-pointer" : ""}`}
+                  onClick={() => {
+                    if (alert.emailCount > 0) {
+                      setLocation(`/emails?alertId=${alert.id}`);
+                    }
+                  }}
+                  data-testid={`alert-${alert.id}`}
+                >
+                  <AlertTriangle
+                    className={
+                      alert.severity === "critical"
+                        ? "h-5 w-5 text-destructive"
+                        : alert.severity === "warning"
+                          ? "h-5 w-5 text-chart-3"
+                          : "h-5 w-5 text-muted-foreground"
+                    }
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium">
+                      {alert.title}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {alert.message}
+                    </div>
+                  </div>
+                  <Badge
+                    variant={
+                      alert.severity === "critical"
+                        ? "destructive"
+                        : alert.severity === "warning"
+                          ? "default"
+                          : "secondary"
+                    }
+                    className="text-xs"
+                  >
+                    {alert.severity === "critical"
+                      ? "Critique"
+                      : alert.severity === "warning"
+                        ? "Attention"
+                        : "Info"}
+                  </Badge>
+                  {alert.emailCount > 0 && (
+                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-sm text-muted-foreground">
+              Aucune alerte active
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
 
   function renderCategoriesSection() {
     return (
@@ -887,190 +1096,6 @@ export default function Dashboard() {
           <RotateCcw className="h-4 w-4 mr-2" />
           Réinitialiser l'ordre
         </Button>
-      </div>
-
-      {/* Tasks and Alerts Grid - Fixed position, not draggable */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {/* Pending Tasks */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-            <CardTitle className="text-xl">Tâches en cours</CardTitle>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setLocation("/tasks")}
-              data-testid="button-view-all-tasks"
-            >
-              Voir tout
-            </Button>
-          </CardHeader>
-          <CardContent>
-            {tasksLoading ? (
-              <div className="space-y-3">
-                {[...Array(3)].map((_, i) => (
-                  <Skeleton key={i} className="h-20" />
-                ))}
-              </div>
-            ) : tasks && tasks.length > 0 ? (
-              <div className="space-y-3">
-                {tasks.slice(0, 5).map((task: any) => (
-                  <div
-                    key={task.id}
-                    className="flex items-start gap-3 p-3 rounded-md border border-border hover-elevate"
-                    data-testid={`task-${task.id}`}
-                  >
-                    {task.status === "nouveau" ? (
-                      <Circle className="h-5 w-5 mt-0.5 text-chart-3" />
-                    ) : (
-                      <Clock className="h-5 w-5 mt-0.5 text-primary" />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium">{task.title}</div>
-                      {task.description && (
-                        <div className="text-xs text-muted-foreground mt-1 line-clamp-1">
-                          {task.description}
-                        </div>
-                      )}
-                      <Badge
-                        variant={
-                          task.status === "nouveau" ? "secondary" : "default"
-                        }
-                        className="text-xs mt-2"
-                      >
-                        {task.status === "nouveau" ? "Nouveau" : "En cours"}
-                      </Badge>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      {task.status === "nouveau" && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() =>
-                            updateTaskStatusMutation.mutate({
-                              taskId: task.id,
-                              status: "en_cours",
-                            })
-                          }
-                          data-testid={`button-start-task-${task.id}`}
-                        >
-                          <Clock className="h-3 w-3" />
-                        </Button>
-                      )}
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() =>
-                          updateTaskStatusMutation.mutate({
-                            taskId: task.id,
-                            status: "termine",
-                          })
-                        }
-                        data-testid={`button-complete-task-${task.id}`}
-                      >
-                        <CheckCircle2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-sm text-muted-foreground">
-                Aucune tâche en cours
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Active Alerts */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-            <CardTitle className="text-xl">Alertes actives</CardTitle>
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => generateAlertsMutation.mutate()}
-                disabled={generateAlertsMutation.isPending}
-                data-testid="button-generate-alerts"
-              >
-                <RefreshCw className={`h-4 w-4 ${generateAlertsMutation.isPending ? "animate-spin" : ""}`} />
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setLocation("/alerts")}
-                data-testid="button-view-all-alerts"
-              >
-                Voir tout
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {alertsLoading ? (
-              <div className="space-y-3">
-                {[...Array(3)].map((_, i) => (
-                  <Skeleton key={i} className="h-16" />
-                ))}
-              </div>
-            ) : alerts && alerts.length > 0 ? (
-              <div className="space-y-3">
-                {alerts.map((alert: any) => (
-                  <div
-                    key={alert.id}
-                    className={`flex items-center gap-3 p-3 rounded-md border border-border hover-elevate ${alert.emailCount > 0 ? "cursor-pointer" : ""}`}
-                    onClick={() => {
-                      if (alert.emailCount > 0) {
-                        setLocation(`/emails?alertId=${alert.id}`);
-                      }
-                    }}
-                    data-testid={`alert-${alert.id}`}
-                  >
-                    <AlertTriangle
-                      className={
-                        alert.severity === "critical"
-                          ? "h-5 w-5 text-destructive"
-                          : alert.severity === "warning"
-                            ? "h-5 w-5 text-chart-3"
-                            : "h-5 w-5 text-muted-foreground"
-                      }
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium">
-                        {alert.title}
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {alert.message}
-                      </div>
-                    </div>
-                    <Badge
-                      variant={
-                        alert.severity === "critical"
-                          ? "destructive"
-                          : alert.severity === "warning"
-                            ? "default"
-                            : "secondary"
-                      }
-                      className="text-xs"
-                    >
-                      {alert.severity === "critical"
-                        ? "Critique"
-                        : alert.severity === "warning"
-                          ? "Attention"
-                          : "Info"}
-                    </Badge>
-                    {alert.emailCount > 0 && (
-                      <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-sm text-muted-foreground">
-                Aucune alerte active
-              </div>
-            )}
-          </CardContent>
-        </Card>
       </div>
 
       {/* Draggable sections */}
