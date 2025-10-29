@@ -1180,10 +1180,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (toDelete?.isSystem) {
         return res.status(400).json({ message: "Cannot delete system category" });
       }
+      // Check if it's the 'autre' category (required as fallback)
+      if (toDelete?.key === 'autre') {
+        return res.status(400).json({ message: "Cannot delete the 'autre' category - it is required as a fallback" });
+      }
       await storage.deleteEmailCategory(req.params.id);
       res.json({ success: true });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error deleting email category:", error);
+      // Return specific error message if available
+      if (error.message && error.message.includes("autre")) {
+        return res.status(400).json({ message: error.message });
+      }
       res.status(500).json({ message: "Failed to delete email category" });
     }
   });

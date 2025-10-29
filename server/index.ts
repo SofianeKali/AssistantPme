@@ -38,8 +38,66 @@ app.use((req, res, next) => {
   next();
 });
 
+// Initialize default email categories
+async function initializeDefaultCategories() {
+  const defaultCategories = [
+    {
+      key: 'autre',
+      label: 'Autres',
+      color: '#9ca3af', // gray
+      icon: 'Mail',
+      isSystem: true,
+      generateAutoResponse: false, // Don't auto-respond to "other" emails
+      autoCreateTask: false,
+      autoMarkAsProcessed: false,
+    },
+    {
+      key: 'devis',
+      label: 'Devis',
+      color: '#3b82f6', // blue
+      icon: 'FileText',
+      isSystem: true,
+      generateAutoResponse: true,
+      autoCreateTask: true,
+      autoMarkAsProcessed: false,
+    },
+    {
+      key: 'facture',
+      label: 'Factures',
+      color: '#f59e0b', // amber
+      icon: 'DollarSign',
+      isSystem: true,
+      generateAutoResponse: true,
+      autoCreateTask: true,
+      autoMarkAsProcessed: false,
+    },
+    {
+      key: 'rdv',
+      label: 'Rendez-vous',
+      color: '#10b981', // emerald
+      icon: 'Calendar',
+      isSystem: true,
+      generateAutoResponse: true,
+      autoCreateTask: false,
+      autoMarkAsProcessed: false,
+    },
+  ];
+
+  for (const category of defaultCategories) {
+    const existing = await storage.getEmailCategoryByKey(category.key);
+    if (!existing) {
+      await storage.createEmailCategory(category);
+      console.log(`[Init] Created default category: ${category.key}`);
+    }
+  }
+}
+
 (async () => {
   const server = await registerRoutes(app);
+
+  // Initialize default email categories if they don't exist
+  await initializeDefaultCategories();
+  console.log('[App] Default categories initialized');
 
   // Start email scheduler for automatic email scanning
   const emailScheduler = new EmailScheduler(storage);

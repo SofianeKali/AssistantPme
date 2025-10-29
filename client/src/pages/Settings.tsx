@@ -287,11 +287,11 @@ export default function Settings() {
 
   const addCategoryMutation = useMutation({
     mutationFn: async (data: any) => {
-      // Create a system category (not linked to specific account)
+      // Create a global category (not a system category)
       const categoryData = {
         ...data,
         emailAccountId: null,
-        isSystem: true,
+        isSystem: false, // User-created categories are not system categories
       };
       return await apiRequest("POST", "/api/email-categories", categoryData);
     },

@@ -1197,6 +1197,31 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteEmailCategory(id: string): Promise<void> {
+    // First, get the category to be deleted to retrieve its key
+    const [categoryToDelete] = await db
+      .select()
+      .from(emailCategories)
+      .where(eq(emailCategories.id, id));
+    
+    if (!categoryToDelete) {
+      throw new Error("Category not found");
+    }
+    
+    // Don't allow deleting the 'autre' category as it's the fallback category
+    if (categoryToDelete.key === 'autre') {
+      throw new Error("Cannot delete the 'autre' category - it is required as a fallback");
+    }
+    
+    // Update all emails with this emailType to use 'autre' instead
+    const { emails } = await import("@shared/schema");
+    await db
+      .update(emails)
+      .set({ emailType: 'autre', updatedAt: new Date() })
+      .where(eq(emails.emailType, categoryToDelete.key));
+    
+    console.log(`[Categories] Transferred emails from '${categoryToDelete.key}' to 'autre' before deletion`);
+    
+    // Now delete the category
     await db.delete(emailCategories).where(eq(emailCategories.id, id));
   }
   
@@ -1230,6 +1255,7 @@ export class DatabaseStorage implements IStorage {
         isSystem: emailCategories.isSystem,
         generateAutoResponse: emailCategories.generateAutoResponse,
         autoCreateTask: emailCategories.autoCreateTask,
+        autoMarkAsProcessed: emailCategories.autoMarkAsProcessed,
         createdAt: emailCategories.createdAt,
         updatedAt: emailCategories.updatedAt,
       })
