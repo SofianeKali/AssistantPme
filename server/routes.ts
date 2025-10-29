@@ -36,7 +36,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Dashboard stats
   app.get('/api/dashboard/stats', isAuthenticated, async (req, res) => {
     try {
-      const stats = await storage.getDashboardStats();
+      const emailAccountId = req.query.emailAccountId as string | undefined;
+      const stats = await storage.getDashboardStats(emailAccountId);
       res.json(stats);
     } catch (error) {
       console.error("Error fetching dashboard stats:", error);
@@ -99,7 +100,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const offset = parseInt(req.query.offset as string) || 0;
       const periodType = (req.query.periodType as string) || 'week';
-      const distribution = await storage.getEmailDistribution(offset, periodType as 'week' | 'month');
+      const emailAccountId = req.query.emailAccountId as string | undefined;
+      const distribution = await storage.getEmailDistribution(offset, periodType as 'week' | 'month', emailAccountId);
       res.json(distribution);
     } catch (error) {
       console.error("Error fetching email distribution:", error);
@@ -112,7 +114,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const offset = parseInt(req.query.offset as string) || 0;
       const periodType = (req.query.periodType as string) || 'week';
-      const evolution = await storage.getEmailEvolution(offset, periodType as 'week' | 'month');
+      const emailAccountId = req.query.emailAccountId as string | undefined;
+      const evolution = await storage.getEmailEvolution(offset, periodType as 'week' | 'month', emailAccountId);
       res.json(evolution);
     } catch (error) {
       console.error("Error fetching email evolution:", error);
@@ -125,7 +128,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const offset = parseInt(req.query.offset as string) || 0;
       const periodType = (req.query.periodType as string) || 'week';
-      const processing = await storage.getCategoryProcessing(offset, periodType as 'week' | 'month');
+      const emailAccountId = req.query.emailAccountId as string | undefined;
+      const processing = await storage.getCategoryProcessing(offset, periodType as 'week' | 'month', emailAccountId);
       res.json(processing);
     } catch (error) {
       console.error("Error fetching category processing:", error);
@@ -311,7 +315,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/emails/stats/by-category', isAuthenticated, async (req, res) => {
     try {
       // All users see stats for all emails (PME shared inbox)
-      const categoryCounts = await storage.getEmailStatsByCategory();
+      const emailAccountId = req.query.emailAccountId as string | undefined;
+      const categoryCounts = await storage.getEmailStatsByCategory(undefined, emailAccountId);
       res.json(categoryCounts);
     } catch (error) {
       console.error("Error fetching email category stats:", error);
