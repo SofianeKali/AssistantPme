@@ -108,6 +108,7 @@ export const emailCategories = pgTable("email_categories", {
   isSystem: boolean("is_system").notNull().default(false), // System categories cannot be deleted
   generateAutoResponse: boolean("generate_auto_response").notNull().default(true), // Whether to generate AI auto-response
   autoCreateTask: boolean("auto_create_task").notNull().default(false), // Whether to automatically create tasks from emails in this category
+  autoMarkAsProcessed: boolean("auto_mark_as_processed").notNull().default(false), // Whether to automatically mark emails as processed (traité) when scanned
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

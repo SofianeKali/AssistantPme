@@ -242,12 +242,10 @@ export default function Dashboard() {
                         </div>
                       )}
                       <Badge
-                        variant="outline"
-                        className={`text-xs mt-2 ${
-                          task.status === "nouveau"
-                            ? "bg-chart-2/10 text-chart-2 border-chart-2/20"
-                            : "bg-chart-3/10 text-chart-3 border-chart-3/20"
-                        }`}
+                        variant={
+                          task.status === "nouveau" ? "secondary" : "default"
+                        }
+                        className="text-xs mt-2"
                       >
                         {task.status === "nouveau" ? "Nouveau" : "En cours"}
                       </Badge>
