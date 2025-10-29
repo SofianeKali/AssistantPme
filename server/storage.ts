@@ -1007,19 +1007,54 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  // Get task evolution for a specific week
-  async getTaskEvolutionByWeek(weekOffset: number = 0): Promise<any> {
+  // Helper to calculate period start and end dates
+  private getPeriodDates(periodType: 'week' | 'month', offset: number): { start: Date; end: Date; periods: Date[] } {
     const now = new Date();
-    const weekStart = new Date(now.getTime() - weekOffset * 7 * 24 * 60 * 60 * 1000);
-    weekStart.setHours(0, 0, 0, 0);
-    // Set to Monday
-    weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
+    let start: Date, end: Date;
+    const periods: Date[] = [];
     
+    if (periodType === 'week') {
+      const weekStart = new Date(now.getTime() - offset * 7 * 24 * 60 * 60 * 1000);
+      weekStart.setHours(0, 0, 0, 0);
+      weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
+      start = weekStart;
+      end = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+      
+      for (let i = 0; i < 7; i++) {
+        periods.push(new Date(weekStart.getTime() + i * 24 * 60 * 60 * 1000));
+      }
+    } else {
+      const targetMonth = new Date(now.getFullYear(), now.getMonth() - offset, 1);
+      start = new Date(targetMonth.getFullYear(), targetMonth.getMonth(), 1);
+      end = new Date(targetMonth.getFullYear(), targetMonth.getMonth() + 1, 0, 23, 59, 59);
+      
+      const daysInMonth = end.getDate();
+      for (let i = 1; i <= daysInMonth; i++) {
+        periods.push(new Date(targetMonth.getFullYear(), targetMonth.getMonth(), i));
+      }
+    }
+    
+    return { start, end, periods };
+  }
+
+  // Helper to format day/date labels
+  private getPeriodLabel(date: Date, periodType: 'week' | 'month'): string {
+    if (periodType === 'week') {
+      const dayNames = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+      return dayNames[date.getDay()];
+    } else {
+      return date.getDate().toString();
+    }
+  }
+
+  // Get task evolution for a specific period
+  async getTaskEvolutionByWeek(weekOffset: number = 0, periodType: 'week' | 'month' = 'week'): Promise<any> {
+    const { periods } = this.getPeriodDates(periodType, weekOffset);
     const evolution = [];
-    const dayNames = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
     
-    for (let i = 0; i < 7; i++) {
-      const dayStart = new Date(weekStart.getTime() + i * 24 * 60 * 60 * 1000);
+    for (const periodDate of periods) {
+      const dayStart = new Date(periodDate);
+      dayStart.setHours(0, 0, 0, 0);
       const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
       
       const [nouveau] = await db
@@ -1056,7 +1091,7 @@ export class DatabaseStorage implements IStorage {
         );
       
       evolution.push({
-        day: dayNames[i],
+        day: this.getPeriodLabel(periodDate, periodType),
         nouveau: Number(nouveau?.count || 0),
         enCours: Number(enCours?.count || 0),
         termine: Number(termine?.count || 0)
@@ -1066,19 +1101,14 @@ export class DatabaseStorage implements IStorage {
     return evolution;
   }
 
-  // Get alert evolution for a specific week
-  async getAlertEvolutionByWeek(weekOffset: number = 0): Promise<any> {
-    const now = new Date();
-    const weekStart = new Date(now.getTime() - weekOffset * 7 * 24 * 60 * 60 * 1000);
-    weekStart.setHours(0, 0, 0, 0);
-    // Set to Monday
-    weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
-    
+  // Get alert evolution for a specific period
+  async getAlertEvolutionByWeek(weekOffset: number = 0, periodType: 'week' | 'month' = 'week'): Promise<any> {
+    const { periods } = this.getPeriodDates(periodType, weekOffset);
     const evolution = [];
-    const dayNames = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
     
-    for (let i = 0; i < 7; i++) {
-      const dayStart = new Date(weekStart.getTime() + i * 24 * 60 * 60 * 1000);
+    for (const periodDate of periods) {
+      const dayStart = new Date(periodDate);
+      dayStart.setHours(0, 0, 0, 0);
       const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
       
       const [active] = await db
@@ -1104,7 +1134,7 @@ export class DatabaseStorage implements IStorage {
         );
       
       evolution.push({
-        day: dayNames[i],
+        day: this.getPeriodLabel(periodDate, periodType),
         active: Number(active?.count || 0),
         resolved: Number(resolved?.count || 0)
       });
@@ -1113,19 +1143,14 @@ export class DatabaseStorage implements IStorage {
     return evolution;
   }
 
-  // Get appointments for a specific week
-  async getAppointmentsByWeek(weekOffset: number = 0): Promise<any> {
-    const now = new Date();
-    const weekStart = new Date(now.getTime() - weekOffset * 7 * 24 * 60 * 60 * 1000);
-    weekStart.setHours(0, 0, 0, 0);
-    // Set to Monday
-    weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
-    
+  // Get appointments for a specific period
+  async getAppointmentsByWeek(weekOffset: number = 0, periodType: 'week' | 'month' = 'week'): Promise<any> {
+    const { periods } = this.getPeriodDates(periodType, weekOffset);
     const appointmentsData = [];
-    const dayNames = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
     
-    for (let i = 0; i < 7; i++) {
-      const dayStart = new Date(weekStart.getTime() + i * 24 * 60 * 60 * 1000);
+    for (const periodDate of periods) {
+      const dayStart = new Date(periodDate);
+      dayStart.setHours(0, 0, 0, 0);
       const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
       
       const [count] = await db
@@ -1139,12 +1164,131 @@ export class DatabaseStorage implements IStorage {
         );
       
       appointmentsData.push({
-        day: dayNames[i],
+        day: this.getPeriodLabel(periodDate, periodType),
         count: Number(count?.count || 0)
       });
     }
     
     return appointmentsData;
+  }
+
+  // Get email distribution for a specific period
+  async getEmailDistribution(offset: number = 0, periodType: 'week' | 'month' = 'week'): Promise<any> {
+    const { start, end } = this.getPeriodDates(periodType, offset);
+    
+    const categoriesData = await db.select().from(emailCategories);
+    const categoryColorMap = new Map(categoriesData.map(cat => [cat.key, cat.color]));
+    
+    const emailDistribution = await db
+      .select({
+        type: emails.emailType,
+        count: sql<number>`count(*)`,
+      })
+      .from(emails)
+      .where(
+        and(
+          gte(emails.receivedAt, start),
+          lte(emails.receivedAt, end)
+        )
+      )
+      .groupBy(emails.emailType);
+    
+    return emailDistribution.map(item => {
+      const categoryInfo = categoriesData.find(cat => cat.key === item.type);
+      return {
+        name: categoryInfo?.label || item.type || 'Autre',
+        value: Number(item.count),
+        color: categoryColorMap.get(item.type || '') || '#6B7280'
+      };
+    });
+  }
+
+  // Get email evolution for a specific period
+  async getEmailEvolution(offset: number = 0, periodType: 'week' | 'month' = 'week'): Promise<any> {
+    const { periods } = this.getPeriodDates(periodType, offset);
+    const evolution = [];
+    
+    for (const periodDate of periods) {
+      const dayStart = new Date(periodDate);
+      dayStart.setHours(0, 0, 0, 0);
+      const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+      
+      const [processed] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(emails)
+        .where(
+          and(
+            gte(emails.receivedAt, dayStart),
+            lte(emails.receivedAt, dayEnd),
+            or(
+              eq(emails.status, 'traite'),
+              eq(emails.status, 'archive')
+            )
+          )
+        );
+      
+      evolution.push({
+        day: this.getPeriodLabel(periodDate, periodType),
+        count: Number(processed?.count || 0)
+      });
+    }
+    
+    return evolution;
+  }
+
+  // Get category processing rate for a specific period
+  async getCategoryProcessing(offset: number = 0, periodType: 'week' | 'month' = 'week'): Promise<any> {
+    const { start, end } = this.getPeriodDates(periodType, offset);
+    
+    const categoriesData = await db.select().from(emailCategories);
+    const categoryColorMap = new Map(categoriesData.map(cat => [cat.key, cat.color]));
+    const categoryKeys = Array.from(new Set(categoriesData.map(cat => cat.key)));
+    
+    const categoryProcessing = [];
+    
+    for (const categoryKey of categoryKeys) {
+      const [total] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(emails)
+        .where(
+          and(
+            eq(emails.emailType, categoryKey),
+            gte(emails.receivedAt, start),
+            lte(emails.receivedAt, end)
+          )
+        );
+      
+      const [processed] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(emails)
+        .where(
+          and(
+            eq(emails.emailType, categoryKey),
+            gte(emails.receivedAt, start),
+            lte(emails.receivedAt, end),
+            or(
+              eq(emails.status, 'traite'),
+              eq(emails.status, 'archive')
+            )
+          )
+        );
+      
+      const totalCount = Number(total?.count || 0);
+      const processedCount = Number(processed?.count || 0);
+      const rate = totalCount > 0 ? Math.round((processedCount / totalCount) * 100) : 0;
+      
+      const categoryInfo = categoriesData.find(cat => cat.key === categoryKey);
+      
+      if (totalCount > 0) {
+        categoryProcessing.push({
+          category: categoryInfo?.label || categoryKey,
+          rate,
+          color: categoryColorMap.get(categoryKey) || '#6B7280'
+        });
+      }
+    }
+    
+    return categoryProcessing;
   }
 
   // Advanced KPIs

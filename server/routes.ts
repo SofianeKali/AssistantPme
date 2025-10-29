@@ -55,11 +55,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Task evolution by week
+  // Task evolution by period
   app.get('/api/dashboard/tasks-evolution', isAuthenticated, async (req, res) => {
     try {
-      const weekOffset = parseInt(req.query.weekOffset as string) || 0;
-      const evolution = await storage.getTaskEvolutionByWeek(weekOffset);
+      const offset = parseInt(req.query.offset as string) || 0;
+      const periodType = (req.query.periodType as string) || 'week';
+      const evolution = await storage.getTaskEvolutionByWeek(offset, periodType as 'week' | 'month');
       res.json(evolution);
     } catch (error) {
       console.error("Error fetching task evolution:", error);
@@ -67,11 +68,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Alert evolution by week
+  // Alert evolution by period
   app.get('/api/dashboard/alerts-evolution', isAuthenticated, async (req, res) => {
     try {
-      const weekOffset = parseInt(req.query.weekOffset as string) || 0;
-      const evolution = await storage.getAlertEvolutionByWeek(weekOffset);
+      const offset = parseInt(req.query.offset as string) || 0;
+      const periodType = (req.query.periodType as string) || 'week';
+      const evolution = await storage.getAlertEvolutionByWeek(offset, periodType as 'week' | 'month');
       res.json(evolution);
     } catch (error) {
       console.error("Error fetching alert evolution:", error);
@@ -79,15 +81,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Appointments by week
+  // Appointments by period
   app.get('/api/dashboard/appointments-week', isAuthenticated, async (req, res) => {
     try {
-      const weekOffset = parseInt(req.query.weekOffset as string) || 0;
-      const appointments = await storage.getAppointmentsByWeek(weekOffset);
+      const offset = parseInt(req.query.offset as string) || 0;
+      const periodType = (req.query.periodType as string) || 'week';
+      const appointments = await storage.getAppointmentsByWeek(offset, periodType as 'week' | 'month');
       res.json(appointments);
     } catch (error) {
       console.error("Error fetching appointments by week:", error);
       res.status(500).json({ message: "Failed to fetch appointments data" });
+    }
+  });
+
+  // Email distribution by period
+  app.get('/api/dashboard/email-distribution', isAuthenticated, async (req, res) => {
+    try {
+      const offset = parseInt(req.query.offset as string) || 0;
+      const periodType = (req.query.periodType as string) || 'week';
+      const distribution = await storage.getEmailDistribution(offset, periodType as 'week' | 'month');
+      res.json(distribution);
+    } catch (error) {
+      console.error("Error fetching email distribution:", error);
+      res.status(500).json({ message: "Failed to fetch email distribution data" });
+    }
+  });
+
+  // Email evolution by period
+  app.get('/api/dashboard/email-evolution', isAuthenticated, async (req, res) => {
+    try {
+      const offset = parseInt(req.query.offset as string) || 0;
+      const periodType = (req.query.periodType as string) || 'week';
+      const evolution = await storage.getEmailEvolution(offset, periodType as 'week' | 'month');
+      res.json(evolution);
+    } catch (error) {
+      console.error("Error fetching email evolution:", error);
+      res.status(500).json({ message: "Failed to fetch email evolution data" });
+    }
+  });
+
+  // Category processing by period
+  app.get('/api/dashboard/category-processing', isAuthenticated, async (req, res) => {
+    try {
+      const offset = parseInt(req.query.offset as string) || 0;
+      const periodType = (req.query.periodType as string) || 'week';
+      const processing = await storage.getCategoryProcessing(offset, periodType as 'week' | 'month');
+      res.json(processing);
+    } catch (error) {
+      console.error("Error fetching category processing:", error);
+      res.status(500).json({ message: "Failed to fetch category processing data" });
     }
   });
 
