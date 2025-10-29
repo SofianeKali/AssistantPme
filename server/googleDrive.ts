@@ -1,5 +1,7 @@
 import { google } from 'googleapis';
 import { PassThrough } from 'stream';
+import { storage } from './storage';
+import type { CloudStorageConfig } from '@shared/schema';
 
 let connectionSettings: any;
 
@@ -37,6 +39,31 @@ async function getAccessToken() {
   return accessToken;
 }
 
+// Get access token from user configuration
+async function getAccessTokenFromUserConfig(config: CloudStorageConfig): Promise<string> {
+  const { clientId, clientSecret, refreshToken } = config.credentials as {
+    clientId: string;
+    clientSecret: string;
+    refreshToken: string;
+  };
+
+  const oauth2Client = new google.auth.OAuth2(
+    clientId,
+    clientSecret,
+    'urn:ietf:wg:oauth:2.0:oob' // Redirect URI for installed apps
+  );
+
+  oauth2Client.setCredentials({ refresh_token: refreshToken });
+
+  try {
+    const { credentials } = await oauth2Client.refreshAccessToken();
+    return credentials.access_token!;
+  } catch (error) {
+    console.error('Error refreshing Google Drive access token:', error);
+    throw new Error('Failed to refresh Google Drive access token');
+  }
+}
+
 // WARNING: Never cache this client.
 // Access tokens expire, so a new client must be created each time.
 // Always call this function again to get a fresh client.
@@ -47,6 +74,24 @@ export async function getUncachableGoogleDriveClient() {
   auth.setCredentials({ access_token: accessToken });
   
   return google.drive({ version: 'v3', auth });
+}
+
+// Get Google Drive client for a specific user
+// Prioritizes user configuration over system configuration
+export async function getUserGoogleDriveClient(userId: string): Promise<any> {
+  // Try to get user-specific configuration first
+  const userConfig = await storage.getCloudStorageConfig(userId, 'google_drive');
+  
+  if (userConfig) {
+    // Use user's personal credentials
+    const accessToken = await getAccessTokenFromUserConfig(userConfig);
+    const auth = new google.auth.OAuth2();
+    auth.setCredentials({ access_token: accessToken });
+    return google.drive({ version: 'v3', auth });
+  }
+  
+  // Fall back to system configuration
+  return getUncachableGoogleDriveClient();
 }
 
 export async function uploadFileToDrive(
