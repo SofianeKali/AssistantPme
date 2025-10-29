@@ -156,6 +156,11 @@ export interface IStorage {
   updateTaskStatus(id: string, status: string): Promise<Task>;
   updateTaskAssignment(id: string, assignedToId: string | null): Promise<Task>;
   deleteTask(id: string): Promise<void>;
+  
+  // Weekly evolution charts
+  getTaskEvolutionByWeek(weekOffset?: number): Promise<any>;
+  getAlertEvolutionByWeek(weekOffset?: number): Promise<any>;
+  getAppointmentsByWeek(weekOffset?: number): Promise<any>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -855,6 +860,10 @@ export class DatabaseStorage implements IStorage {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     
+    // Récupérer les catégories d'emails avec leurs couleurs
+    const categoriesData = await db.select().from(emailCategories);
+    const categoryColorMap = new Map(categoriesData.map(cat => [cat.key, cat.color]));
+    
     // Evolution des emails traités (last 7 days)
     const emailEvolution = [];
     for (let i = 6; i >= 0; i--) {
@@ -906,7 +915,7 @@ export class DatabaseStorage implements IStorage {
       });
     }
     
-    // Répartition des emails reçus par type
+    // Répartition des emails reçus par catégorie (avec couleurs)
     const emailDistribution = await db
       .select({
         type: emails.emailType,
@@ -916,22 +925,22 @@ export class DatabaseStorage implements IStorage {
       .where(gte(emails.receivedAt, startOfMonth))
       .groupBy(emails.emailType);
     
-    // Taux de traitement par catégorie
+    // Taux de traitement par catégorie (avec couleurs)
     const categoryProcessing = [];
-    const categories = ['devis', 'facture', 'rdv', 'autre'];
+    const categoryKeys = Array.from(new Set(categoriesData.map(cat => cat.key)));
     
-    for (const category of categories) {
+    for (const categoryKey of categoryKeys) {
       const [total] = await db
         .select({ count: sql<number>`count(*)` })
         .from(emails)
-        .where(eq(emails.emailType, category));
+        .where(eq(emails.emailType, categoryKey));
       
       const [processed] = await db
         .select({ count: sql<number>`count(*)` })
         .from(emails)
         .where(
           and(
-            eq(emails.emailType, category),
+            eq(emails.emailType, categoryKey),
             or(
               eq(emails.status, 'traite'),
               eq(emails.status, 'archive')
@@ -943,9 +952,12 @@ export class DatabaseStorage implements IStorage {
       const processedCount = Number(processed?.count || 0);
       const rate = totalCount > 0 ? Math.round((processedCount / totalCount) * 100) : 0;
       
+      const categoryInfo = categoriesData.find(cat => cat.key === categoryKey);
+      
       categoryProcessing.push({
-        category: category.charAt(0).toUpperCase() + category.slice(1),
-        rate
+        category: categoryInfo?.label || categoryKey,
+        rate,
+        color: categoryColorMap.get(categoryKey) || '#6B7280'
       });
     }
     
@@ -977,10 +989,14 @@ export class DatabaseStorage implements IStorage {
     return {
       emailEvolution,
       appointmentsByWeek,
-      emailDistribution: emailDistribution.map(item => ({
-        name: (item.type || 'Autre').charAt(0).toUpperCase() + (item.type || 'autre').slice(1),
-        value: Number(item.count)
-      })),
+      emailDistribution: emailDistribution.map(item => {
+        const categoryInfo = categoriesData.find(cat => cat.key === item.type);
+        return {
+          name: categoryInfo?.label || item.type || 'Autre',
+          value: Number(item.count),
+          color: categoryColorMap.get(item.type || '') || '#6B7280'
+        };
+      }),
       categoryProcessing,
       emailFunnel: [
         { name: 'Reçus', count: Number(received?.count || 0) },
@@ -989,6 +1005,146 @@ export class DatabaseStorage implements IStorage {
         { name: 'Traités', count: Number(processed?.count || 0) }
       ]
     };
+  }
+
+  // Get task evolution for a specific week
+  async getTaskEvolutionByWeek(weekOffset: number = 0): Promise<any> {
+    const now = new Date();
+    const weekStart = new Date(now.getTime() - weekOffset * 7 * 24 * 60 * 60 * 1000);
+    weekStart.setHours(0, 0, 0, 0);
+    // Set to Monday
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
+    
+    const evolution = [];
+    const dayNames = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+    
+    for (let i = 0; i < 7; i++) {
+      const dayStart = new Date(weekStart.getTime() + i * 24 * 60 * 60 * 1000);
+      const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+      
+      const [nouveau] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(tasks)
+        .where(
+          and(
+            gte(tasks.createdAt, dayStart),
+            lte(tasks.createdAt, dayEnd),
+            eq(tasks.status, 'nouveau')
+          )
+        );
+      
+      const [enCours] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(tasks)
+        .where(
+          and(
+            gte(tasks.createdAt, dayStart),
+            lte(tasks.createdAt, dayEnd),
+            eq(tasks.status, 'en_cours')
+          )
+        );
+      
+      const [termine] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(tasks)
+        .where(
+          and(
+            gte(tasks.createdAt, dayStart),
+            lte(tasks.createdAt, dayEnd),
+            eq(tasks.status, 'termine')
+          )
+        );
+      
+      evolution.push({
+        day: dayNames[i],
+        nouveau: Number(nouveau?.count || 0),
+        enCours: Number(enCours?.count || 0),
+        termine: Number(termine?.count || 0)
+      });
+    }
+    
+    return evolution;
+  }
+
+  // Get alert evolution for a specific week
+  async getAlertEvolutionByWeek(weekOffset: number = 0): Promise<any> {
+    const now = new Date();
+    const weekStart = new Date(now.getTime() - weekOffset * 7 * 24 * 60 * 60 * 1000);
+    weekStart.setHours(0, 0, 0, 0);
+    // Set to Monday
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
+    
+    const evolution = [];
+    const dayNames = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+    
+    for (let i = 0; i < 7; i++) {
+      const dayStart = new Date(weekStart.getTime() + i * 24 * 60 * 60 * 1000);
+      const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+      
+      const [active] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(alerts)
+        .where(
+          and(
+            gte(alerts.createdAt, dayStart),
+            lte(alerts.createdAt, dayEnd),
+            isNull(alerts.resolvedAt)
+          )
+        );
+      
+      const [resolved] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(alerts)
+        .where(
+          and(
+            gte(alerts.createdAt, dayStart),
+            lte(alerts.createdAt, dayEnd),
+            sql`${alerts.resolvedAt} IS NOT NULL`
+          )
+        );
+      
+      evolution.push({
+        day: dayNames[i],
+        active: Number(active?.count || 0),
+        resolved: Number(resolved?.count || 0)
+      });
+    }
+    
+    return evolution;
+  }
+
+  // Get appointments for a specific week
+  async getAppointmentsByWeek(weekOffset: number = 0): Promise<any> {
+    const now = new Date();
+    const weekStart = new Date(now.getTime() - weekOffset * 7 * 24 * 60 * 60 * 1000);
+    weekStart.setHours(0, 0, 0, 0);
+    // Set to Monday
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1);
+    
+    const appointmentsData = [];
+    const dayNames = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+    
+    for (let i = 0; i < 7; i++) {
+      const dayStart = new Date(weekStart.getTime() + i * 24 * 60 * 60 * 1000);
+      const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+      
+      const [count] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(appointments)
+        .where(
+          and(
+            gte(appointments.startTime, dayStart),
+            lte(appointments.startTime, dayEnd)
+          )
+        );
+      
+      appointmentsData.push({
+        day: dayNames[i],
+        count: Number(count?.count || 0)
+      });
+    }
+    
+    return appointmentsData;
   }
 
   // Advanced KPIs

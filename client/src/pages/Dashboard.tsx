@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -13,6 +14,8 @@ import {
   Circle,
   Clock,
   ArrowRight,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import * as LucideIcons from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -35,6 +38,7 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  Label,
 } from "recharts";
 
 // Map icon names to Lucide components
@@ -98,6 +102,11 @@ const CHART_COLORS = [
 export default function Dashboard() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  
+  // Week offsets for navigation
+  const [tasksWeekOffset, setTasksWeekOffset] = useState(0);
+  const [alertsWeekOffset, setAlertsWeekOffset] = useState(0);
+  const [appointmentsWeekOffset, setAppointmentsWeekOffset] = useState(0);
 
   const { data: stats, isLoading } = useQuery<any>({
     queryKey: ["/api/dashboard/stats"],
@@ -132,6 +141,31 @@ export default function Dashboard() {
             task.status === "nouveau" || task.status === "en_cours",
         ) || []
       );
+    },
+  });
+  
+  // Weekly evolution queries
+  const { data: tasksEvolution, isLoading: tasksEvolutionLoading } = useQuery<any>({
+    queryKey: ["/api/dashboard/tasks-evolution", tasksWeekOffset],
+    queryFn: async () => {
+      const response = await fetch(`/api/dashboard/tasks-evolution?weekOffset=${tasksWeekOffset}`);
+      return response.json();
+    },
+  });
+
+  const { data: alertsEvolution, isLoading: alertsEvolutionLoading } = useQuery<any>({
+    queryKey: ["/api/dashboard/alerts-evolution", alertsWeekOffset],
+    queryFn: async () => {
+      const response = await fetch(`/api/dashboard/alerts-evolution?weekOffset=${alertsWeekOffset}`);
+      return response.json();
+    },
+  });
+
+  const { data: appointmentsWeek, isLoading: appointmentsWeekLoading } = useQuery<any>({
+    queryKey: ["/api/dashboard/appointments-week", appointmentsWeekOffset],
+    queryFn: async () => {
+      const response = await fetch(`/api/dashboard/appointments-week?weekOffset=${appointmentsWeekOffset}`);
+      return response.json();
     },
   });
 
@@ -532,13 +566,14 @@ export default function Dashboard() {
                   outerRadius={80}
                   paddingAngle={2}
                   dataKey="value"
-                  label={(entry) => `${entry.name}`}
+                  label={(entry) => `${entry.name} (${entry.value})`}
+                  labelLine={true}
                 >
                   {charts?.emailDistribution?.map(
                     (entry: any, index: number) => (
                       <Cell
                         key={`cell-${index}`}
-                        fill={CHART_COLORS[index % CHART_COLORS.length]}
+                        fill={entry.color || CHART_COLORS[index % CHART_COLORS.length]}
                       />
                     ),
                   )}
@@ -556,38 +591,61 @@ export default function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* RDV planifiés par semaine */}
+        {/* Évolution des RDV */}
         <Card>
-          <CardHeader>
-            <CardTitle>RDV planifiés par semaine</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+            <CardTitle>Évolution des RDV</CardTitle>
+            <div className="flex gap-1">
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => setAppointmentsWeekOffset(appointmentsWeekOffset + 1)}
+                data-testid="button-appointments-prev-week"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => setAppointmentsWeekOffset(Math.max(0, appointmentsWeekOffset - 1))}
+                disabled={appointmentsWeekOffset === 0}
+                data-testid="button-appointments-next-week"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={charts?.appointmentsByWeek || []}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="hsl(var(--border))"
-                />
-                <XAxis
-                  dataKey="week"
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "6px",
-                  }}
-                />
-                <Bar
-                  dataKey="count"
-                  fill={COLORS.chart2}
-                  radius={[4, 4, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
+            {appointmentsWeekLoading ? (
+              <Skeleton className="h-[250px]" />
+            ) : (
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={appointmentsWeek || []}>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="hsl(var(--border))"
+                  />
+                  <XAxis
+                    dataKey="day"
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                  />
+                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "6px",
+                    }}
+                  />
+                  <Bar
+                    dataKey="count"
+                    fill={COLORS.chart2}
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
 
@@ -598,27 +656,21 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
-              <BarChart
-                data={charts?.categoryProcessing || []}
-                layout="vertical"
-              >
+              <BarChart data={charts?.categoryProcessing || []}>
                 <CartesianGrid
                   strokeDasharray="3 3"
                   stroke="hsl(var(--border))"
                 />
                 <XAxis
-                  type="number"
+                  dataKey="category"
+                  stroke="hsl(var(--muted-foreground))"
+                  fontSize={12}
+                />
+                <YAxis
                   domain={[0, 100]}
                   stroke="hsl(var(--muted-foreground))"
                   fontSize={12}
                   unit="%"
-                />
-                <YAxis
-                  type="category"
-                  dataKey="category"
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                  width={80}
                 />
                 <Tooltip
                   contentStyle={{
@@ -628,45 +680,150 @@ export default function Dashboard() {
                   }}
                   formatter={(value: any) => [`${value}%`, "Taux"]}
                 />
-                <Bar
-                  dataKey="rate"
-                  fill={COLORS.chart3}
-                  radius={[0, 4, 4, 0]}
-                />
+                <Bar dataKey="rate" radius={[4, 4, 0, 0]}>
+                  {charts?.categoryProcessing?.map((entry: any, index: number) => (
+                    <Cell key={`cell-${index}`} fill={entry.color || COLORS.chart3} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        {/* Funnel de traitement */}
+        {/* Évolution des tâches */}
         <Card>
-          <CardHeader>
-            <CardTitle>Traitement des emails</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+            <CardTitle>Évolution des tâches</CardTitle>
+            <div className="flex gap-1">
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => setTasksWeekOffset(tasksWeekOffset + 1)}
+                data-testid="button-tasks-prev-week"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => setTasksWeekOffset(Math.max(0, tasksWeekOffset - 1))}
+                disabled={tasksWeekOffset === 0}
+                data-testid="button-tasks-next-week"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {charts?.emailFunnel?.map((stage: any, index: number) => {
-              const maxCount = charts.emailFunnel[0]?.count || 1;
-              const percentage = Math.round((stage.count / maxCount) * 100);
+          <CardContent>
+            {tasksEvolutionLoading ? (
+              <Skeleton className="h-[250px]" />
+            ) : (
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={tasksEvolution || []}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis
+                    dataKey="day"
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                  />
+                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "6px",
+                    }}
+                  />
+                  <Legend />
+                  <Bar
+                    dataKey="nouveau"
+                    stackId="a"
+                    fill={COLORS.chart3}
+                    radius={[0, 0, 0, 0]}
+                    name="Nouveau"
+                  />
+                  <Bar
+                    dataKey="enCours"
+                    stackId="a"
+                    fill={COLORS.primary}
+                    radius={[0, 0, 0, 0]}
+                    name="En cours"
+                  />
+                  <Bar
+                    dataKey="termine"
+                    stackId="a"
+                    fill={COLORS.chart1}
+                    radius={[4, 4, 0, 0]}
+                    name="Terminé"
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
 
-              return (
-                <div key={index} className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">{stage.name}</span>
-                    <span className="font-semibold">{stage.count}</span>
-                  </div>
-                  <div className="w-full bg-muted rounded-full h-2">
-                    <div
-                      className="h-2 rounded-full transition-all"
-                      style={{
-                        width: `${percentage}%`,
-                        backgroundColor:
-                          CHART_COLORS[index % CHART_COLORS.length],
-                      }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
+        {/* Evolution des alertes */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+            <CardTitle>Evolution des alertes</CardTitle>
+            <div className="flex gap-1">
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => setAlertsWeekOffset(alertsWeekOffset + 1)}
+                data-testid="button-alerts-prev-week"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={() => setAlertsWeekOffset(Math.max(0, alertsWeekOffset - 1))}
+                disabled={alertsWeekOffset === 0}
+                data-testid="button-alerts-next-week"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {alertsEvolutionLoading ? (
+              <Skeleton className="h-[250px]" />
+            ) : (
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={alertsEvolution || []}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis
+                    dataKey="day"
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                  />
+                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "6px",
+                    }}
+                  />
+                  <Legend />
+                  <Bar
+                    dataKey="active"
+                    stackId="a"
+                    fill={COLORS.chart3}
+                    radius={[0, 0, 0, 0]}
+                    name="Actives"
+                  />
+                  <Bar
+                    dataKey="resolved"
+                    stackId="a"
+                    fill={COLORS.chart1}
+                    radius={[4, 4, 0, 0]}
+                    name="Résolues"
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </CardContent>
         </Card>
       </div>

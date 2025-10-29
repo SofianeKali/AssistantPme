@@ -55,6 +55,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Task evolution by week
+  app.get('/api/dashboard/tasks-evolution', isAuthenticated, async (req, res) => {
+    try {
+      const weekOffset = parseInt(req.query.weekOffset as string) || 0;
+      const evolution = await storage.getTaskEvolutionByWeek(weekOffset);
+      res.json(evolution);
+    } catch (error) {
+      console.error("Error fetching task evolution:", error);
+      res.status(500).json({ message: "Failed to fetch task evolution data" });
+    }
+  });
+
+  // Alert evolution by week
+  app.get('/api/dashboard/alerts-evolution', isAuthenticated, async (req, res) => {
+    try {
+      const weekOffset = parseInt(req.query.weekOffset as string) || 0;
+      const evolution = await storage.getAlertEvolutionByWeek(weekOffset);
+      res.json(evolution);
+    } catch (error) {
+      console.error("Error fetching alert evolution:", error);
+      res.status(500).json({ message: "Failed to fetch alert evolution data" });
+    }
+  });
+
+  // Appointments by week
+  app.get('/api/dashboard/appointments-week', isAuthenticated, async (req, res) => {
+    try {
+      const weekOffset = parseInt(req.query.weekOffset as string) || 0;
+      const appointments = await storage.getAppointmentsByWeek(weekOffset);
+      res.json(appointments);
+    } catch (error) {
+      console.error("Error fetching appointments by week:", error);
+      res.status(500).json({ message: "Failed to fetch appointments data" });
+    }
+  });
+
   // Advanced KPIs
   app.get('/api/dashboard/kpis', isAuthenticated, async (req, res) => {
     try {
