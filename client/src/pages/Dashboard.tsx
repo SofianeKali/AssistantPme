@@ -135,7 +135,15 @@ const DEFAULT_LAYOUT = [
 ];
 
 // Sortable wrapper component
-function SortableItem({ id, children }: { id: string; children: React.ReactNode }) {
+function SortableItem({ 
+  id, 
+  children, 
+  className 
+}: { 
+  id: string; 
+  children: React.ReactNode;
+  className?: string;
+}) {
   const {
     attributes,
     listeners,
@@ -152,7 +160,7 @@ function SortableItem({ id, children }: { id: string; children: React.ReactNode 
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="relative group">
+    <div ref={setNodeRef} style={style} className={`relative group ${className || ''}`}>
       <div
         {...attributes}
         {...listeners}
@@ -1075,9 +1083,13 @@ export default function Dashboard() {
           items={layout}
           strategy={verticalListSortingStrategy}
         >
-          <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {layout.map((sectionId) => (
-              <SortableItem key={sectionId} id={sectionId}>
+              <SortableItem 
+                key={sectionId} 
+                id={sectionId}
+                className={sectionId === "categories" ? "lg:col-span-2" : ""}
+              >
                 {renderSection(sectionId)}
               </SortableItem>
             ))}
