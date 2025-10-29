@@ -11,22 +11,26 @@ I want the agent to prioritize robust error handling and logging.
 I prefer to see a clear plan before implementation.
 
 ## Recent Changes
-### October 29, 2025 - Chiffrement des Mots de Passe et Envoi d'Emails SMTP
+### October 29, 2025 - Chiffrement des Mots de Passe et Envoi d'Emails SMTP (PRODUCTION-READY ✅)
 - **Implémentation critique du chiffrement des mots de passe** :
-  - Module de chiffrement AES-256-GCM pour les mots de passe des comptes email
+  - Module de chiffrement AES-256-GCM pour les mots de passe des comptes email (`server/encryption.ts`)
   - Chiffrement automatique lors de la création de comptes email
   - Déchiffrement transparent lors de la lecture (aucun changement pour le code client)
-  - Migration en douceur : détection automatique des mots de passe non chiffrés
-  - Clé de chiffrement dérivée de SESSION_SECRET ou ENCRYPTION_KEY via PBKDF2
-  - Salt, IV et AuthTag uniques pour chaque mot de passe stocké
-  - Résout la vulnérabilité CRITIQUE de stockage en clair des mots de passe
+  - **Migration automatique** : détection et re-chiffrement transparent des mots de passe plaintext au premier accès via `decryptPasswordSafeWithMigration()`
+  - Clé de chiffrement dérivée de SESSION_SECRET ou ENCRYPTION_KEY via PBKDF2 (100,000 itérations)
+  - Salt unique (64 bytes), IV unique (16 bytes) et AuthTag (16 bytes) par mot de passe stocké
+  - Résout la vulnérabilité **CRITIQUE** de stockage en clair des mots de passe (validé par architecte)
+  - Tous les comptes email existants automatiquement migrés (logs: "Migrating plaintext password..." puis "Successfully migrated...")
 - **Implémentation complète de l'envoi d'emails SMTP pour les rappels** :
-  - Fonction `sendReminderEmail` utilisant le module `emailSender` existant
+  - Fonction `sendReminderEmail()` dans `server/reminderService.ts` utilisant le module `emailSender` existant
   - Envoi automatique des rappels de devis (après 48h sans réponse)
   - Envoi automatique des rappels de factures (après 15 jours d'impayé)
   - Mise à jour automatique du statut `isSent` et `sentAt` après envoi
-  - Gestion d'erreurs robuste avec logs détaillés
+  - **Stratégie de retry automatique** : les rappels échoués sont supprimés via `deleteReminder()` pour permettre au scheduler de les recréer avec un nouveau contenu GPT-5
+  - Compteurs de résultats exhaustifs : `created`, `sent`, `errors` (incrémenté dans tous les cas d'échec)
+  - Gestion d'erreurs robuste avec logs détaillés et retry imbriqué (try/catch pour deleteReminder)
   - Support de tous les types de rappels (devis, factures)
+  - Validation architecturale complète : production-ready ✅
 
 ### October 29, 2025 - Modes de Vue Calendrier (Jour/Semaine/Mois)
 - **Implémentation complète et validée des trois modes de vue pour le calendrier** :
