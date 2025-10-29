@@ -36,8 +36,19 @@ import { useLocation, Link } from "wouter";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import logoUrl from "../assets/logo.png";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useQuery } from "@tanstack/react-query";
+
+interface SidebarCounts {
+  unprocessedEmails: number;
+  unresolvedAlerts: number;
+  tasksNew: number;
+  tasksInProgress: number;
+  upcomingAppointments: number;
+  documentsInUnprocessedEmails: number;
+}
 
 const mainMenuItems = [
   {
@@ -107,6 +118,12 @@ export function AppSidebar() {
   const { user } = useAuth();
   const isMobile = useIsMobile();
   
+  // Fetch sidebar counts
+  const { data: counts } = useQuery<SidebarCounts>({
+    queryKey: ['/api/sidebar/counts'],
+    refetchInterval: 30000, // Refetch every 30 seconds
+  });
+  
   // Filter config menu items based on user role
   const filteredConfigMenuItems = configMenuItems.filter(item => {
     if (item.adminOnly) {
@@ -114,6 +131,37 @@ export function AppSidebar() {
     }
     return true;
   });
+
+  // Helper function to get badge count for each menu item
+  const getBadgeCount = (url: string): number | null => {
+    if (!counts) return null;
+    
+    switch (url) {
+      case '/emails':
+        return counts.unprocessedEmails || null;
+      case '/alerts':
+        return counts.unresolvedAlerts || null;
+      case '/tasks':
+        return (counts.tasksNew + counts.tasksInProgress) || null;
+      case '/calendar':
+        return counts.upcomingAppointments || null;
+      case '/documents':
+        return counts.documentsInUnprocessedEmails || null;
+      default:
+        return null;
+    }
+  };
+
+  // Helper function to get badge text for tasks (shows both counts)
+  const getTasksBadgeText = (): string | null => {
+    if (!counts) return null;
+    const { tasksNew, tasksInProgress } = counts;
+    if (tasksNew === 0 && tasksInProgress === 0) return null;
+    if (tasksNew > 0 && tasksInProgress > 0) {
+      return `${tasksNew}+${tasksInProgress}`;
+    }
+    return String(tasksNew + tasksInProgress);
+  };
 
   const getUserInitials = () => {
     if (user?.firstName && user?.lastName) {
@@ -152,20 +200,38 @@ export function AppSidebar() {
           <SidebarGroupLabel>Principal</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {mainMenuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={location === item.url}
-                    data-testid={item.testId}
-                  >
-                    <Link href={item.url}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {mainMenuItems.map((item) => {
+                const badgeCount = getBadgeCount(item.url);
+                const isTasksMenu = item.url === '/tasks';
+                const tasksBadgeText = isTasksMenu ? getTasksBadgeText() : null;
+                const showBadge = isTasksMenu ? tasksBadgeText !== null : badgeCount !== null && badgeCount > 0;
+                
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={location === item.url}
+                      data-testid={item.testId}
+                    >
+                      <Link href={item.url} className="flex items-center justify-between w-full">
+                        <div className="flex items-center gap-2">
+                          <item.icon className="h-4 w-4" />
+                          <span>{item.title}</span>
+                        </div>
+                        {showBadge && (
+                          <Badge 
+                            variant="secondary" 
+                            className="ml-auto text-xs"
+                            data-testid={`badge-count-${item.url.slice(1)}`}
+                          >
+                            {isTasksMenu ? tasksBadgeText : badgeCount}
+                          </Badge>
+                        )}
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
