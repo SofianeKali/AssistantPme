@@ -128,21 +128,21 @@ const DEFAULT_LAYOUT = [
   "tasks",
   "alerts",
   "categories",
+  "tasks-evolution",
   "email-evolution",
   "email-distribution",
-  "appointments",
   "category-processing",
-  "tasks-evolution",
   "alerts-evolution",
+  "appointments",
 ];
 
 // Sortable wrapper component
-function SortableItem({ 
-  id, 
-  children, 
-  className 
-}: { 
-  id: string; 
+function SortableItem({
+  id,
+  children,
+  className,
+}: {
+  id: string;
   children: React.ReactNode;
   className?: string;
 }) {
@@ -162,7 +162,11 @@ function SortableItem({
   };
 
   return (
-    <div ref={setNodeRef} style={style} className={`relative group ${className || ''}`}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`relative group ${className || ""}`}
+    >
       <div
         {...attributes}
         {...listeners}
@@ -320,7 +324,7 @@ export default function Dashboard() {
 
   // Dashboard layout state and queries
   const [layout, setLayout] = useState<string[]>(DEFAULT_LAYOUT);
-  
+
   const { data: savedLayout } = useQuery<any>({
     queryKey: ["/api/dashboard/layout"],
   });
@@ -334,15 +338,15 @@ export default function Dashboard() {
       } else {
         // Existing user with saved layout - merge with defaults
         // Filter out invalid/deprecated sections from saved layout
-        const validSections = savedLayout.layout.filter((id: string) => 
-          DEFAULT_LAYOUT.includes(id)
+        const validSections = savedLayout.layout.filter((id: string) =>
+          DEFAULT_LAYOUT.includes(id),
         );
-        
+
         // Add any new sections from DEFAULT_LAYOUT that aren't in saved layout
-        const newSections = DEFAULT_LAYOUT.filter((id: string) => 
-          !savedLayout.layout.includes(id)
+        const newSections = DEFAULT_LAYOUT.filter(
+          (id: string) => !savedLayout.layout.includes(id),
         );
-        
+
         // Merge: existing sections in saved order + new sections at the end
         const mergedLayout = [...validSections, ...newSections];
         setLayout(mergedLayout);
@@ -353,7 +357,9 @@ export default function Dashboard() {
   // Save layout mutation
   const saveLayoutMutation = useMutation({
     mutationFn: async (newLayout: string[]) => {
-      const res = await apiRequest("POST", "/api/dashboard/layout", { layout: newLayout });
+      const res = await apiRequest("POST", "/api/dashboard/layout", {
+        layout: newLayout,
+      });
       return await res.json();
     },
     onError: () => {
@@ -370,7 +376,7 @@ export default function Dashboard() {
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
-    })
+    }),
   );
 
   // Handle drag end
@@ -382,10 +388,10 @@ export default function Dashboard() {
         const oldIndex = items.indexOf(active.id as string);
         const newIndex = items.indexOf(over.id as string);
         const newLayout = arrayMove(items, oldIndex, newIndex);
-        
+
         // Save to backend
         saveLayoutMutation.mutate(newLayout);
-        
+
         return newLayout;
       });
     }
@@ -463,17 +469,17 @@ export default function Dashboard() {
   // Render functions for each dashboard section
   const renderSection = (sectionId: string) => {
     const sections: Record<string, JSX.Element> = {
-      "tasks": renderTasksSection(),
-      "alerts": renderAlertsSection(),
-      "categories": renderCategoriesSection(),
+      tasks: renderTasksSection(),
+      alerts: renderAlertsSection(),
+      categories: renderCategoriesSection(),
+      "tasks-evolution": renderTasksEvolutionChart(),
       "email-evolution": renderEmailEvolutionChart(),
       "email-distribution": renderEmailDistributionChart(),
-      "appointments": renderAppointmentsChart(),
       "category-processing": renderCategoryProcessingChart(),
-      "tasks-evolution": renderTasksEvolutionChart(),
       "alerts-evolution": renderAlertsEvolutionChart(),
+      appointments: renderAppointmentsChart(),
     };
-    
+
     return sections[sectionId] || null;
   };
 
@@ -583,7 +589,9 @@ export default function Dashboard() {
               disabled={generateAlertsMutation.isPending}
               data-testid="button-generate-alerts"
             >
-              <RefreshCw className={`h-4 w-4 ${generateAlertsMutation.isPending ? "animate-spin" : ""}`} />
+              <RefreshCw
+                className={`h-4 w-4 ${generateAlertsMutation.isPending ? "animate-spin" : ""}`}
+              />
             </Button>
             <Button
               size="sm"
@@ -625,9 +633,7 @@ export default function Dashboard() {
                     }
                   />
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium">
-                      {alert.title}
-                    </div>
+                    <div className="text-sm font-medium">{alert.title}</div>
                     <div className="text-xs text-muted-foreground mt-1">
                       {alert.message}
                     </div>
@@ -743,7 +749,10 @@ export default function Dashboard() {
             onPeriodTypeChange={(type) => setEmailEvolutionPeriod(type)}
             offset={emailEvolutionOffset}
             onOffsetChange={setEmailEvolutionOffset}
-            periodLabel={getPeriodLabel(emailEvolutionPeriod, emailEvolutionOffset)}
+            periodLabel={getPeriodLabel(
+              emailEvolutionPeriod,
+              emailEvolutionOffset,
+            )}
             testIdPrefix="email-evolution"
           />
         </CardHeader>
@@ -795,7 +804,10 @@ export default function Dashboard() {
             onPeriodTypeChange={(type) => setEmailDistributionPeriod(type)}
             offset={emailDistributionOffset}
             onOffsetChange={setEmailDistributionOffset}
-            periodLabel={getPeriodLabel(emailDistributionPeriod, emailDistributionOffset)}
+            periodLabel={getPeriodLabel(
+              emailDistributionPeriod,
+              emailDistributionOffset,
+            )}
             testIdPrefix="email-distribution"
           />
         </CardHeader>
@@ -815,12 +827,17 @@ export default function Dashboard() {
                   fill="#8884d8"
                   dataKey="value"
                 >
-                  {(emailDistribution || []).map((entry: any, index: number) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={entry.color || CHART_COLORS[index % CHART_COLORS.length]}
-                    />
-                  ))}
+                  {(emailDistribution || []).map(
+                    (entry: any, index: number) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={
+                          entry.color ||
+                          CHART_COLORS[index % CHART_COLORS.length]
+                        }
+                      />
+                    ),
+                  )}
                 </Pie>
                 <Tooltip
                   contentStyle={{
@@ -898,7 +915,10 @@ export default function Dashboard() {
             onPeriodTypeChange={(type) => setCategoryProcessingPeriod(type)}
             offset={categoryProcessingOffset}
             onOffsetChange={setCategoryProcessingOffset}
-            periodLabel={getPeriodLabel(categoryProcessingPeriod, categoryProcessingOffset)}
+            periodLabel={getPeriodLabel(
+              categoryProcessingPeriod,
+              categoryProcessingOffset,
+            )}
             testIdPrefix="category-processing"
           />
         </CardHeader>
@@ -925,10 +945,19 @@ export default function Dashboard() {
                     borderRadius: "6px",
                   }}
                 />
-                <Bar dataKey="rate" radius={[4, 4, 0, 0]} name="Taux de traitement (%)">
-                  {(categoryProcessing || []).map((entry: any, index: number) => (
-                    <Cell key={`cell-${index}`} fill={entry.color || COLORS.chart1} />
-                  ))}
+                <Bar
+                  dataKey="rate"
+                  radius={[4, 4, 0, 0]}
+                  name="Taux de traitement (%)"
+                >
+                  {(categoryProcessing || []).map(
+                    (entry: any, index: number) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={entry.color || COLORS.chart1}
+                      />
+                    ),
+                  )}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -958,7 +987,10 @@ export default function Dashboard() {
           ) : (
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={tasksEvolution || []}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="hsl(var(--border))"
+                />
                 <XAxis
                   dataKey="day"
                   stroke="hsl(var(--muted-foreground))"
@@ -1022,7 +1054,10 @@ export default function Dashboard() {
           ) : (
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={alertsEvolution || []}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="hsl(var(--border))"
+                />
                 <XAxis
                   dataKey="day"
                   stroke="hsl(var(--muted-foreground))"
@@ -1104,14 +1139,11 @@ export default function Dashboard() {
         collisionDetection={closestCenter}
         onDragEnd={handleDragEnd}
       >
-        <SortableContext
-          items={layout}
-          strategy={verticalListSortingStrategy}
-        >
+        <SortableContext items={layout} strategy={verticalListSortingStrategy}>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {layout.map((sectionId) => (
-              <SortableItem 
-                key={sectionId} 
+              <SortableItem
+                key={sectionId}
                 id={sectionId}
                 className={sectionId === "categories" ? "lg:col-span-2" : ""}
               >
