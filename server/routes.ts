@@ -272,6 +272,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch('/api/email-accounts/:id', isAuthenticated, isAdmin, async (req, res) => {
+    try {
+      const updated = await storage.updateEmailAccount(req.params.id, req.body);
+      res.json(updated);
+    } catch (error) {
+      console.error("Error updating email account:", error);
+      res.status(500).json({ message: "Failed to update email account" });
+    }
+  });
+
   app.delete('/api/email-accounts/:id', isAuthenticated, isAdmin, async (req, res) => {
     try {
       await storage.deleteEmailAccount(req.params.id);

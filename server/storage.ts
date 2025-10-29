@@ -63,6 +63,7 @@ export interface IStorage {
   getEmailAccounts(userId?: string): Promise<EmailAccount[]>;
   getEmailAccountById(id: string): Promise<EmailAccount | undefined>;
   getAllEmailAccounts(): Promise<EmailAccount[]>;
+  updateEmailAccount(id: string, data: Partial<EmailAccount>): Promise<EmailAccount>;
   deleteEmailAccount(id: string): Promise<void>;
   
   // Emails
@@ -304,6 +305,26 @@ export class DatabaseStorage implements IStorage {
       }
       return password;
     }
+  }
+
+  async updateEmailAccount(id: string, data: Partial<EmailAccount>): Promise<EmailAccount> {
+    // If password is being updated, encrypt it
+    const updateData = { ...data };
+    if (data.password) {
+      updateData.password = encryptPassword(data.password);
+    }
+    
+    const [result] = await db
+      .update(emailAccounts)
+      .set({ ...updateData, updatedAt: new Date() })
+      .where(eq(emailAccounts.id, id))
+      .returning();
+    
+    // Decrypt password before returning
+    return {
+      ...result,
+      password: await this.decryptPasswordSafeWithMigration(result.id, result.password),
+    };
   }
 
   async deleteEmailAccount(id: string): Promise<void> {
@@ -2062,6 +2083,7 @@ export class DatabaseStorage implements IStorage {
         generateAutoResponse: emailCategories.generateAutoResponse,
         autoCreateTask: emailCategories.autoCreateTask,
         autoMarkAsProcessed: emailCategories.autoMarkAsProcessed,
+        redirectEmails: emailCategories.redirectEmails,
         createdAt: emailCategories.createdAt,
         updatedAt: emailCategories.updatedAt,
       })
