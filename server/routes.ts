@@ -1276,6 +1276,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/alerts/bulk-resolve', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = (req.user as any).id;
+      const { alertIds } = req.body;
+
+      if (!alertIds || !Array.isArray(alertIds) || alertIds.length === 0) {
+        return res.status(400).json({ message: "Alert IDs are required" });
+      }
+
+      const count = await storage.resolveBulkAlerts(alertIds, userId);
+      res.json({ count, message: `${count} alerte(s) résolue(s)` });
+    } catch (error) {
+      console.error("Error resolving alerts in bulk:", error);
+      res.status(500).json({ message: "Failed to resolve alerts" });
+    }
+  });
+
   app.post('/api/alerts/generate', isAuthenticated, async (req, res) => {
     try {
       const { AlertService } = await import('./alertService');

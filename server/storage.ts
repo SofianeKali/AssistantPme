@@ -89,6 +89,7 @@ export interface IStorage {
   createAlert(alert: InsertAlert): Promise<Alert>;
   getAlerts(filters?: { resolved?: boolean; type?: string; relatedEntityType?: string; relatedEntityId?: string; ruleId?: string; limit?: number }): Promise<Alert[]>;
   resolveAlert(id: string, userId: string): Promise<Alert>;
+  resolveBulkAlerts(ids: string[], userId: string): Promise<number>;
   linkEmailsToAlert(alertId: string, emailIds: string[]): Promise<void>;
   getAlertEmails(alertId: string): Promise<string[]>;
   updateAlertEmailCount(alertId: string, count: number): Promise<void>;
@@ -708,6 +709,22 @@ export class DatabaseStorage implements IStorage {
       .where(eq(alerts.id, id))
       .returning();
     return updated;
+  }
+
+  async resolveBulkAlerts(ids: string[], userId: string): Promise<number> {
+    const result = await db
+      .update(alerts)
+      .set({
+        isResolved: true,
+        resolvedAt: new Date(),
+        resolvedById: userId,
+      })
+      .where(and(
+        inArray(alerts.id, ids),
+        eq(alerts.isResolved, false)
+      ))
+      .returning({ id: alerts.id });
+    return result.length;
   }
 
   async linkEmailsToAlert(alertId: string, emailIds: string[]): Promise<void> {
