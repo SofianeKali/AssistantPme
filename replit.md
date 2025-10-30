@@ -29,6 +29,7 @@ The application uses a modern web stack:
     - **Configuration**: Comprehensive settings interface for system administration including Email Accounts (IMAP/SMTP, scan frequency, retention - admin-only), Categories (icons, colors, attachment redirection - admin-only), Cloud Storage (personal Google Drive/OneDrive OAuth configuration with step-by-step documentation), Automation (document extraction, storage provider, AI features - admin-only), and Alerts (custom alert rules). Admin-restricted features require admin role.
     - **User Management**: Role-based access control and task assignment.
     - **Advanced Features**: Sentiment analysis, KPIs, and automated reminders for quotes and invoices.
+    - **Beta Lead Capture**: Professional landing page at `/beta` route with comprehensive lead capture form. Features react-hook-form + Zod validation, social proof elements, benefit cards, and ROI messaging targeting French SMBs. Captures prospect details (contact info, company size, role, pain points) for beta program recruitment.
 
 ## External Dependencies
 - **OpenAI**: GPT-5 model access for AI capabilities.
