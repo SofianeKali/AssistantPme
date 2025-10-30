@@ -427,7 +427,7 @@ export class DatabaseStorage implements IStorage {
     
     let query = db.select({
       ...allColumns,
-      attachmentCount: sql<number>`(SELECT COUNT(*) FROM ${documents} WHERE ${documents.emailId} = ${emails.id})`.as('attachment_count')
+      attachmentCount: sql<number>`COALESCE((SELECT COUNT(*)::int FROM documents WHERE documents.email_id = emails.id), 0)`
     }).from(emails);
     
     const conditions = [];
