@@ -72,7 +72,7 @@ export interface IStorage {
   // Emails
   createEmail(email: InsertEmail): Promise<Email>;
   getEmails(userId: string, filters?: { type?: string; status?: string; search?: string; limit?: number }): Promise<Email[]>;
-  getAllEmails(filters?: { type?: string; status?: string; priority?: string; search?: string; olderThanHours?: number; limit?: number }): Promise<Email[]>; // For backend services
+  getAllEmails(filters?: { type?: string; status?: string; priority?: string; search?: string; olderThanHours?: number; limit?: number; offset?: number }): Promise<(Email & { attachmentCount: number })[]>; // For backend services
   getEmailById(id: string, userId?: string): Promise<Email | undefined>;
   getEmailByMessageId(messageId: string): Promise<Email | undefined>;
   updateEmail(id: string, userId: string | undefined, data: Partial<Email>): Promise<Email>;

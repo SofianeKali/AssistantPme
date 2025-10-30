@@ -917,6 +917,17 @@ export default function Emails() {
                               data-testid={`icon-unread-${email.id}`}
                             />
                           )}
+                          {email.attachmentCount > 0 && (
+                            <span
+                              className="flex-shrink-0"
+                              title={`${email.attachmentCount} pièce(s) jointe(s)`}
+                            >
+                              <Paperclip
+                                className="h-4 w-4 text-muted-foreground"
+                                data-testid={`icon-attachment-${email.id}`}
+                              />
+                            </span>
+                          )}
                           {email.status && (
                             <Badge
                               variant="outline"
