@@ -1971,6 +1971,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Start free trial - No payment required
+  app.post('/api/start-trial', async (req, res) => {
+    try {
+      const { email, firstName, lastName } = req.body;
+
+      if (!email || !firstName || !lastName) {
+        return res.status(400).json({ message: 'Données manquantes (email, firstName, lastName requis)' });
+      }
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: 'Un compte existe déjà avec cet email' });
+      }
+
+      // Generate temporary password
+      const tempPassword = crypto.randomBytes(12).toString('base64').slice(0, 16);
+
+      // Calculate trial end date (14 days from now)
+      const trialEndsAt = new Date();
+      trialEndsAt.setDate(trialEndsAt.getDate() + 14);
+
+      // Create trial user
+      const user = await storage.db.insert(users).values({
+        email,
+        firstName,
+        lastName,
+        role: 'admin',
+        passwordHash: await bcrypt.hash(tempPassword, 10),
+        subscriptionPlan: 'trial',
+        subscriptionStatus: 'trialing',
+        trialEndsAt,
+      }).returning();
+
+      console.log(`[Trial] Created trial user: ${email}`);
+
+      // Send welcome email with credentials (using Resend)
+      try {
+        const { Resend } = require('resend');
+        const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+        
+        if (resend) {
+          await resend.emails.send({
+            from: 'IzyInbox <onboarding@izyinbox.com>',
+            to: email,
+            subject: 'Bienvenue sur IzyInbox - Essai gratuit 14 jours',
+            html: `
+              <h1>Bienvenue sur IzyInbox !</h1>
+              <p>Bonjour ${firstName},</p>
+              <p>Votre essai gratuit de <strong>14 jours</strong> a démarré avec succès.</p>
+              
+              <h2>Vos identifiants de connexion :</h2>
+              <ul>
+                <li><strong>Email :</strong> ${email}</li>
+                <li><strong>Mot de passe temporaire :</strong> ${tempPassword}</li>
+              </ul>
+              
+              <p><strong>Important :</strong> Nous vous recommandons de changer ce mot de passe lors de votre première connexion.</p>
+              
+              <p>Votre essai se termine le <strong>${trialEndsAt.toLocaleDateString('fr-FR')}</strong>. Vous pourrez ensuite souscrire au plan de votre choix pour continuer à utiliser IzyInbox.</p>
+              
+              <p>Connectez-vous dès maintenant : <a href="${process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000'}/login">Accéder à IzyInbox</a></p>
+              
+              <p>À bientôt,<br>L'équipe IzyInbox</p>
+            `,
+          });
+          console.log(`[Resend] Trial welcome email sent to ${email}`);
+        } else {
+          console.warn('[Resend] API key not configured - skipping trial welcome email');
+        }
+      } catch (emailError) {
+        console.error('[Resend] Error sending trial welcome email:', emailError);
+      }
+
+      res.json({
+        success: true,
+        userId: user[0].id,
+        trialEndsAt: trialEndsAt.toISOString(),
+      });
+    } catch (error: any) {
+      console.error('[Trial] Error creating trial user:', error);
+      res.status(500).json({ message: 'Erreur lors de la création du compte d\'essai', error: error.message });
+    }
+  });
+
   // Stripe webhook to handle payment confirmations
   app.post('/api/stripe-webhook', async (req, res) => {
     if (!stripe) {

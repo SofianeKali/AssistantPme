@@ -40,8 +40,9 @@ export const users = pgTable("users", {
   // Stripe integration for subscriptions
   stripeCustomerId: varchar("stripe_customer_id"),
   stripeSubscriptionId: varchar("stripe_subscription_id"),
-  subscriptionPlan: varchar("subscription_plan"), // starter, professional, enterprise, custom
+  subscriptionPlan: varchar("subscription_plan"), // starter, professional, enterprise, custom, trial
   subscriptionStatus: varchar("subscription_status"), // active, cancelled, past_due, trialing
+  trialEndsAt: timestamp("trial_ends_at"), // Date de fin de l'essai gratuit (NULL si pas en essai)
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

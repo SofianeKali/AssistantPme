@@ -6,6 +6,8 @@ import { useLocation } from "wouter";
 
 export default function PaymentSuccess() {
   const [, navigate] = useLocation();
+  const searchParams = new URLSearchParams(window.location.search);
+  const isTrial = searchParams.get('trial') === 'true';
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
@@ -16,9 +18,13 @@ export default function PaymentSuccess() {
               <CheckCircle2 className="h-10 w-10 text-green-600 dark:text-green-400" />
             </div>
           </div>
-          <CardTitle className="text-2xl">Paiement réussi !</CardTitle>
+          <CardTitle className="text-2xl">
+            {isTrial ? 'Essai gratuit activé !' : 'Paiement réussi !'}
+          </CardTitle>
           <CardDescription>
-            Votre souscription a été confirmée avec succès
+            {isTrial 
+              ? 'Votre essai gratuit de 14 jours a démarré avec succès'
+              : 'Votre souscription a été confirmée avec succès'}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -42,14 +48,29 @@ export default function PaymentSuccess() {
               <CheckCircle2 className="h-4 w-4 text-green-600" />
               Compte administrateur créé
             </p>
-            <p className="flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-green-600" />
-              Prélèvement automatique configuré pour le 5 de chaque mois
-            </p>
-            <p className="flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-green-600" />
-              Email de bienvenue envoyé avec vos identifiants
-            </p>
+            {isTrial ? (
+              <>
+                <p className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  Essai gratuit de 14 jours sans carte bancaire
+                </p>
+                <p className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  Accès complet à toutes les fonctionnalités
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  Prélèvement automatique configuré pour le 5 de chaque mois
+                </p>
+                <p className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  Email de bienvenue envoyé avec vos identifiants
+                </p>
+              </>
+            )}
           </div>
 
           <div className="pt-4 space-y-3">

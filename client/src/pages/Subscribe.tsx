@@ -182,6 +182,51 @@ export default function Subscribe() {
     }
   };
 
+  const handleStartTrial = async () => {
+    const formData = form.getValues();
+    
+    if (!formData.firstName || !formData.lastName || !formData.email) {
+      toast({
+        title: "Informations manquantes",
+        description: "Veuillez remplir vos informations avant de démarrer l'essai",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsCreating(true);
+    try {
+      const response = await apiRequest('POST', '/api/start-trial', {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+      });
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Erreur lors de la création de l\'essai gratuit');
+      }
+
+      toast({
+        title: "Essai gratuit activé !",
+        description: "Consultez votre email pour vos identifiants de connexion",
+      });
+
+      // Redirect to payment success with trial info
+      setTimeout(() => {
+        navigate('/payment-success?trial=true');
+      }, 1500);
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message || "Une erreur est survenue",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
   const handleBack = () => {
     setStep('info');
     setClientSecret('');
@@ -282,29 +327,72 @@ export default function Subscribe() {
                     )}
                   />
 
-                  <div className="pt-4 border-t">
-                    <div className="flex justify-between items-center mb-4">
-                      <span className="font-medium">Plan {planDetails.name}</span>
-                      <span className="text-2xl font-semibold">{planDetails.price}€/mois</span>
+                  <div className="pt-4 border-t space-y-4">
+                    {/* Free Trial Option */}
+                    <div className="bg-primary/10 border border-primary/20 rounded-md p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                        <span className="font-semibold text-primary">Essai gratuit 14 jours</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Commencez dès maintenant sans carte bancaire • Aucun engagement
+                      </p>
+                      <Button
+                        type="button"
+                        onClick={handleStartTrial}
+                        className="w-full"
+                        disabled={isCreating}
+                        data-testid="button-start-trial"
+                      >
+                        {isCreating ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Création...
+                          </>
+                        ) : (
+                          'Démarrer l\'essai gratuit'
+                        )}
+                      </Button>
                     </div>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Premier prélèvement aujourd'hui, puis le 5 de chaque mois
-                    </p>
-                    <Button
-                      type="submit"
-                      className="w-full"
-                      disabled={isCreating}
-                      data-testid="button-next"
-                    >
-                      {isCreating ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Création...
-                        </>
-                      ) : (
-                        'Continuer vers le paiement'
-                      )}
-                    </Button>
+
+                    {/* Divider */}
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t" />
+                      </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-background px-2 text-muted-foreground">
+                          Ou souscrire directement
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Paid Subscription */}
+                    <div>
+                      <div className="flex justify-between items-center mb-4">
+                        <span className="font-medium">Plan {planDetails.name}</span>
+                        <span className="text-2xl font-semibold">{planDetails.price}€/mois</span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Premier prélèvement aujourd'hui, puis le 5 de chaque mois
+                      </p>
+                      <Button
+                        type="submit"
+                        variant="outline"
+                        className="w-full"
+                        disabled={isCreating}
+                        data-testid="button-next"
+                      >
+                        {isCreating ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Création...
+                          </>
+                        ) : (
+                          'Continuer vers le paiement'
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 </form>
               </Form>

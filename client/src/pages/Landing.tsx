@@ -110,9 +110,13 @@ export default function Landing() {
           <h2 className="text-3xl font-semibold mb-4">
             Tarifs simples et transparents
           </h2>
-          <p className="text-lg text-muted-foreground">
+          <p className="text-lg text-muted-foreground mb-3">
             Choisissez le plan adapté à votre entreprise • Prélèvement le 5 de chaque mois
           </p>
+          <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium">
+            <CheckCircle2 className="h-4 w-4" />
+            Essai gratuit 14 jours sans carte bancaire
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
