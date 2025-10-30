@@ -1941,45 +1941,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
       });
 
-      // Create subscription with 5th of month billing
-      const subscription = await stripe.subscriptions.create({
+      // Create payment intent first for immediate payment collection
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: PRICING_PLANS[plan as keyof typeof PRICING_PLANS].priceMonthly,
+        currency: 'eur',
         customer: customer.id,
-        items: [{
-          price_data: {
-            currency: 'eur',
-            product_data: {
-              name: `IzyInbox ${PRICING_PLANS[plan as keyof typeof PRICING_PLANS].name}`,
-              description: `Plan ${PRICING_PLANS[plan as keyof typeof PRICING_PLANS].name} - ${PRICING_PLANS[plan as keyof typeof PRICING_PLANS].users} utilisateurs`,
-            },
-            unit_amount: PRICING_PLANS[plan as keyof typeof PRICING_PLANS].priceMonthly,
-            recurring: {
-              interval: 'month',
-              interval_count: 1,
-            },
-          },
-        }],
-        payment_behavior: 'default_incomplete',
-        payment_settings: {
-          payment_method_types: ['card'],
-          save_default_payment_method: 'on_subscription',
-        },
-        expand: ['latest_invoice.payment_intent'],
-        billing_cycle_anchor_config: {
-          day_of_month: 5, // Bill on the 5th of each month
-        },
+        setup_future_usage: 'off_session',
         metadata: {
           email,
           firstName,
           lastName,
           plan,
+          type: 'subscription_initial_payment',
         },
       });
 
-      const invoice = subscription.latest_invoice as Stripe.Invoice;
-      const paymentIntent = invoice.payment_intent as Stripe.PaymentIntent;
+      console.log('[Stripe] PaymentIntent created:', paymentIntent.id);
+      console.log('[Stripe] Client secret retrieved successfully');
 
       res.json({
-        subscriptionId: subscription.id,
+        paymentIntentId: paymentIntent.id,
         customerId: customer.id,
         clientSecret: paymentIntent.client_secret,
         plan,
@@ -2016,14 +1997,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log(`[Stripe] Received event: ${event.type}`);
 
     try {
-      if (event.type === 'invoice.payment_succeeded') {
-        const invoice = event.data.object as Stripe.Invoice;
-        const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string);
+      if (event.type === 'payment_intent.succeeded') {
+        const paymentIntent = event.data.object as Stripe.PaymentIntent;
         
-        // Check if this is the first payment (create user)
-        if (invoice.billing_reason === 'subscription_create') {
-          const metadata = subscription.metadata;
-          const { email, firstName, lastName, plan } = metadata;
+        // Check if this is a subscription initial payment
+        if (paymentIntent.metadata.type === 'subscription_initial_payment') {
+          const { email, firstName, lastName, plan } = paymentIntent.metadata;
+          const customerId = paymentIntent.customer as string;
+
+          // Create Stripe Product and Price for recurring subscription
+          const product = await stripe.products.create({
+            name: `IzyInbox ${PRICING_PLANS[plan as keyof typeof PRICING_PLANS].name}`,
+            description: `Plan ${PRICING_PLANS[plan as keyof typeof PRICING_PLANS].name}`,
+          });
+
+          const price = await stripe.prices.create({
+            product: product.id,
+            currency: 'eur',
+            unit_amount: PRICING_PLANS[plan as keyof typeof PRICING_PLANS].priceMonthly,
+            recurring: {
+              interval: 'month',
+              interval_count: 1,
+            },
+          });
+
+          // Create subscription for future recurring payments
+          const subscription = await stripe.subscriptions.create({
+            customer: customerId,
+            items: [{ price: price.id }],
+            payment_settings: {
+              payment_method_types: ['card'],
+              save_default_payment_method: 'on_subscription',
+            },
+            default_payment_method: paymentIntent.payment_method as string,
+            metadata: {
+              email,
+              firstName,
+              lastName,
+              plan,
+            },
+          });
+
+          console.log(`[Stripe] Created subscription: ${subscription.id}`);
 
           // Generate temporary password
           const tempPassword = crypto.randomBytes(12).toString('base64').slice(0, 16);
@@ -2035,7 +2050,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             firstName,
             lastName,
             plan,
-            subscription.customer as string,
+            customerId,
             subscription.id
           );
 
