@@ -395,8 +395,40 @@ export class DatabaseStorage implements IStorage {
     return await query;
   }
 
-  async getAllEmails(filters?: { type?: string; status?: string; priority?: string; search?: string; olderThanHours?: number; limit?: number; offset?: number }): Promise<Email[]> {
-    let query = db.select().from(emails);
+  async getAllEmails(filters?: { type?: string; status?: string; priority?: string; search?: string; olderThanHours?: number; limit?: number; offset?: number }): Promise<(Email & { attachmentCount: number })[]> {
+    const allColumns = {
+      id: emails.id,
+      createdAt: emails.createdAt,
+      updatedAt: emails.updatedAt,
+      userId: emails.userId,
+      status: emails.status,
+      emailAccountId: emails.emailAccountId,
+      messageId: emails.messageId,
+      subject: emails.subject,
+      from: emails.from,
+      to: emails.to,
+      cc: emails.cc,
+      body: emails.body,
+      htmlBody: emails.htmlBody,
+      receivedAt: emails.receivedAt,
+      aiAnalysis: emails.aiAnalysis,
+      emailType: emails.emailType,
+      priority: emails.priority,
+      sentiment: emails.sentiment,
+      suggestedResponse: emails.suggestedResponse,
+      assignedToId: emails.assignedToId,
+      hasAttachments: emails.hasAttachments,
+      isRead: emails.isRead,
+      requiresResponse: emails.requiresResponse,
+      responseDeadline: emails.responseDeadline,
+      sentResponse: emails.sentResponse,
+      respondedAt: emails.respondedAt,
+    };
+    
+    let query = db.select({
+      ...allColumns,
+      attachmentCount: sql<number>`(SELECT COUNT(*) FROM ${documents} WHERE ${documents.emailId} = ${emails.id})`.as('attachment_count')
+    }).from(emails);
     
     const conditions = [];
     if (filters?.type && filters.type !== 'all') {
