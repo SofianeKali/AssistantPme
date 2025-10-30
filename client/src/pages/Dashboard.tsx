@@ -635,19 +635,21 @@ export default function Dashboard() {
                         <Clock className="h-3 w-3" />
                       </Button>
                     )}
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() =>
-                        updateTaskStatusMutation.mutate({
-                          taskId: task.id,
-                          status: "termine",
-                        })
-                      }
-                      data-testid={`button-complete-task-${task.id}`}
-                    >
-                      <CheckCircle2 className="h-3 w-3" />
-                    </Button>
+                    {task.status === "en_cours" && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() =>
+                          updateTaskStatusMutation.mutate({
+                            taskId: task.id,
+                            status: "termine",
+                          })
+                        }
+                        data-testid={`button-complete-task-${task.id}`}
+                      >
+                        <CheckCircle2 className="h-3 w-3" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))}
