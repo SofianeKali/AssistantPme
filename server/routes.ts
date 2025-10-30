@@ -1993,17 +1993,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const trialEndsAt = new Date();
       trialEndsAt.setDate(trialEndsAt.getDate() + 14);
 
-      // Create trial user
-      const user = await storage.db.insert(users).values({
+      // Create trial user using storage method
+      const user = await storage.createTrialUser(
         email,
+        tempPassword,
         firstName,
         lastName,
-        role: 'admin',
-        passwordHash: await bcrypt.hash(tempPassword, 10),
-        subscriptionPlan: 'trial',
-        subscriptionStatus: 'trialing',
-        trialEndsAt,
-      }).returning();
+        trialEndsAt
+      );
 
       console.log(`[Trial] Created trial user: ${email}`);
 
@@ -2047,7 +2044,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         success: true,
-        userId: user[0].id,
+        userId: user.id,
         trialEndsAt: trialEndsAt.toISOString(),
       });
     } catch (error: any) {

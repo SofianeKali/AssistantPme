@@ -1,3 +1,4 @@
+import bcrypt from 'bcrypt';
 import {
   users,
   emailAccounts,
@@ -62,6 +63,7 @@ export interface IStorage {
   deleteUser(id: string): Promise<void>;
   updateUserStripeInfo(userId: string, stripeCustomerId: string, stripeSubscriptionId: string, plan: string): Promise<User>;
   createUserWithPassword(email: string, password: string, firstName: string, lastName: string, plan: string, stripeCustomerId: string, stripeSubscriptionId: string): Promise<User>;
+  createTrialUser(email: string, password: string, firstName: string, lastName: string, trialEndsAt: Date): Promise<User>;
   
   // Email accounts
   createEmailAccount(account: InsertEmailAccount): Promise<EmailAccount>;
@@ -241,7 +243,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUserWithPassword(email: string, password: string, firstName: string, lastName: string, plan: string, stripeCustomerId: string, stripeSubscriptionId: string): Promise<User> {
-    const bcrypt = require('bcrypt');
     const passwordHash = await bcrypt.hash(password, 10);
     
     const [user] = await db
@@ -256,6 +257,25 @@ export class DatabaseStorage implements IStorage {
         stripeSubscriptionId,
         subscriptionPlan: plan,
         subscriptionStatus: 'active',
+      })
+      .returning();
+    return user;
+  }
+
+  async createTrialUser(email: string, password: string, firstName: string, lastName: string, trialEndsAt: Date): Promise<User> {
+    const passwordHash = await bcrypt.hash(password, 10);
+    
+    const [user] = await db
+      .insert(users)
+      .values({
+        email,
+        passwordHash,
+        firstName,
+        lastName,
+        role: 'admin', // Trial users also get admin access
+        subscriptionPlan: 'trial',
+        subscriptionStatus: 'trialing',
+        trialEndsAt,
       })
       .returning();
     return user;

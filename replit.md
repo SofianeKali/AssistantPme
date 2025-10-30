@@ -30,6 +30,7 @@ The application uses a modern web stack:
     - **User Management**: Role-based access control and task assignment.
     - **Advanced Features**: Sentiment analysis, KPIs, and automated reminders for quotes and invoices.
     - **Beta Lead Capture**: Professional landing page at `/beta` route with comprehensive lead capture form. Features react-hook-form + Zod validation, social proof elements, benefit cards, and ROI messaging targeting French SMBs. Captures prospect details (contact info, company size, role, pain points) for beta program recruitment.
+    - **Subscription System**: Stripe-powered subscription management with 4 pricing tiers (Starter €59/month, Professional €149/month, Enterprise €399/month, Custom on-demand). Features include automated user onboarding, email welcome with temporary credentials via Resend, and **14-day free trial** option without requiring payment upfront. Trial users receive immediate access with admin privileges, trial expiration tracking via `trialEndsAt` field, and seamless conversion to paid plans.
 
 ## External Dependencies
 - **OpenAI**: GPT-5 model access for AI capabilities.
