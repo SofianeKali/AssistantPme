@@ -13,6 +13,7 @@ import { sendEmailResponse } from "./emailSender";
 import multer from "multer";
 import Stripe from "stripe";
 import crypto from "crypto";
+import { Resend } from "resend";
 
 // Configure multer for file uploads (in-memory storage)
 const upload = multer({
@@ -2006,7 +2007,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Send welcome email with credentials (using Resend)
       try {
-        const { Resend } = require('resend');
         const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
         
         if (resend) {
@@ -2140,7 +2140,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           // Send welcome email with credentials (using Resend)
           try {
-            const { Resend } = require('resend');
             const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
             
             if (resend) {
