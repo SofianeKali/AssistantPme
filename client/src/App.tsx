@@ -11,6 +11,8 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/hooks/useAuth";
 import Landing from "@/pages/Landing";
 import BetaSignup from "@/pages/BetaSignup";
+import Subscribe from "@/pages/Subscribe";
+import PaymentSuccess from "@/pages/PaymentSuccess";
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import Emails from "@/pages/Emails";
@@ -32,6 +34,8 @@ function Router() {
         <>
           <Route path="/" component={Landing} />
           <Route path="/beta" component={BetaSignup} />
+          <Route path="/subscribe" component={Subscribe} />
+          <Route path="/payment-success" component={PaymentSuccess} />
           <Route path="/login" component={Login} />
         </>
       ) : (

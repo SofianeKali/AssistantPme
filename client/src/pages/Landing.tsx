@@ -1,5 +1,7 @@
 import { Button } from "@/components/ui/button";
-import { Mail, Zap, BarChart3, Calendar, FileText, Shield, Search, Cloud, Sparkles } from "lucide-react";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Mail, Zap, BarChart3, Calendar, FileText, Shield, Search, Cloud, Sparkles, Check } from "lucide-react";
 
 export default function Landing() {
   return (
@@ -102,6 +104,85 @@ export default function Landing() {
         </div>
       </div>
 
+      {/* Pricing Section */}
+      <div className="container mx-auto px-6 py-16">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-semibold mb-4">
+            Tarifs simples et transparents
+          </h2>
+          <p className="text-lg text-muted-foreground">
+            Choisissez le plan adapté à votre entreprise • Prélèvement le 5 de chaque mois
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+          <PricingCard
+            name="Starter"
+            price="59"
+            description="Pour les micro-entreprises"
+            features={[
+              "1-5 utilisateurs",
+              "500 emails/mois",
+              "10 000 crédits IA",
+              "Support email",
+              "Stockage cloud personnel",
+              "Catégories personnalisées",
+            ]}
+            plan="starter"
+          />
+          <PricingCard
+            name="Professional"
+            price="149"
+            description="Pour les PME en croissance"
+            features={[
+              "5-20 utilisateurs",
+              "2 000 emails/mois",
+              "50 000 crédits IA",
+              "Support prioritaire",
+              "Multi-comptes email",
+              "Alertes personnalisées",
+              "Intégrations avancées",
+            ]}
+            plan="professional"
+            popular
+          />
+          <PricingCard
+            name="Enterprise"
+            price="399"
+            description="Pour les grandes équipes"
+            features={[
+              "20-100 utilisateurs",
+              "Emails illimités",
+              "200 000 crédits IA",
+              "Support dédié 24/7",
+              "Onboarding personnalisé",
+              "SLA garanti",
+              "Conformité avancée",
+            ]}
+            plan="enterprise"
+          />
+          <PricingCard
+            name="Custom"
+            price="Sur devis"
+            description="Solution sur mesure"
+            features={[
+              "Utilisateurs illimités",
+              "Volume illimité",
+              "Crédits IA personnalisés",
+              "Account manager dédié",
+              "Développements custom",
+              "Intégration SI",
+              "Formation sur site",
+            ]}
+            plan="custom"
+          />
+        </div>
+
+        <p className="text-center text-sm text-muted-foreground mt-8">
+          -20% sur engagement annuel (2 mois gratuits) • Essai gratuit 14 jours sans CB
+        </p>
+      </div>
+
       {/* Beta CTA */}
       <div className="bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 border-y border-border">
         <div className="container mx-auto px-6 py-16 text-center">
@@ -178,5 +259,75 @@ function FeatureCard({
       <h3 className="text-base font-semibold mb-2">{title}</h3>
       <p className="text-sm text-muted-foreground">{description}</p>
     </div>
+  );
+}
+
+function PricingCard({
+  name,
+  price,
+  description,
+  features,
+  plan,
+  popular = false,
+}: {
+  name: string;
+  price: string;
+  description: string;
+  features: string[];
+  plan: string;
+  popular?: boolean;
+}) {
+  const handleSubscribe = () => {
+    if (plan === 'custom') {
+      window.location.href = '/beta'; // Redirect custom to beta for now
+    } else {
+      window.location.href = `/subscribe?plan=${plan}`;
+    }
+  };
+
+  return (
+    <Card className={`flex flex-col relative ${popular ? 'border-primary' : ''}`}>
+      {popular && (
+        <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+          <Badge className="bg-primary text-primary-foreground">
+            Plus populaire
+          </Badge>
+        </div>
+      )}
+      <CardHeader className="pb-8">
+        <CardTitle className="text-xl">{name}</CardTitle>
+        <CardDescription>{description}</CardDescription>
+        <div className="mt-4">
+          {price === 'Sur devis' ? (
+            <div className="text-2xl font-semibold">{price}</div>
+          ) : (
+            <>
+              <span className="text-4xl font-semibold">{price}€</span>
+              <span className="text-muted-foreground">/mois</span>
+            </>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="flex-1">
+        <ul className="space-y-3">
+          {features.map((feature, index) => (
+            <li key={index} className="flex items-start gap-2">
+              <Check className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+              <span className="text-sm">{feature}</span>
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+      <CardFooter>
+        <Button
+          className="w-full"
+          variant={popular ? 'default' : 'outline'}
+          onClick={handleSubscribe}
+          data-testid={`button-subscribe-${plan}`}
+        >
+          {plan === 'custom' ? 'Nous contacter' : 'Souscrire'}
+        </Button>
+      </CardFooter>
+    </Card>
   );
 }
