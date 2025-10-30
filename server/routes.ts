@@ -436,11 +436,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Search criteria are required" });
       }
 
-      // Perform the search with provided criteria
+      // Perform the search with provided criteria AND original prompt for semantic analysis
       const result = await storage.searchEmailsWithAI({
         ...criteria,
         limit,
-        offset
+        offset,
+        prompt // Pass the original prompt for semantic content analysis
       });
 
       console.log(`[AI Search] Executed search with ${Object.keys(criteria).length} criteria → ${result.total} results`);

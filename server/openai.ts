@@ -619,3 +619,83 @@ Return ONLY a JSON object. Include only the fields that are explicitly mentioned
     return {};
   }
 }
+
+// Semantic email content analysis
+export async function scoreEmailRelevance(
+  searchPrompt: string,
+  emails: Array<{
+    id: string;
+    from: string;
+    subject: string;
+    body: string;
+    attachmentTexts?: string[];
+  }>
+): Promise<Array<{ emailId: string; score: number; reason: string }>> {
+  if (emails.length === 0) {
+    return [];
+  }
+
+  try {
+    // Prepare email content for analysis
+    const emailContents = emails.map(email => {
+      let content = `Email de: ${email.from}\nSujet: ${email.subject}\nContenu: ${email.body.substring(0, 1500)}`;
+      
+      // Include attachment text if available
+      if (email.attachmentTexts && email.attachmentTexts.length > 0) {
+        const attachmentText = email.attachmentTexts.join('\n').substring(0, 1000);
+        content += `\n\nContenu des pièces jointes: ${attachmentText}`;
+      }
+      
+      return {
+        id: email.id,
+        content
+      };
+    });
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-5",
+      messages: [
+        {
+          role: "system",
+          content: `You are an AI assistant specialized in analyzing email relevance for search queries.
+
+You will receive a search query and a list of emails. For each email, determine how relevant it is to the search query.
+
+Return a JSON array where each element has:
+- emailId: string (the email ID)
+- score: number (relevance score from 0 to 100, where 100 is perfectly relevant)
+- reason: string (brief French explanation of why this email is relevant or not, max 100 chars)
+
+Consider the following when scoring:
+- Semantic meaning and context, not just keyword matching
+- Content from email body AND attachments if provided
+- Intent behind the search query
+- Partial matches should still get reasonable scores
+
+Return ONLY a JSON object with an "results" array.`
+        },
+        {
+          role: "user",
+          content: `Search query: "${searchPrompt}"
+
+Emails to analyze:
+${emailContents.map((e, i) => `\n[Email ${i + 1} - ID: ${e.id}]\n${e.content}`).join('\n\n---\n')}`
+        }
+      ],
+      response_format: { type: "json_object" },
+    });
+
+    const result = JSON.parse(response.choices[0].message.content || '{"results":[]}');
+    console.log(`[AI Search] Scored ${emails.length} emails for relevance`);
+    
+    return result.results || [];
+  } catch (error) {
+    console.error("Error scoring email relevance:", error);
+    // Return zero scores if AI fails to prevent false positives
+    return emails.map(email => ({
+      emailId: email.id,
+      score: 0,
+      reason: "Erreur d'analyse IA"
+    }));
+  }
+}

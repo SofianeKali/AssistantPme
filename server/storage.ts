@@ -204,7 +204,7 @@ export class DatabaseStorage implements IStorage {
       .insert(users)
       .values(userData)
       .onConflictDoUpdate({
-        target: users.email,
+        target: users.id, // Use ID as the conflict target (from Replit Auth sub claim)
         set: {
           ...updateData,
           updatedAt: new Date(),
@@ -516,6 +516,7 @@ export class DatabaseStorage implements IStorage {
     requiresResponse?: boolean;
     limit?: number;
     offset?: number;
+    prompt?: string; // Original search prompt for semantic analysis
   }): Promise<{ emails: Email[]; total: number }> {
     const conditions = [];
 
@@ -587,27 +588,104 @@ export class DatabaseStorage implements IStorage {
       conditions.push(eq(emails.requiresResponse, criteria.requiresResponse));
     }
 
-    // Build query
+    // Build query to get candidate emails (larger pool for semantic analysis)
     let query = db.select().from(emails);
     if (conditions.length > 0) {
       query = query.where(and(...conditions)) as any;
     }
     query = query.orderBy(desc(emails.receivedAt)) as any;
 
-    // Get total count
-    let countQuery = db.select({ count: sql<number>`count(*)` }).from(emails);
-    if (conditions.length > 0) {
-      countQuery = countQuery.where(and(...conditions)) as any;
+    // Get more candidates than needed for semantic filtering (capped to avoid huge prompts)
+    const candidateLimit = criteria.prompt 
+      ? Math.min(50, Math.max(30, (criteria.limit || 20) * 3)) 
+      : (criteria.limit || 20);
+    const candidateEmails = await query.limit(candidateLimit) as Email[];
+
+    // If no prompt for semantic analysis, use traditional filtering
+    if (!criteria.prompt || candidateEmails.length === 0) {
+      // Get total count
+      let countQuery = db.select({ count: sql<number>`count(*)` }).from(emails);
+      if (conditions.length > 0) {
+        countQuery = countQuery.where(and(...conditions)) as any;
+      }
+      const countResults = await countQuery;
+
+      const paginatedEmails = candidateEmails.slice(
+        criteria.offset || 0,
+        (criteria.offset || 0) + (criteria.limit || 20)
+      );
+
+      return {
+        emails: paginatedEmails,
+        total: Number(countResults[0]?.count || 0)
+      };
     }
-    
-    const [emailResults, countResults] = await Promise.all([
-      (criteria.limit ? query.limit(criteria.limit).offset(criteria.offset || 0) : query) as Promise<Email[]>,
-      countQuery
-    ]);
+
+    // Check if document extraction is enabled
+    const settings = await this.getAllSettings();
+    const documentExtractionEnabled = settings.documentExtraction === true || settings.documentExtraction === 'true';
+    const storageProvider = settings.storageProvider;
+    const isDocumentStorageEnabled = documentExtractionEnabled && 
+      (storageProvider === 'google_drive' || storageProvider === 'onedrive');
+
+    // Fetch documents (OCR text) for candidate emails if extraction is enabled
+    const emailsWithAttachments = await Promise.all(
+      candidateEmails.map(async (email) => {
+        let attachmentTexts: string[] = [];
+        
+        if (isDocumentStorageEnabled && email.hasAttachments) {
+          // Get documents for this email
+          const emailDocuments = await db
+            .select()
+            .from(documents)
+            .where(eq(documents.emailId, email.id));
+          
+          // Extract OCR text from documents
+          attachmentTexts = emailDocuments
+            .filter(doc => doc.ocrText && doc.ocrText.trim().length > 0)
+            .map(doc => doc.ocrText!);
+        }
+
+        return {
+          id: email.id,
+          from: email.from,
+          subject: email.subject || '',
+          body: email.body || '',
+          attachmentTexts
+        };
+      })
+    );
+
+    // Use AI to score email relevance based on content
+    const { scoreEmailRelevance } = await import('./openai');
+    const scoredResults = await scoreEmailRelevance(criteria.prompt, emailsWithAttachments);
+
+    // Create a map of scores
+    const scoreMap = new Map(
+      scoredResults.map(r => [r.emailId, { score: r.score, reason: r.reason }])
+    );
+
+    // Filter out low-scoring emails (score < 30) and sort by relevance
+    const relevantEmails = candidateEmails
+      .map(email => ({
+        email,
+        score: scoreMap.get(email.id)?.score || 0,
+        reason: scoreMap.get(email.id)?.reason || ''
+      }))
+      .filter(item => item.score >= 30) // Only keep reasonably relevant emails
+      .sort((a, b) => b.score - a.score); // Sort by score descending
+
+    // Apply pagination to scored results
+    const paginatedResults = relevantEmails.slice(
+      criteria.offset || 0,
+      (criteria.offset || 0) + (criteria.limit || 20)
+    );
+
+    console.log(`[AI Search] Semantic analysis: ${candidateEmails.length} candidates → ${relevantEmails.length} relevant (score ≥30) → ${paginatedResults.length} returned`);
 
     return {
-      emails: emailResults,
-      total: Number(countResults[0]?.count || 0)
+      emails: paginatedResults.map(r => r.email),
+      total: relevantEmails.length
     };
   }
 
