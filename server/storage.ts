@@ -517,6 +517,7 @@ export class DatabaseStorage implements IStorage {
     limit?: number;
     offset?: number;
     prompt?: string; // Original search prompt for semantic analysis
+    deepSearch?: boolean; // Enable deep search in attachments (default: false)
   }): Promise<{ emails: Email[]; total: number }> {
     const conditions = [];
 
@@ -621,19 +622,22 @@ export class DatabaseStorage implements IStorage {
       };
     }
 
-    // Check if document extraction is enabled
+    // Check if document extraction is enabled AND deep search is requested
     const settings = await this.getAllSettings();
     const documentExtractionEnabled = settings.documentExtraction === true || settings.documentExtraction === 'true';
     const storageProvider = settings.storageProvider;
     const isDocumentStorageEnabled = documentExtractionEnabled && 
       (storageProvider === 'google_drive' || storageProvider === 'onedrive');
+    
+    // Deep search flag controls whether to search in attachments
+    const shouldSearchAttachments = (criteria.deepSearch === true) && isDocumentStorageEnabled;
 
-    // Fetch documents (OCR text) for candidate emails if extraction is enabled
+    // Fetch documents (OCR text) for candidate emails if deep search is enabled
     const emailsWithAttachments = await Promise.all(
       candidateEmails.map(async (email) => {
         let attachmentTexts: string[] = [];
         
-        if (isDocumentStorageEnabled && email.hasAttachments) {
+        if (shouldSearchAttachments && email.hasAttachments) {
           // Get documents for this email
           const emailDocuments = await db
             .select()

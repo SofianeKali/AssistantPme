@@ -61,6 +61,7 @@ export default function Emails() {
   const [aiSearchPrompt, setAISearchPrompt] = useState("");
   const [aiSearchActive, setAISearchActive] = useState(false);
   const [aiSearchCriteria, setAISearchCriteria] = useState<any>(null);
+  const [deepSearch, setDeepSearch] = useState(false); // Deep search in attachments (off by default)
   const [attachments, setAttachments] = useState<File[]>([]);
   const { toast } = useToast();
 
@@ -98,7 +99,7 @@ export default function Emails() {
     queryKey: alertId 
       ? ["/api/alerts", alertId, "emails"]
       : aiSearchActive
-      ? ["/api/emails/ai-search", aiSearchCriteria, page, pageSize]
+      ? ["/api/emails/ai-search", aiSearchCriteria, deepSearch, page, pageSize]
       : ["/api/emails", { type: typeFilter, status: statusFilter, search, page, pageSize }],
     queryFn: async () => {
       // If alertId is set, fetch emails for this alert
@@ -123,6 +124,7 @@ export default function Emails() {
           headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify({
+            deepSearch,
             criteria: aiSearchCriteria,
             prompt: aiSearchPrompt,
             limit: pageSize,
@@ -200,7 +202,7 @@ export default function Emails() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ prompt: aiSearchPrompt })
+        body: JSON.stringify({ prompt: aiSearchPrompt, deepSearch })
       });
 
       if (!res.ok) {
@@ -238,6 +240,7 @@ export default function Emails() {
     setAISearchActive(false);
     setAISearchPrompt("");
     setAISearchCriteria(null);
+    setDeepSearch(false);
     setPage(1);
   };
 
@@ -1100,6 +1103,25 @@ export default function Emails() {
                   }
                 }}
               />
+            </div>
+            <div className="flex items-start space-x-2 p-3 rounded-md bg-muted/50 border">
+              <Checkbox
+                id="deep-search"
+                checked={deepSearch}
+                onCheckedChange={(checked) => setDeepSearch(checked === true)}
+                data-testid="checkbox-deep-search"
+              />
+              <div className="grid gap-1.5 leading-none">
+                <label
+                  htmlFor="deep-search"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  Recherche approfondie
+                </label>
+                <p className="text-sm text-muted-foreground">
+                  Active la recherche dans le contenu des pièces jointes (documents PDF, images OCR). Peut augmenter le temps de recherche.
+                </p>
+              </div>
             </div>
             <div className="bg-muted p-3 rounded-md text-sm space-y-2">
               <p className="font-medium">Exemples de recherches :</p>

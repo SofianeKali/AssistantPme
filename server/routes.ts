@@ -399,7 +399,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Analyze AI search prompt (separate from search execution)
   app.post('/api/emails/ai-search/analyze', isAuthenticated, async (req, res) => {
     try {
-      const { prompt } = req.body;
+      const { prompt, deepSearch = false } = req.body;
       
       if (!prompt || typeof prompt !== 'string') {
         return res.status(400).json({ message: "Prompt is required" });
@@ -415,11 +415,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Analyze the search prompt with AI (only once)
       const criteria = await analyzeSearchPrompt(prompt, availableCategories);
       
-      console.log(`[AI Search] Analyzed prompt: "${prompt}" →`, criteria);
+      console.log(`[AI Search] Analyzed prompt: "${prompt}" (deep: ${deepSearch}) →`, criteria);
 
       res.json({
         criteria,
-        prompt
+        prompt,
+        deepSearch
       });
     } catch (error) {
       console.error("Error analyzing search prompt:", error);
@@ -430,7 +431,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Execute AI search with already-analyzed criteria
   app.post('/api/emails/ai-search', isAuthenticated, async (req, res) => {
     try {
-      const { criteria, limit = 20, offset = 0, prompt } = req.body;
+      const { criteria, limit = 20, offset = 0, prompt, deepSearch = false } = req.body;
       
       if (!criteria || typeof criteria !== 'object') {
         return res.status(400).json({ message: "Search criteria are required" });
@@ -441,10 +442,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...criteria,
         limit,
         offset,
-        prompt // Pass the original prompt for semantic content analysis
+        prompt, // Pass the original prompt for semantic content analysis
+        deepSearch // Pass deep search flag to control attachment search
       });
 
-      console.log(`[AI Search] Executed search with ${Object.keys(criteria).length} criteria → ${result.total} results`);
+      console.log(`[AI Search] Executed search with ${Object.keys(criteria).length} criteria (deep: ${deepSearch}) → ${result.total} results`);
 
       res.json({
         emails: result.emails,
@@ -452,7 +454,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         limit,
         offset,
         criteria,
-        prompt
+        prompt,
+        deepSearch
       });
     } catch (error) {
       console.error("Error performing AI search:", error);
