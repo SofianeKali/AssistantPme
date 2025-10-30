@@ -37,6 +37,11 @@ export const users = pgTable("users", {
   // Password hash for local authentication (bcrypt)
   // NULL for users who authenticate via OIDC only
   passwordHash: text("password_hash"),
+  // Stripe integration for subscriptions
+  stripeCustomerId: varchar("stripe_customer_id"),
+  stripeSubscriptionId: varchar("stripe_subscription_id"),
+  subscriptionPlan: varchar("subscription_plan"), // starter, professional, enterprise, custom
+  subscriptionStatus: varchar("subscription_status"), // active, cancelled, past_due, trialing
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

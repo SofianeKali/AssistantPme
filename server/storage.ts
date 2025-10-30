@@ -60,6 +60,8 @@ export interface IStorage {
   upsertUser(user: UpsertUser): Promise<User>;
   getAllUsers(): Promise<User[]>;
   deleteUser(id: string): Promise<void>;
+  updateUserStripeInfo(userId: string, stripeCustomerId: string, stripeSubscriptionId: string, plan: string): Promise<User>;
+  createUserWithPassword(email: string, password: string, firstName: string, lastName: string, plan: string, stripeCustomerId: string, stripeSubscriptionId: string): Promise<User>;
   
   // Email accounts
   createEmailAccount(account: InsertEmailAccount): Promise<EmailAccount>;
@@ -221,6 +223,42 @@ export class DatabaseStorage implements IStorage {
 
   async deleteUser(id: string): Promise<void> {
     await db.delete(users).where(eq(users.id, id));
+  }
+
+  async updateUserStripeInfo(userId: string, stripeCustomerId: string, stripeSubscriptionId: string, plan: string): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({
+        stripeCustomerId,
+        stripeSubscriptionId,
+        subscriptionPlan: plan,
+        subscriptionStatus: 'active',
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+
+  async createUserWithPassword(email: string, password: string, firstName: string, lastName: string, plan: string, stripeCustomerId: string, stripeSubscriptionId: string): Promise<User> {
+    const bcrypt = require('bcrypt');
+    const passwordHash = await bcrypt.hash(password, 10);
+    
+    const [user] = await db
+      .insert(users)
+      .values({
+        email,
+        passwordHash,
+        firstName,
+        lastName,
+        role: 'admin', // Subscribed users become admins
+        stripeCustomerId,
+        stripeSubscriptionId,
+        subscriptionPlan: plan,
+        subscriptionStatus: 'active',
+      })
+      .returning();
+    return user;
   }
 
   // Email accounts

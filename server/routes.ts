@@ -11,6 +11,8 @@ import { processDocument } from "./ocrService";
 import { downloadFileFromDrive } from "./googleDrive";
 import { sendEmailResponse } from "./emailSender";
 import multer from "multer";
+import Stripe from "stripe";
+import crypto from "crypto";
 
 // Configure multer for file uploads (in-memory storage)
 const upload = multer({
@@ -1874,6 +1876,215 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting user:", error);
       res.status(500).json({ message: "Impossible de supprimer l'utilisateur" });
+    }
+  });
+
+  // Stripe integration - Create subscription
+  if (!process.env.STRIPE_SECRET_KEY) {
+    console.error('[Stripe] Missing STRIPE_SECRET_KEY - payment routes will not be available');
+  }
+  
+  const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: "2024-11-20.acacia",
+  }) : null;
+
+  // Pricing configuration
+  const PRICING_PLANS = {
+    starter: {
+      priceMonthly: 5900, // €59.00 in cents
+      name: 'Starter',
+      users: '1-5',
+      emailsPerMonth: 500,
+    },
+    professional: {
+      priceMonthly: 14900, // €149.00 in cents
+      name: 'Professional',
+      users: '5-20',
+      emailsPerMonth: 2000,
+    },
+    enterprise: {
+      priceMonthly: 39900, // €399.00 in cents
+      name: 'Enterprise',
+      users: '20-100',
+      emailsPerMonth: 'Illimité',
+    },
+  };
+
+  app.post('/api/create-subscription', async (req, res) => {
+    if (!stripe) {
+      return res.status(503).json({ message: 'Service de paiement non configuré' });
+    }
+
+    try {
+      const { plan, email, firstName, lastName } = req.body;
+
+      if (!plan || !email || !firstName || !lastName) {
+        return res.status(400).json({ message: 'Données manquantes (plan, email, firstName, lastName requis)' });
+      }
+
+      if (!['starter', 'professional', 'enterprise'].includes(plan)) {
+        return res.status(400).json({ message: 'Plan invalide' });
+      }
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(400).json({ message: 'Un compte existe déjà avec cet email' });
+      }
+
+      // Create Stripe customer
+      const customer = await stripe.customers.create({
+        email,
+        name: `${firstName} ${lastName}`,
+        metadata: {
+          plan,
+        },
+      });
+
+      // Create subscription with 5th of month billing
+      const subscription = await stripe.subscriptions.create({
+        customer: customer.id,
+        items: [{
+          price_data: {
+            currency: 'eur',
+            product_data: {
+              name: `IzyInbox ${PRICING_PLANS[plan as keyof typeof PRICING_PLANS].name}`,
+              description: `Plan ${PRICING_PLANS[plan as keyof typeof PRICING_PLANS].name} - ${PRICING_PLANS[plan as keyof typeof PRICING_PLANS].users} utilisateurs`,
+            },
+            unit_amount: PRICING_PLANS[plan as keyof typeof PRICING_PLANS].priceMonthly,
+            recurring: {
+              interval: 'month',
+              interval_count: 1,
+            },
+          },
+        }],
+        payment_behavior: 'default_incomplete',
+        payment_settings: {
+          payment_method_types: ['card'],
+          save_default_payment_method: 'on_subscription',
+        },
+        expand: ['latest_invoice.payment_intent'],
+        billing_cycle_anchor_config: {
+          day_of_month: 5, // Bill on the 5th of each month
+        },
+        metadata: {
+          email,
+          firstName,
+          lastName,
+          plan,
+        },
+      });
+
+      const invoice = subscription.latest_invoice as Stripe.Invoice;
+      const paymentIntent = invoice.payment_intent as Stripe.PaymentIntent;
+
+      res.json({
+        subscriptionId: subscription.id,
+        customerId: customer.id,
+        clientSecret: paymentIntent.client_secret,
+        plan,
+      });
+    } catch (error: any) {
+      console.error('[Stripe] Error creating subscription:', error);
+      res.status(500).json({ message: 'Erreur lors de la création de l\'abonnement', error: error.message });
+    }
+  });
+
+  // Stripe webhook to handle payment confirmations
+  app.post('/api/stripe-webhook', async (req, res) => {
+    if (!stripe) {
+      return res.status(503).send('Stripe not configured');
+    }
+
+    const sig = req.headers['stripe-signature'] as string;
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+    if (!webhookSecret) {
+      console.error('[Stripe] Missing STRIPE_WEBHOOK_SECRET');
+      return res.status(500).send('Webhook secret not configured');
+    }
+
+    let event: Stripe.Event;
+
+    try {
+      event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+    } catch (err: any) {
+      console.error('[Stripe] Webhook signature verification failed:', err.message);
+      return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    console.log(`[Stripe] Received event: ${event.type}`);
+
+    try {
+      if (event.type === 'invoice.payment_succeeded') {
+        const invoice = event.data.object as Stripe.Invoice;
+        const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string);
+        
+        // Check if this is the first payment (create user)
+        if (invoice.billing_reason === 'subscription_create') {
+          const metadata = subscription.metadata;
+          const { email, firstName, lastName, plan } = metadata;
+
+          // Generate temporary password
+          const tempPassword = crypto.randomBytes(12).toString('base64').slice(0, 16);
+
+          // Create admin user with password
+          const user = await storage.createUserWithPassword(
+            email,
+            tempPassword,
+            firstName,
+            lastName,
+            plan,
+            subscription.customer as string,
+            subscription.id
+          );
+
+          console.log(`[Stripe] Created new admin user: ${email} for plan ${plan}`);
+
+          // Send welcome email with credentials (using Resend)
+          try {
+            const { Resend } = require('resend');
+            const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+            
+            if (resend) {
+              await resend.emails.send({
+                from: 'IzyInbox <onboarding@izyinbox.com>',
+                to: email,
+                subject: 'Bienvenue sur IzyInbox - Vos identifiants de connexion',
+                html: `
+                  <h1>Bienvenue sur IzyInbox !</h1>
+                  <p>Bonjour ${firstName},</p>
+                  <p>Votre souscription au plan <strong>${PRICING_PLANS[plan as keyof typeof PRICING_PLANS].name}</strong> a été confirmée avec succès.</p>
+                  
+                  <h2>Vos identifiants de connexion :</h2>
+                  <ul>
+                    <li><strong>Email :</strong> ${email}</li>
+                    <li><strong>Mot de passe temporaire :</strong> ${tempPassword}</li>
+                  </ul>
+                  
+                  <p><strong>Important :</strong> Nous vous recommandons de changer ce mot de passe lors de votre première connexion.</p>
+                  
+                  <p>Vous serez prélevé automatiquement le 5 de chaque mois pour un montant de ${(PRICING_PLANS[plan as keyof typeof PRICING_PLANS].priceMonthly / 100).toFixed(2)}€.</p>
+                  
+                  <p>Connectez-vous dès maintenant : <a href="${process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000'}/login">Accéder à IzyInbox</a></p>
+                  
+                  <p>À bientôt,<br>L'équipe IzyInbox</p>
+                `,
+              });
+              console.log(`[Resend] Welcome email sent to ${email}`);
+            } else {
+              console.warn('[Resend] API key not configured - skipping welcome email');
+            }
+          } catch (emailError) {
+            console.error('[Resend] Error sending welcome email:', emailError);
+          }
+        }
+      }
+
+      res.json({ received: true });
+    } catch (error) {
+      console.error('[Stripe] Error processing webhook:', error);
+      res.status(500).json({ message: 'Error processing webhook' });
     }
   });
 
