@@ -1,9 +1,12 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { 
   Mail, 
   Sparkles, 
@@ -20,102 +23,59 @@ import {
   BarChart3
 } from "lucide-react";
 
+const betaSignupSchema = z.object({
+  firstName: z.string().min(2, "Prénom requis (min. 2 caractères)"),
+  lastName: z.string().min(2, "Nom requis (min. 2 caractères)"),
+  email: z.string().email("Email invalide"),
+  phone: z.string().min(10, "Téléphone requis (min. 10 caractères)"),
+  company: z.string().min(2, "Nom de l'entreprise requis"),
+  companySize: z.string().min(1, "Veuillez sélectionner une taille"),
+  role: z.string().min(1, "Veuillez sélectionner un rôle"),
+  painPoint: z.string().min(20, "Veuillez décrire votre défi (min. 20 caractères)"),
+});
+
+type BetaSignupForm = z.infer<typeof betaSignupSchema>;
+
 export default function BetaSignup() {
   const { toast } = useToast();
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    company: "",
-    companySize: "",
-    role: "",
-    painPoint: "",
+  
+  const form = useForm<BetaSignupForm>({
+    resolver: zodResolver(betaSignupSchema),
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+      company: "",
+      companySize: "",
+      role: "",
+      painPoint: "",
+    },
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-
+  const onSubmit = async (data: BetaSignupForm) => {
     try {
       // Simuler l'envoi (à remplacer par vraie API)
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      console.log("Lead Beta:", formData);
+      console.log("Lead Beta:", data);
       
-      setIsSubmitted(true);
       toast({
         title: "Inscription réussie !",
         description: "Nous vous contacterons dans les 48h pour démarrer votre période beta.",
       });
+      
+      // Reset form and show success
+      form.reset();
     } catch (error) {
       toast({
         title: "Erreur",
         description: "Une erreur est survenue. Veuillez réessayer.",
         variant: "destructive",
       });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
-  const handleChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  if (isSubmitted) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5 flex items-center justify-center p-6">
-        <div className="max-w-2xl w-full text-center">
-          <div className="bg-card border border-border rounded-md p-12 shadow-sm">
-            <div className="flex justify-center mb-6">
-              <div className="h-20 w-20 rounded-full bg-green-500/10 flex items-center justify-center">
-                <Check className="h-10 w-10 text-green-500" />
-              </div>
-            </div>
-            <h1 className="text-3xl font-semibold mb-4" data-testid="text-success-title">
-              Bienvenue dans le programme Beta ! 🎉
-            </h1>
-            <p className="text-muted-foreground mb-8 text-lg">
-              Votre demande a bien été enregistrée. Notre équipe va vous contacter dans les 
-              <span className="font-semibold text-foreground"> 48 heures</span> pour configurer votre compte 
-              et démarrer votre période d'essai gratuite.
-            </p>
-            <div className="bg-accent/20 rounded-md p-6 mb-8">
-              <h3 className="font-semibold mb-3">Prochaines étapes :</h3>
-              <ul className="text-left space-y-2 text-sm text-muted-foreground">
-                <li className="flex items-start gap-2">
-                  <Check className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                  <span>Validation de votre profil par notre équipe</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                  <span>Appel découverte (30min) pour comprendre vos besoins</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                  <span>Configuration personnalisée de votre compte</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <Check className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                  <span>Accès immédiat à toutes les fonctionnalités premium</span>
-                </li>
-              </ul>
-            </div>
-            <Button 
-              size="lg"
-              onClick={() => window.location.href = "/"} 
-              data-testid="button-back-home"
-            >
-              Retour à l'accueil
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5">
@@ -249,168 +209,197 @@ export default function BetaSignup() {
             <h2 className="text-2xl font-semibold mb-6">
               Rejoignez le programme beta
             </h2>
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="firstName" className="block text-sm font-medium mb-2">
-                    Prénom *
-                  </label>
-                  <Input
-                    id="firstName"
-                    type="text"
-                    required
-                    placeholder="Jean"
-                    value={formData.firstName}
-                    onChange={(e) => handleChange("firstName", e.target.value)}
-                    data-testid="input-firstname"
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="firstName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Prénom *</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="Jean" 
+                            {...field} 
+                            data-testid="input-firstname"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="lastName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Nom *</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="Dupont" 
+                            {...field} 
+                            data-testid="input-lastname"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
                 </div>
-                <div>
-                  <label htmlFor="lastName" className="block text-sm font-medium mb-2">
-                    Nom *
-                  </label>
-                  <Input
-                    id="lastName"
-                    type="text"
-                    required
-                    placeholder="Dupont"
-                    value={formData.lastName}
-                    onChange={(e) => handleChange("lastName", e.target.value)}
-                    data-testid="input-lastname"
-                  />
+
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email professionnel *</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="email"
+                          placeholder="jean.dupont@entreprise.fr" 
+                          {...field} 
+                          data-testid="input-email"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Téléphone *</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="tel"
+                          placeholder="06 12 34 56 78" 
+                          {...field} 
+                          data-testid="input-phone"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="company"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Entreprise *</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Nom de votre entreprise" 
+                          {...field} 
+                          data-testid="input-company"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="companySize"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Taille de l'entreprise *</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-companysize">
+                            <SelectValue placeholder="Sélectionnez..." />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="1-10">1-10 employés</SelectItem>
+                          <SelectItem value="10-50">10-50 employés</SelectItem>
+                          <SelectItem value="50-100">50-100 employés</SelectItem>
+                          <SelectItem value="100+">100+ employés</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="role"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Votre rôle *</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-role">
+                            <SelectValue placeholder="Sélectionnez..." />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="ceo">Dirigeant / CEO</SelectItem>
+                          <SelectItem value="cfo">Directeur Financier / CFO</SelectItem>
+                          <SelectItem value="admin">Responsable Admin / Office Manager</SelectItem>
+                          <SelectItem value="it">Responsable IT</SelectItem>
+                          <SelectItem value="other">Autre</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="painPoint"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Votre principal défi administratif *</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Ex: Nous recevons 200+ emails/jour et perdons trop de temps à trier et répondre..."
+                          rows={3}
+                          {...field}
+                          data-testid="input-painpoint"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="bg-accent/20 rounded-md p-4 text-sm text-muted-foreground">
+                  <Check className="h-4 w-4 inline mr-2 text-primary" />
+                  En soumettant ce formulaire, vous acceptez d'être contacté par notre équipe 
+                  pour une démo personnalisée. Aucun engagement. Données sécurisées (RGPD).
                 </div>
-              </div>
 
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium mb-2">
-                  Email professionnel *
-                </label>
-                <Input
-                  id="email"
-                  type="email"
-                  required
-                  placeholder="jean.dupont@entreprise.fr"
-                  value={formData.email}
-                  onChange={(e) => handleChange("email", e.target.value)}
-                  data-testid="input-email"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="phone" className="block text-sm font-medium mb-2">
-                  Téléphone *
-                </label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  required
-                  placeholder="06 12 34 56 78"
-                  value={formData.phone}
-                  onChange={(e) => handleChange("phone", e.target.value)}
-                  data-testid="input-phone"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="company" className="block text-sm font-medium mb-2">
-                  Entreprise *
-                </label>
-                <Input
-                  id="company"
-                  type="text"
-                  required
-                  placeholder="Nom de votre entreprise"
-                  value={formData.company}
-                  onChange={(e) => handleChange("company", e.target.value)}
-                  data-testid="input-company"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="companySize" className="block text-sm font-medium mb-2">
-                  Taille de l'entreprise *
-                </label>
-                <Select
-                  value={formData.companySize}
-                  onValueChange={(value) => handleChange("companySize", value)}
-                  required
+                <Button 
+                  type="submit" 
+                  size="lg" 
+                  className="w-full text-base"
+                  disabled={form.formState.isSubmitting}
+                  data-testid="button-submit-beta"
                 >
-                  <SelectTrigger data-testid="select-companysize">
-                    <SelectValue placeholder="Sélectionnez..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1-10">1-10 employés</SelectItem>
-                    <SelectItem value="10-50">10-50 employés</SelectItem>
-                    <SelectItem value="50-100">50-100 employés</SelectItem>
-                    <SelectItem value="100+">100+ employés</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                  {form.formState.isSubmitting ? (
+                    "Envoi en cours..."
+                  ) : (
+                    <>
+                      Rejoindre le beta
+                      <ArrowRight className="ml-2 h-5 w-5" />
+                    </>
+                  )}
+                </Button>
 
-              <div>
-                <label htmlFor="role" className="block text-sm font-medium mb-2">
-                  Votre rôle *
-                </label>
-                <Select
-                  value={formData.role}
-                  onValueChange={(value) => handleChange("role", value)}
-                  required
-                >
-                  <SelectTrigger data-testid="select-role">
-                    <SelectValue placeholder="Sélectionnez..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ceo">Dirigeant / CEO</SelectItem>
-                    <SelectItem value="cfo">Directeur Financier / CFO</SelectItem>
-                    <SelectItem value="admin">Responsable Admin / Office Manager</SelectItem>
-                    <SelectItem value="it">Responsable IT</SelectItem>
-                    <SelectItem value="other">Autre</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <label htmlFor="painPoint" className="block text-sm font-medium mb-2">
-                  Votre principal défi administratif *
-                </label>
-                <Textarea
-                  id="painPoint"
-                  required
-                  placeholder="Ex: Nous recevons 200+ emails/jour et perdons trop de temps à trier et répondre..."
-                  value={formData.painPoint}
-                  onChange={(e) => handleChange("painPoint", e.target.value)}
-                  rows={3}
-                  data-testid="input-painpoint"
-                />
-              </div>
-
-              <div className="bg-accent/20 rounded-md p-4 text-sm text-muted-foreground">
-                <Check className="h-4 w-4 inline mr-2 text-primary" />
-                En soumettant ce formulaire, vous acceptez d'être contacté par notre équipe 
-                pour une démo personnalisée. Aucun engagement. Données sécurisées (RGPD).
-              </div>
-
-              <Button 
-                type="submit" 
-                size="lg" 
-                className="w-full text-base"
-                disabled={isSubmitting}
-                data-testid="button-submit-beta"
-              >
-                {isSubmitting ? (
-                  "Envoi en cours..."
-                ) : (
-                  <>
-                    Rejoindre le beta
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </>
-                )}
-              </Button>
-
-              <p className="text-center text-sm text-muted-foreground">
-                Places limitées à 50 entreprises
-              </p>
-            </form>
+                <p className="text-center text-sm text-muted-foreground">
+                  Places limitées à 50 entreprises
+                </p>
+              </form>
+            </Form>
           </div>
         </div>
       </div>
