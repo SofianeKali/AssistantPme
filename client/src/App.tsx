@@ -10,6 +10,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/hooks/useAuth";
 import Landing from "@/pages/Landing";
+import BetaSignup from "@/pages/BetaSignup";
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import Emails from "@/pages/Emails";
@@ -30,6 +31,7 @@ function Router() {
       {isLoading || !isAuthenticated ? (
         <>
           <Route path="/" component={Landing} />
+          <Route path="/beta" component={BetaSignup} />
           <Route path="/login" component={Login} />
         </>
       ) : (
