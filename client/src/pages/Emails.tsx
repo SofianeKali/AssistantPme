@@ -70,6 +70,12 @@ export default function Emails() {
     queryKey: ["/api/email-categories"],
   });
 
+  // Load documents for selected email
+  const { data: emailDocuments = [] } = useQuery<any[]>({
+    queryKey: ["/api/emails", selectedEmail?.id, "documents"],
+    enabled: !!selectedEmail?.id,
+  });
+
   // Read category, status, and alertId from URL query parameters
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -1228,6 +1234,69 @@ export default function Emails() {
                 {selectedEmail?.body}
               </div>
             </div>
+
+            {/* Attachments */}
+            {emailDocuments.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <Paperclip className="h-4 w-4" />
+                  <span>Pièces jointes ({emailDocuments.length})</span>
+                </div>
+                <div className="grid gap-2">
+                  {emailDocuments.map((doc: any) => (
+                    <button
+                      key={doc.id}
+                      onClick={() => {
+                        if (doc.driveUrl || doc.storagePath) {
+                          // Open in cloud storage if available
+                          if (doc.driveUrl) {
+                            window.open(doc.driveUrl, '_blank');
+                          } else {
+                            toast({
+                              title: "Fichier non disponible",
+                              description: "Le fichier n'est pas encore stocké dans le cloud",
+                              variant: "destructive",
+                            });
+                          }
+                        } else {
+                          toast({
+                            title: "Fichier non disponible",
+                            description: "Le fichier n'est pas encore stocké dans le cloud",
+                            variant: "destructive",
+                          });
+                        }
+                      }}
+                      className="flex items-center gap-3 p-3 rounded-md border hover-elevate active-elevate-2 text-left transition-colors"
+                      data-testid={`attachment-${doc.id}`}
+                    >
+                      <FileIcon className="h-8 w-8 text-primary shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{doc.filename}</p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <span>{(doc.size / 1024).toFixed(1)} KB</span>
+                          {doc.storageProvider && (
+                            <>
+                              <span>•</span>
+                              <span>
+                                {doc.storageProvider === 'google_drive' ? 'Google Drive' : 
+                                 doc.storageProvider === 'onedrive' ? 'OneDrive' : 
+                                 'Local'}
+                              </span>
+                            </>
+                          )}
+                          {doc.driveUrl && (
+                            <>
+                              <span>•</span>
+                              <span className="text-primary">Cliquez pour ouvrir</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Custom Prompt Input */}
             {!selectedEmail?.suggestedResponse && showPromptInput && (

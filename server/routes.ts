@@ -994,6 +994,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get documents for a specific email
+  app.get('/api/emails/:id/documents', isAuthenticated, async (req: any, res) => {
+    try {
+      // Verify the email exists and user has access to it
+      const email = await storage.getEmailById(req.params.id, req.session.user?.id);
+      if (!email) {
+        return res.status(404).json({ message: "Email not found or access denied" });
+      }
+      
+      const documents = await storage.getDocumentsByEmailId(req.params.id);
+      res.json(documents);
+    } catch (error) {
+      console.error("Error fetching email documents:", error);
+      res.status(500).json({ message: "Failed to fetch email documents" });
+    }
+  });
+
   // Documents
   app.get('/api/documents', isAuthenticated, async (req, res) => {
     try {

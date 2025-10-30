@@ -80,6 +80,7 @@ export interface IStorage {
   // Documents
   createDocument(doc: InsertDocument): Promise<Document>;
   getDocuments(filters?: { type?: string; search?: string }): Promise<Document[]>;
+  getDocumentsByEmailId(emailId: string): Promise<Document[]>;
   getDocumentById(id: string): Promise<Document | undefined>;
   updateDocument(id: string, data: Partial<Document>): Promise<Document>;
   
@@ -751,8 +752,16 @@ export class DatabaseStorage implements IStorage {
     }
     
     query = query.orderBy(desc(documents.createdAt)) as any;
-    
+  
     return await query;
+  }
+  
+  async getDocumentsByEmailId(emailId: string): Promise<Document[]> {
+    return await db
+      .select()
+      .from(documents)
+      .where(eq(documents.emailId, emailId))
+      .orderBy(documents.filename);
   }
 
   async getDocumentById(id: string): Promise<Document | undefined> {
