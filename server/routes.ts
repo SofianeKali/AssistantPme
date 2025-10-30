@@ -13,7 +13,6 @@ import { sendEmailResponse } from "./emailSender";
 import multer from "multer";
 import Stripe from "stripe";
 import crypto from "crypto";
-import { Resend } from "resend";
 
 // Configure multer for file uploads (in-memory storage)
 const upload = multer({
@@ -2005,41 +2004,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`[Trial] Created trial user: ${email}`);
 
-      // Send welcome email with credentials (using Resend)
+      // Send welcome email with credentials via SMTP
       try {
-        const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+        const { sendTrialWelcomeEmail } = await import('./emailService');
         
-        if (resend) {
-          await resend.emails.send({
-            from: 'IzyInbox <onboarding@izyinbox.com>',
-            to: email,
-            subject: 'Bienvenue sur IzyInbox - Essai gratuit 14 jours',
-            html: `
-              <h1>Bienvenue sur IzyInbox !</h1>
-              <p>Bonjour ${firstName},</p>
-              <p>Votre essai gratuit de <strong>14 jours</strong> a démarré avec succès.</p>
-              
-              <h2>Vos identifiants de connexion :</h2>
-              <ul>
-                <li><strong>Email :</strong> ${email}</li>
-                <li><strong>Mot de passe temporaire :</strong> ${tempPassword}</li>
-              </ul>
-              
-              <p><strong>Important :</strong> Nous vous recommandons de changer ce mot de passe lors de votre première connexion.</p>
-              
-              <p>Votre essai se termine le <strong>${trialEndsAt.toLocaleDateString('fr-FR')}</strong>. Vous pourrez ensuite souscrire au plan de votre choix pour continuer à utiliser IzyInbox.</p>
-              
-              <p>Connectez-vous dès maintenant : <a href="${process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000'}/login">Accéder à IzyInbox</a></p>
-              
-              <p>À bientôt,<br>L'équipe IzyInbox</p>
-            `,
-          });
-          console.log(`[Resend] Trial welcome email sent to ${email}`);
+        // Get the default email account (kalizahir@yahoo.fr) for sending
+        const allEmailAccounts = await storage.getEmailAccounts();
+        const defaultAccount = allEmailAccounts.find(acc => acc.email === 'kalizahir@yahoo.fr' && acc.isActive);
+        
+        if (!defaultAccount) {
+          console.warn('[Trial] Default email account (kalizahir@yahoo.fr) not found or not active - skipping welcome email');
         } else {
-          console.warn('[Resend] API key not configured - skipping trial welcome email');
+          await sendTrialWelcomeEmail({
+            to: email,
+            firstName,
+            lastName,
+            temporaryPassword: tempPassword,
+            trialEndsAt,
+            adminEmailAccount: defaultAccount,
+          });
+          console.log(`[Trial] Welcome email sent to ${email} via SMTP (${defaultAccount.email})`);
         }
       } catch (emailError) {
-        console.error('[Resend] Error sending trial welcome email:', emailError);
+        console.error('[Trial] Failed to send welcome email:', emailError);
+        // Don't fail the trial creation if email sending fails
       }
 
       res.json({
@@ -2138,41 +2126,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           console.log(`[Stripe] Created new admin user: ${email} for plan ${plan}`);
 
-          // Send welcome email with credentials (using Resend)
+          // Send welcome email with credentials via SMTP
           try {
-            const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+            const { sendWelcomeEmail } = await import('./emailService');
             
-            if (resend) {
-              await resend.emails.send({
-                from: 'IzyInbox <onboarding@izyinbox.com>',
-                to: email,
-                subject: 'Bienvenue sur IzyInbox - Vos identifiants de connexion',
-                html: `
-                  <h1>Bienvenue sur IzyInbox !</h1>
-                  <p>Bonjour ${firstName},</p>
-                  <p>Votre souscription au plan <strong>${PRICING_PLANS[plan as keyof typeof PRICING_PLANS].name}</strong> a été confirmée avec succès.</p>
-                  
-                  <h2>Vos identifiants de connexion :</h2>
-                  <ul>
-                    <li><strong>Email :</strong> ${email}</li>
-                    <li><strong>Mot de passe temporaire :</strong> ${tempPassword}</li>
-                  </ul>
-                  
-                  <p><strong>Important :</strong> Nous vous recommandons de changer ce mot de passe lors de votre première connexion.</p>
-                  
-                  <p>Vous serez prélevé automatiquement le 5 de chaque mois pour un montant de ${(PRICING_PLANS[plan as keyof typeof PRICING_PLANS].priceMonthly / 100).toFixed(2)}€.</p>
-                  
-                  <p>Connectez-vous dès maintenant : <a href="${process.env.REPLIT_DEV_DOMAIN || 'http://localhost:5000'}/login">Accéder à IzyInbox</a></p>
-                  
-                  <p>À bientôt,<br>L'équipe IzyInbox</p>
-                `,
-              });
-              console.log(`[Resend] Welcome email sent to ${email}`);
+            // Get the default email account (kalizahir@yahoo.fr) for sending
+            const allEmailAccounts = await storage.getEmailAccounts();
+            const defaultAccount = allEmailAccounts.find(acc => acc.email === 'kalizahir@yahoo.fr' && acc.isActive);
+            
+            if (!defaultAccount) {
+              console.warn('[Stripe] Default email account (kalizahir@yahoo.fr) not found or not active - skipping welcome email');
             } else {
-              console.warn('[Resend] API key not configured - skipping welcome email');
+              await sendWelcomeEmail({
+                to: email,
+                firstName,
+                lastName,
+                temporaryPassword: tempPassword,
+                adminEmailAccount: defaultAccount,
+              });
+              console.log(`[Stripe] Welcome email sent to ${email} via SMTP (${defaultAccount.email})`);
             }
           } catch (emailError) {
-            console.error('[Resend] Error sending welcome email:', emailError);
+            console.error('[Stripe] Failed to send welcome email:', emailError);
+            // Don't fail the webhook processing if email sending fails
           }
         }
       }
