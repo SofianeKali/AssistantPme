@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Mail, Zap, BarChart3, Calendar, FileText, Shield } from "lucide-react";
+import { Mail, Zap, BarChart3, Calendar, FileText, Shield, Search, Cloud, Sparkles } from "lucide-react";
 
 export default function Landing() {
   return (
@@ -55,54 +55,96 @@ export default function Landing() {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <FeatureCard
-            icon={<Mail className="h-6 w-6" />}
-            title="Analyse intelligente des emails"
-            description="Détection automatique des devis, factures et demandes de rendez-vous"
-          />
-          <FeatureCard
-            icon={<Zap className="h-6 w-6" />}
-            title="Réponses automatiques"
-            description="Génération de réponses pertinentes avec validation avant envoi"
-          />
-          <FeatureCard
-            icon={<Calendar className="h-6 w-6" />}
-            title="Calendrier intelligent"
-            description="Planification automatique des rendez-vous avec suggestions"
-          />
-          <FeatureCard
-            icon={<FileText className="h-6 w-6" />}
-            title="Gestion documentaire"
-            description="Classification et stockage automatique des pièces jointes"
+            icon={<Sparkles className="h-6 w-6" />}
+            title="IA GPT-5 pour vos emails"
+            description="Catégorisation automatique, détection de priorité, sentiment et génération de réponses"
           />
           <FeatureCard
             icon={<BarChart3 className="h-6 w-6" />}
-            title="Alertes personnalisées"
-            description="Notifications pour devis sans réponse et factures impayées"
+            title="Dashboard personnalisable"
+            description="KPIs visuels avec drag-and-drop, statistiques en temps réel et alertes critiques"
+          />
+          <FeatureCard
+            icon={<Search className="h-6 w-6" />}
+            title="Recherche sémantique"
+            description="Trouvez vos emails en langage naturel grâce à l'IA contextuelle"
+          />
+          <FeatureCard
+            icon={<Calendar className="h-6 w-6" />}
+            title="Calendrier multi-vues"
+            description="Vues Jour/Semaine/Mois avec planification automatique des rendez-vous"
+          />
+          <FeatureCard
+            icon={<Cloud className="h-6 w-6" />}
+            title="Cloud personnel (Drive/OneDrive)"
+            description="Stockage sécurisé de vos documents avec vos propres identifiants OAuth"
+          />
+          <FeatureCard
+            icon={<Zap className="h-6 w-6" />}
+            title="Alertes en langage naturel"
+            description="Créez des règles d'alerte personnalisées simplement en parlant à l'IA"
+          />
+          <FeatureCard
+            icon={<Mail className="h-6 w-6" />}
+            title="Multi-comptes email"
+            description="Gérez plusieurs comptes IMAP/SMTP avec scan automatique et configuration de fréquence"
+          />
+          <FeatureCard
+            icon={<FileText className="h-6 w-6" />}
+            title="Extraction de documents"
+            description="Reconnaissance OCR et extraction de texte des PDF avec recherche full-text"
           />
           <FeatureCard
             icon={<Shield className="h-6 w-6" />}
-            title="Sécurité RGPD"
-            description="Protection et chiffrement de vos données sensibles"
+            title="Sécurité & RGPD"
+            description="Chiffrement AES-256-GCM, authentification double et conformité totale"
           />
         </div>
       </div>
 
+      {/* Beta CTA */}
+      <div className="bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 border-y border-border">
+        <div className="container mx-auto px-6 py-16 text-center">
+          <div className="max-w-3xl mx-auto">
+            <div className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-full text-sm font-medium mb-6">
+              <Sparkles className="h-4 w-4" />
+              Programme Beta - Places Limitées
+            </div>
+            <h2 className="text-3xl font-semibold mb-4">
+              Rejoignez les premières PME françaises qui testent IzyInbox
+            </h2>
+            <p className="text-lg text-muted-foreground mb-8">
+              3 mois gratuits • Support prioritaire • Influence directe sur le produit
+            </p>
+            <Button
+              size="lg"
+              onClick={() => (window.location.href = "/beta")}
+              data-testid="button-join-beta"
+              className="text-base"
+            >
+              Rejoindre le programme Beta
+            </Button>
+          </div>
+        </div>
+      </div>
+
       {/* CTA Section */}
-      <div className="bg-card border-t border-border">
+      <div className="bg-card">
         <div className="container mx-auto px-6 py-16 text-center">
           <h2 className="text-2xl font-semibold mb-4">
-            Prêt à simplifier votre gestion administrative ?
+            Déjà client ?
           </h2>
           <p className="text-muted-foreground mb-8">
-            Commencez dès maintenant et gagnez du temps précieux
+            Connectez-vous à votre compte pour accéder à votre tableau de bord
           </p>
           <div className="flex gap-4 justify-center flex-wrap">
             <Button
               size="lg"
               onClick={() => (window.location.href = "/login")}
               data-testid="button-cta-login"
+              variant="outline"
             >
-              Démarrer gratuitement
+              Connexion Email/Mot de passe
             </Button>
             <Button
               size="lg"
