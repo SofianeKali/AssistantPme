@@ -28,10 +28,10 @@ export function ChartPeriodControls({
   testIdPrefix,
 }: ChartPeriodControlsProps) {
   return (
-    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto min-w-0">
       <Select value={periodType} onValueChange={onPeriodTypeChange}>
         <SelectTrigger
-          className="w-full sm:w-32"
+          className="w-full sm:w-32 shrink-0"
           data-testid={`select-period-${testIdPrefix}`}
         >
           <SelectValue />
@@ -42,16 +42,17 @@ export function ChartPeriodControls({
         </SelectContent>
       </Select>
 
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1 min-w-0">
         <Button
           size="icon"
           variant="ghost"
           onClick={() => onOffsetChange(offset + 1)}
           data-testid={`button-${testIdPrefix}-prev`}
+          className="shrink-0"
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
-        <span className="text-sm text-muted-foreground min-w-0 flex-1 text-center px-2 truncate sm:min-w-[200px]">
+        <span className="text-sm text-muted-foreground min-w-0 text-center px-2 truncate">
           {periodLabel}
         </span>
         <Button
@@ -60,6 +61,7 @@ export function ChartPeriodControls({
           onClick={() => onOffsetChange(Math.max(0, offset - 1))}
           disabled={offset === 0}
           data-testid={`button-${testIdPrefix}-next`}
+          className="shrink-0"
         >
           <ChevronRight className="h-4 w-4" />
         </Button>
