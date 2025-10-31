@@ -83,7 +83,7 @@ export interface IStorage {
   // Emails
   createEmail(email: InsertEmail): Promise<Email>;
   getEmails(userId: string, filters?: { type?: string; status?: string; search?: string; limit?: number }): Promise<Email[]>;
-  getAllEmails(filters?: { type?: string; status?: string; priority?: string; search?: string; olderThanHours?: number; limit?: number; offset?: number }): Promise<(Email & { attachmentCount: number })[]>; // For backend services
+  getAllEmails(filters?: { type?: string; status?: string; priority?: string; search?: string; olderThanHours?: number; limit?: number; offset?: number; companyId?: string }): Promise<(Email & { attachmentCount: number })[]>; // For backend services - MUST pass companyId for tenant isolation
   getEmailById(id: string, userId?: string): Promise<Email | undefined>;
   getEmailByMessageId(messageId: string): Promise<Email | undefined>;
   updateEmail(id: string, userId: string | undefined, data: Partial<Email>): Promise<Email>;
@@ -485,9 +485,10 @@ export class DatabaseStorage implements IStorage {
     return await query;
   }
 
-  async getAllEmails(filters?: { type?: string; status?: string; priority?: string; search?: string; olderThanHours?: number; limit?: number; offset?: number }): Promise<(Email & { attachmentCount: number })[]> {
+  async getAllEmails(filters?: { type?: string; status?: string; priority?: string; search?: string; olderThanHours?: number; limit?: number; offset?: number; companyId?: string }): Promise<(Email & { attachmentCount: number })[]> {
     const allColumns = {
       id: emails.id,
+      companyId: emails.companyId,
       createdAt: emails.createdAt,
       updatedAt: emails.updatedAt,
       userId: emails.userId,
@@ -521,6 +522,12 @@ export class DatabaseStorage implements IStorage {
     }).from(emails);
     
     const conditions = [];
+    
+    // CRITICAL: Filter by companyId for multi-tenant isolation
+    if (filters?.companyId) {
+      conditions.push(eq(emails.companyId, filters.companyId));
+    }
+    
     if (filters?.type && filters.type !== 'all') {
       conditions.push(eq(emails.emailType, filters.type));
     }
@@ -575,10 +582,16 @@ export class DatabaseStorage implements IStorage {
     return await query;
   }
 
-  async getEmailsCount(filters?: { type?: string; status?: string; priority?: string; search?: string; olderThanHours?: number }): Promise<number> {
+  async getEmailsCount(filters?: { type?: string; status?: string; priority?: string; search?: string; olderThanHours?: number; companyId?: string }): Promise<number> {
     let query = db.select({ count: sql<number>`count(*)` }).from(emails);
     
     const conditions = [];
+    
+    // CRITICAL: Filter by companyId for multi-tenant isolation
+    if (filters?.companyId) {
+      conditions.push(eq(emails.companyId, filters.companyId));
+    }
+    
     if (filters?.type && filters.type !== 'all') {
       conditions.push(eq(emails.emailType, filters.type));
     }
@@ -1293,7 +1306,6 @@ export class DatabaseStorage implements IStorage {
     const startOfWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     
     // Count quotes without response (emails with type 'devis' and status 'nouveau')
-    // Filter by companyId via email_accounts join since emails table doesn't have companyId yet
     const quotesConditions = [
       eq(emails.emailType, 'devis'),
       eq(emails.status, 'nouveau')
@@ -1302,12 +1314,11 @@ export class DatabaseStorage implements IStorage {
       quotesConditions.push(eq(emails.emailAccountId, emailAccountId));
     }
     if (companyId) {
-      quotesConditions.push(eq(emailAccounts.companyId, companyId));
+      quotesConditions.push(eq(emails.companyId, companyId));
     }
     const [quotesNoResponse] = await db
       .select({ count: sql<number>`count(*)` })
       .from(emails)
-      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
       .where(and(...quotesConditions));
     
     // Count unpaid invoices (emails with type 'facture' and status 'nouveau')
@@ -1319,12 +1330,11 @@ export class DatabaseStorage implements IStorage {
       invoicesConditions.push(eq(emails.emailAccountId, emailAccountId));
     }
     if (companyId) {
-      invoicesConditions.push(eq(emailAccounts.companyId, companyId));
+      invoicesConditions.push(eq(emails.companyId, companyId));
     }
     const [unpaidInvoices] = await db
       .select({ count: sql<number>`count(*)` })
       .from(emails)
-      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
       .where(and(...invoicesConditions));
     
     // Count appointments today (filter by companyId)
@@ -1346,12 +1356,11 @@ export class DatabaseStorage implements IStorage {
       unprocessedConditions.push(eq(emails.emailAccountId, emailAccountId));
     }
     if (companyId) {
-      unprocessedConditions.push(eq(emailAccounts.companyId, companyId));
+      unprocessedConditions.push(eq(emails.companyId, companyId));
     }
     const [unprocessedEmails] = await db
       .select({ count: sql<number>`count(*)` })
       .from(emails)
-      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
       .where(and(...unprocessedConditions));
     
     // Count active alerts (not resolved, filter by companyId)
@@ -1370,12 +1379,11 @@ export class DatabaseStorage implements IStorage {
       monthlyConditions.push(eq(emails.emailAccountId, emailAccountId));
     }
     if (companyId) {
-      monthlyConditions.push(eq(emailAccounts.companyId, companyId));
+      monthlyConditions.push(eq(emails.companyId, companyId));
     }
     const [monthlyEmails] = await db
       .select({ count: sql<number>`count(*)` })
       .from(emails)
-      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
       .where(and(...monthlyConditions));
     
     const monthlyProcessedConditions = [
@@ -1389,12 +1397,11 @@ export class DatabaseStorage implements IStorage {
       monthlyProcessedConditions.push(eq(emails.emailAccountId, emailAccountId));
     }
     if (companyId) {
-      monthlyProcessedConditions.push(eq(emailAccounts.companyId, companyId));
+      monthlyProcessedConditions.push(eq(emails.companyId, companyId));
     }
     const [monthlyEmailsProcessed] = await db
       .select({ count: sql<number>`count(*)` })
       .from(emails)
-      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
       .where(and(...monthlyProcessedConditions));
     
     const appointmentMonthlyConditions = [gte(appointments.createdAt, startOfMonth)];
@@ -1417,12 +1424,11 @@ export class DatabaseStorage implements IStorage {
       weeklyConditions.push(eq(emails.emailAccountId, emailAccountId));
     }
     if (companyId) {
-      weeklyConditions.push(eq(emailAccounts.companyId, companyId));
+      weeklyConditions.push(eq(emails.companyId, companyId));
     }
     const [weeklyEmails] = await db
       .select({ count: sql<number>`count(*)` })
       .from(emails)
-      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
       .where(and(...weeklyConditions));
     
     // Email type breakdown (this month)
@@ -1431,7 +1437,7 @@ export class DatabaseStorage implements IStorage {
       typeBreakdownConditions.push(eq(emails.emailAccountId, emailAccountId));
     }
     if (companyId) {
-      typeBreakdownConditions.push(eq(emailAccounts.companyId, companyId));
+      typeBreakdownConditions.push(eq(emails.companyId, companyId));
     }
     const emailTypeBreakdown = await db
       .select({
@@ -1439,7 +1445,6 @@ export class DatabaseStorage implements IStorage {
         count: sql<number>`count(*)`,
       })
       .from(emails)
-      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
       .where(and(...typeBreakdownConditions))
       .groupBy(emails.emailType);
     
@@ -1449,7 +1454,7 @@ export class DatabaseStorage implements IStorage {
       priorityConditions.push(eq(emails.emailAccountId, emailAccountId));
     }
     if (companyId) {
-      priorityConditions.push(eq(emailAccounts.companyId, companyId));
+      priorityConditions.push(eq(emails.companyId, companyId));
     }
     const priorityBreakdown = await db
       .select({
@@ -1457,7 +1462,6 @@ export class DatabaseStorage implements IStorage {
         count: sql<number>`count(*)`,
       })
       .from(emails)
-      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
       .where(and(...priorityConditions))
       .groupBy(emails.priority);
     
@@ -1525,12 +1529,11 @@ export class DatabaseStorage implements IStorage {
         )
       ];
       if (companyId) {
-        processedConditions.push(eq(emailAccounts.companyId, companyId));
+        processedConditions.push(eq(emails.companyId, companyId));
       }
       const [processed] = await db
         .select({ count: sql<number>`count(*)` })
         .from(emails)
-        .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
         .where(and(...processedConditions));
       
       const dayNames = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
@@ -1568,7 +1571,7 @@ export class DatabaseStorage implements IStorage {
     // Répartition des emails reçus par catégorie (avec couleurs)
     const emailDistributionConditions = [gte(emails.receivedAt, startOfMonth)];
     if (companyId) {
-      emailDistributionConditions.push(eq(emailAccounts.companyId, companyId));
+      emailDistributionConditions.push(eq(emails.companyId, companyId));
     }
     const emailDistribution = await db
       .select({
@@ -1576,7 +1579,6 @@ export class DatabaseStorage implements IStorage {
         count: sql<number>`count(*)`,
       })
       .from(emails)
-      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
       .where(and(...emailDistributionConditions))
       .groupBy(emails.emailType);
     
@@ -1587,12 +1589,11 @@ export class DatabaseStorage implements IStorage {
     for (const categoryKey of categoryKeys) {
       const totalConditions = [eq(emails.emailType, categoryKey)];
       if (companyId) {
-        totalConditions.push(eq(emailAccounts.companyId, companyId));
+        totalConditions.push(eq(emails.companyId, companyId));
       }
       const [total] = await db
         .select({ count: sql<number>`count(*)` })
         .from(emails)
-        .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
         .where(and(...totalConditions));
       
       const processedConditions = [
@@ -1603,12 +1604,11 @@ export class DatabaseStorage implements IStorage {
         )
       ];
       if (companyId) {
-        processedConditions.push(eq(emailAccounts.companyId, companyId));
+        processedConditions.push(eq(emails.companyId, companyId));
       }
       const [processed] = await db
         .select({ count: sql<number>`count(*)` })
         .from(emails)
-        .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
         .where(and(...processedConditions));
       
       const totalCount = Number(total?.count || 0);
@@ -1625,31 +1625,28 @@ export class DatabaseStorage implements IStorage {
     }
     
     // Funnel de traitement des emails
-    const receivedConditions = companyId ? [eq(emailAccounts.companyId, companyId)] : [];
+    const receivedConditions = companyId ? [eq(emails.companyId, companyId)] : [];
     const [received] = await db
       .select({ count: sql<number>`count(*)` })
       .from(emails)
-      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
       .where(receivedConditions.length > 0 ? and(...receivedConditions) : undefined);
     
     const sortedConditions = [ne(emails.status, 'nouveau')];
     if (companyId) {
-      sortedConditions.push(eq(emailAccounts.companyId, companyId));
+      sortedConditions.push(eq(emails.companyId, companyId));
     }
     const [sorted] = await db
       .select({ count: sql<number>`count(*)` })
       .from(emails)
-      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
       .where(and(...sortedConditions));
     
     const assignedConditions = [sql`${emails.assignedToId} IS NOT NULL`];
     if (companyId) {
-      assignedConditions.push(eq(emailAccounts.companyId, companyId));
+      assignedConditions.push(eq(emails.companyId, companyId));
     }
     const [assigned] = await db
       .select({ count: sql<number>`count(*)` })
       .from(emails)
-      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
       .where(and(...assignedConditions));
     
     const funnelProcessedConditions = [
@@ -1659,12 +1656,11 @@ export class DatabaseStorage implements IStorage {
       )
     ];
     if (companyId) {
-      funnelProcessedConditions.push(eq(emailAccounts.companyId, companyId));
+      funnelProcessedConditions.push(eq(emails.companyId, companyId));
     }
     const [processed] = await db
       .select({ count: sql<number>`count(*)` })
       .from(emails)
-      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
       .where(and(...funnelProcessedConditions));
     
     return {
@@ -1880,7 +1876,7 @@ export class DatabaseStorage implements IStorage {
       conditions.push(eq(emails.emailAccountId, emailAccountId));
     }
     if (companyId) {
-      conditions.push(eq(emailAccounts.companyId, companyId));
+      conditions.push(eq(emails.companyId, companyId));
     }
     
     const emailDistribution = await db
@@ -1889,7 +1885,6 @@ export class DatabaseStorage implements IStorage {
         count: sql<number>`count(*)`,
       })
       .from(emails)
-      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
       .where(and(...conditions))
       .groupBy(emails.emailType);
     
@@ -1925,13 +1920,12 @@ export class DatabaseStorage implements IStorage {
         conditions.push(eq(emails.emailAccountId, emailAccountId));
       }
       if (companyId) {
-        conditions.push(eq(emailAccounts.companyId, companyId));
+        conditions.push(eq(emails.companyId, companyId));
       }
       
       const [processed] = await db
         .select({ count: sql<number>`count(*)` })
         .from(emails)
-        .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
         .where(and(...conditions));
       
       evolution.push({
@@ -1963,13 +1957,12 @@ export class DatabaseStorage implements IStorage {
         totalConditions.push(eq(emails.emailAccountId, emailAccountId));
       }
       if (companyId) {
-        totalConditions.push(eq(emailAccounts.companyId, companyId));
+        totalConditions.push(eq(emails.companyId, companyId));
       }
       
       const [total] = await db
         .select({ count: sql<number>`count(*)` })
         .from(emails)
-        .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
         .where(and(...totalConditions));
       
       const processedConditions = [
@@ -1985,13 +1978,12 @@ export class DatabaseStorage implements IStorage {
         processedConditions.push(eq(emails.emailAccountId, emailAccountId));
       }
       if (companyId) {
-        processedConditions.push(eq(emailAccounts.companyId, companyId));
+        processedConditions.push(eq(emails.companyId, companyId));
       }
       
       const [processed] = await db
         .select({ count: sql<number>`count(*)` })
         .from(emails)
-        .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
         .where(and(...processedConditions));
       
       const totalCount = Number(total?.count || 0);
@@ -2020,15 +2012,13 @@ export class DatabaseStorage implements IStorage {
     const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
     
     // 1. RESPONSE RATE - Percentage of emails that received a response
-    // Filter by companyId via email_accounts join
     const responseRateConditions = [eq(emails.requiresResponse, true)];
     if (companyId) {
-      responseRateConditions.push(eq(emailAccounts.companyId, companyId));
+      responseRateConditions.push(eq(emails.companyId, companyId));
     }
     const [totalEmailsRequiringResponse] = await db
       .select({ count: sql<number>`count(*)` })
       .from(emails)
-      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
       .where(and(...responseRateConditions));
     
     const totalRequiringResponse = Number(totalEmailsRequiringResponse?.count || 0);
@@ -2043,7 +2033,7 @@ export class DatabaseStorage implements IStorage {
       )
     ];
     if (companyId) {
-      responsesConditions.push(eq(emailAccounts.companyId, companyId));
+      responsesConditions.push(eq(emails.companyId, companyId));
     }
     const [emailsWithResponses] = await db
       .select({ 
@@ -2051,7 +2041,6 @@ export class DatabaseStorage implements IStorage {
       })
       .from(emails)
       .innerJoin(emailResponses, eq(emails.id, emailResponses.emailId))
-      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
       .where(and(...responsesConditions));
     
     const emailsWithResponseCount = Number(emailsWithResponses?.count || 0);
@@ -2067,7 +2056,7 @@ export class DatabaseStorage implements IStorage {
       )
     ];
     if (companyId) {
-      processedConditions.push(eq(emailAccounts.companyId, companyId));
+      processedConditions.push(eq(emails.companyId, companyId));
     }
     const processedEmails = await db
       .select({
@@ -2075,7 +2064,6 @@ export class DatabaseStorage implements IStorage {
         updatedAt: emails.updatedAt,
       })
       .from(emails)
-      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
       .where(and(...processedConditions));
     
     let totalProcessingTime = 0;
@@ -2098,12 +2086,11 @@ export class DatabaseStorage implements IStorage {
     // 3. EXPECTED REVENUE - Sum of amounts from quotes (devis)
     const quotesConditions = [eq(emails.emailType, 'devis')];
     if (companyId) {
-      quotesConditions.push(eq(emailAccounts.companyId, companyId));
+      quotesConditions.push(eq(emails.companyId, companyId));
     }
     const allQuotes = await db
       .select({ aiAnalysis: emails.aiAnalysis })
       .from(emails)
-      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
       .where(and(...quotesConditions));
     
     let expectedRevenue = 0;
@@ -2123,12 +2110,11 @@ export class DatabaseStorage implements IStorage {
     // Current month
     const currentMonthEmailsConditions = [gte(emails.receivedAt, startOfMonth)];
     if (companyId) {
-      currentMonthEmailsConditions.push(eq(emailAccounts.companyId, companyId));
+      currentMonthEmailsConditions.push(eq(emails.companyId, companyId));
     }
     const [currentMonthEmails] = await db
       .select({ count: sql<number>`count(*)` })
       .from(emails)
-      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
       .where(and(...currentMonthEmailsConditions));
     
     const currentMonthProcessedConditions = [
@@ -2139,12 +2125,11 @@ export class DatabaseStorage implements IStorage {
       )
     ];
     if (companyId) {
-      currentMonthProcessedConditions.push(eq(emailAccounts.companyId, companyId));
+      currentMonthProcessedConditions.push(eq(emails.companyId, companyId));
     }
     const [currentMonthProcessed] = await db
       .select({ count: sql<number>`count(*)` })
       .from(emails)
-      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
       .where(and(...currentMonthProcessedConditions));
     
     const currentMonthAppointmentsConditions = [gte(appointments.createdAt, startOfMonth)];
@@ -2162,12 +2147,11 @@ export class DatabaseStorage implements IStorage {
       lte(emails.receivedAt, endOfLastMonth)
     ];
     if (companyId) {
-      lastMonthEmailsConditions.push(eq(emailAccounts.companyId, companyId));
+      lastMonthEmailsConditions.push(eq(emails.companyId, companyId));
     }
     const [lastMonthEmails] = await db
       .select({ count: sql<number>`count(*)` })
       .from(emails)
-      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
       .where(and(...lastMonthEmailsConditions));
     
     const lastMonthProcessedConditions = [
@@ -2179,12 +2163,11 @@ export class DatabaseStorage implements IStorage {
       )
     ];
     if (companyId) {
-      lastMonthProcessedConditions.push(eq(emailAccounts.companyId, companyId));
+      lastMonthProcessedConditions.push(eq(emails.companyId, companyId));
     }
     const [lastMonthProcessed] = await db
       .select({ count: sql<number>`count(*)` })
       .from(emails)
-      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
       .where(and(...lastMonthProcessedConditions));
     
     const lastMonthAppointmentsConditions = [

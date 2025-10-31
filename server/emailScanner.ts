@@ -167,6 +167,7 @@ export class EmailScanner {
           
           // Create email record
           const emailData: InsertEmail = {
+            companyId: account.companyId, // Multi-tenant isolation: associate email with the company
             userId: account.userId, // Associate email with the user who owns the email account
             emailAccountId: account.id,
             messageId: mail.messageId || `${Date.now()}-${Math.random()}`,
@@ -219,6 +220,7 @@ export class EmailScanner {
               });
               
               await this.storage.createTask({
+                companyId: account.companyId, // Multi-tenant isolation
                 emailId: createdEmail.id,
                 title: taskData.title,
                 description: taskData.description,
@@ -472,6 +474,7 @@ export class EmailScanner {
               });
 
               const appointmentData: InsertAppointment = {
+                companyId: account.companyId, // Multi-tenant isolation
                 emailId: createdEmail.id,
                 title: mail.subject || 'Rendez-vous',
                 description: analysis.summary,

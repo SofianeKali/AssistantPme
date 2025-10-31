@@ -374,6 +374,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         search: search as string,
         limit: limit ? parseInt(limit as string) : undefined,
         offset: offset ? parseInt(offset as string) : undefined,
+        companyId: req.user!.companyId || undefined, // CRITICAL: Filter by company for multi-tenant isolation
       };
       
       const [emails, total] = await Promise.all([
@@ -382,6 +383,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           type: filters.type,
           status: filters.status,
           search: filters.search,
+          companyId: req.user!.companyId || undefined, // CRITICAL: Filter by company for multi-tenant isolation
         }),
       ]);
       
@@ -1659,7 +1661,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { key } = req.params;
       const { value } = req.body;
-      const setting = await storage.upsertSetting({ key, value });
+      const companyId = req.user!.companyId!; // Admin users always have companyId
+      const setting = await storage.upsertSetting({ companyId, key, value });
       res.json(setting);
     } catch (error) {
       console.error("Error updating setting:", error);
