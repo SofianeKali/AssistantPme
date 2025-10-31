@@ -2293,7 +2293,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Sidebar counts for navigation menu
-  async getSidebarCounts(userId?: string, adminUserIds?: string[]): Promise<{
+  async getSidebarCounts(userId?: string, adminUserIds?: string[], companyId?: string): Promise<{
     unprocessedEmails: number;
     unresolvedAlerts: number;
     tasksNew: number;
@@ -2303,7 +2303,7 @@ export class DatabaseStorage implements IStorage {
   }> {
     const now = new Date();
 
-    // Count unprocessed emails (nouveau + en_cours) - filtered by user
+    // Count unprocessed emails (nouveau + en_cours) - filtered by user and companyId
     const emailConditions = [
       or(
         eq(emails.status, 'nouveau'),
@@ -2313,13 +2313,16 @@ export class DatabaseStorage implements IStorage {
     if (userId) {
       emailConditions.push(eq(emails.userId, userId));
     }
+    if (companyId) {
+      emailConditions.push(eq(emails.companyId, companyId));
+    }
     const [unprocessedEmailsResult] = await db
       .select({ count: sql<number>`count(*)` })
       .from(emails)
       .where(and(...emailConditions));
     const unprocessedEmails = Number(unprocessedEmailsResult?.count || 0);
 
-    // Count unresolved alerts - filtered by user (via alert_rules join)
+    // Count unresolved alerts - filtered by user (via alert_rules join) and companyId
     // Include alerts created by user + alerts created by admins
     let alertQuery = db
       .select({ count: sql<number>`count(DISTINCT ${alerts.id})` })
@@ -2327,6 +2330,9 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(alertRules, eq(alerts.ruleId, alertRules.id));
     
     const alertConditions = [eq(alerts.isResolved, false)];
+    if (companyId) {
+      alertConditions.push(eq(alerts.companyId, companyId));
+    }
     if (userId) {
       const allowedUserIds = [userId];
       if (adminUserIds && adminUserIds.length > 0) {
@@ -2339,8 +2345,11 @@ export class DatabaseStorage implements IStorage {
     const [unresolvedAlertsResult] = await alertQuery;
     const unresolvedAlerts = Number(unresolvedAlertsResult?.count || 0);
 
-    // Count tasks with status "nouveau" - filtered by user (creator or assignee + admin-created)
+    // Count tasks with status "nouveau" - filtered by user (creator or assignee + admin-created) and companyId
     let tasksNewConditions: any[] = [eq(tasks.status, 'nouveau')];
+    if (companyId) {
+      tasksNewConditions.push(eq(tasks.companyId, companyId));
+    }
     if (userId) {
       const allowedCreatorIds = [userId];
       if (adminUserIds && adminUserIds.length > 0) {
@@ -2360,8 +2369,11 @@ export class DatabaseStorage implements IStorage {
       .where(and(...tasksNewConditions));
     const tasksNew = Number(tasksNewResult?.count || 0);
 
-    // Count tasks with status "en_cours" - filtered by user (creator or assignee + admin-created)
+    // Count tasks with status "en_cours" - filtered by user (creator or assignee + admin-created) and companyId
     let tasksInProgressConditions: any[] = [eq(tasks.status, 'en_cours')];
+    if (companyId) {
+      tasksInProgressConditions.push(eq(tasks.companyId, companyId));
+    }
     if (userId) {
       const allowedCreatorIds = [userId];
       if (adminUserIds && adminUserIds.length > 0) {
@@ -2381,8 +2393,11 @@ export class DatabaseStorage implements IStorage {
       .where(and(...tasksInProgressConditions));
     const tasksInProgress = Number(tasksInProgressResult?.count || 0);
 
-    // Count upcoming appointments (startTime >= now) - filtered by user
+    // Count upcoming appointments (startTime >= now) - filtered by user and companyId
     const appointmentConditions = [gte(appointments.startTime, now)];
+    if (companyId) {
+      appointmentConditions.push(eq(appointments.companyId, companyId));
+    }
     if (userId) {
       appointmentConditions.push(eq(appointments.createdById, userId));
     }
@@ -2392,13 +2407,16 @@ export class DatabaseStorage implements IStorage {
       .where(and(...appointmentConditions));
     const upcomingAppointments = Number(upcomingAppointmentsResult?.count || 0);
 
-    // Count documents attached to unprocessed emails - filtered by user via emails
+    // Count documents attached to unprocessed emails - filtered by user via emails and companyId
     const documentEmailConditions = [
       or(
         eq(emails.status, 'nouveau'),
         eq(emails.status, 'en_cours')
       )
     ];
+    if (companyId) {
+      documentEmailConditions.push(eq(emails.companyId, companyId));
+    }
     if (userId) {
       documentEmailConditions.push(eq(emails.userId, userId));
     }

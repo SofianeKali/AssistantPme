@@ -312,12 +312,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = req.user as any;
       const isAdmin = user.role === "admin";
+      const companyId = user.companyId;
 
       let adminUserIds: string[] | undefined = undefined;
 
       if (!isAdmin) {
         // Regular users need to include admin-created items in their counts
-        const companyId = user.companyId;
         const allUsers = await storage.getAllUsers(companyId);
         adminUserIds = allUsers
           .filter((u) => u.role === "admin")
@@ -327,6 +327,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const counts = await storage.getSidebarCounts(
         isAdmin ? undefined : user.id,
         adminUserIds,
+        companyId, // Always pass companyId for multi-tenant isolation
       );
       res.json(counts);
     } catch (error) {
