@@ -1318,46 +1318,64 @@ export class DatabaseStorage implements IStorage {
     if (emailAccountId) {
       invoicesConditions.push(eq(emails.emailAccountId, emailAccountId));
     }
+    if (companyId) {
+      invoicesConditions.push(eq(emailAccounts.companyId, companyId));
+    }
     const [unpaidInvoices] = await db
       .select({ count: sql<number>`count(*)` })
       .from(emails)
+      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
       .where(and(...invoicesConditions));
     
-    // Count appointments today
+    // Count appointments today (filter by companyId)
+    const appointmentConditions = [
+      gte(appointments.startTime, startOfDay),
+      lte(appointments.startTime, endOfDay)
+    ];
+    if (companyId) {
+      appointmentConditions.push(eq(appointments.companyId, companyId));
+    }
     const [appointmentsToday] = await db
       .select({ count: sql<number>`count(*)` })
       .from(appointments)
-      .where(
-        and(
-          gte(appointments.startTime, startOfDay),
-          lte(appointments.startTime, endOfDay)
-        )
-      );
+      .where(and(...appointmentConditions));
     
     // Count unprocessed emails (status 'nouveau')
     const unprocessedConditions = [eq(emails.status, 'nouveau')];
     if (emailAccountId) {
       unprocessedConditions.push(eq(emails.emailAccountId, emailAccountId));
     }
+    if (companyId) {
+      unprocessedConditions.push(eq(emailAccounts.companyId, companyId));
+    }
     const [unprocessedEmails] = await db
       .select({ count: sql<number>`count(*)` })
       .from(emails)
+      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
       .where(and(...unprocessedConditions));
     
-    // Count active alerts (not resolved)
+    // Count active alerts (not resolved, filter by companyId)
+    const alertConditions = [eq(alerts.isResolved, false)];
+    if (companyId) {
+      alertConditions.push(eq(alerts.companyId, companyId));
+    }
     const [activeAlerts] = await db
       .select({ count: sql<number>`count(*)` })
       .from(alerts)
-      .where(eq(alerts.isResolved, false));
+      .where(and(...alertConditions));
     
     // Monthly stats
     const monthlyConditions = [gte(emails.receivedAt, startOfMonth)];
     if (emailAccountId) {
       monthlyConditions.push(eq(emails.emailAccountId, emailAccountId));
     }
+    if (companyId) {
+      monthlyConditions.push(eq(emailAccounts.companyId, companyId));
+    }
     const [monthlyEmails] = await db
       .select({ count: sql<number>`count(*)` })
       .from(emails)
+      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
       .where(and(...monthlyConditions));
     
     const monthlyProcessedConditions = [
@@ -1370,15 +1388,23 @@ export class DatabaseStorage implements IStorage {
     if (emailAccountId) {
       monthlyProcessedConditions.push(eq(emails.emailAccountId, emailAccountId));
     }
+    if (companyId) {
+      monthlyProcessedConditions.push(eq(emailAccounts.companyId, companyId));
+    }
     const [monthlyEmailsProcessed] = await db
       .select({ count: sql<number>`count(*)` })
       .from(emails)
+      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
       .where(and(...monthlyProcessedConditions));
     
+    const appointmentMonthlyConditions = [gte(appointments.createdAt, startOfMonth)];
+    if (companyId) {
+      appointmentMonthlyConditions.push(eq(appointments.companyId, companyId));
+    }
     const [monthlyAppointments] = await db
       .select({ count: sql<number>`count(*)` })
       .from(appointments)
-      .where(gte(appointments.createdAt, startOfMonth));
+      .where(and(...appointmentMonthlyConditions));
     
     const [monthlyDocuments] = await db
       .select({ count: sql<number>`count(*)` })
@@ -1390,9 +1416,13 @@ export class DatabaseStorage implements IStorage {
     if (emailAccountId) {
       weeklyConditions.push(eq(emails.emailAccountId, emailAccountId));
     }
+    if (companyId) {
+      weeklyConditions.push(eq(emailAccounts.companyId, companyId));
+    }
     const [weeklyEmails] = await db
       .select({ count: sql<number>`count(*)` })
       .from(emails)
+      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
       .where(and(...weeklyConditions));
     
     // Email type breakdown (this month)
@@ -1400,12 +1430,16 @@ export class DatabaseStorage implements IStorage {
     if (emailAccountId) {
       typeBreakdownConditions.push(eq(emails.emailAccountId, emailAccountId));
     }
+    if (companyId) {
+      typeBreakdownConditions.push(eq(emailAccounts.companyId, companyId));
+    }
     const emailTypeBreakdown = await db
       .select({
         type: emails.emailType,
         count: sql<number>`count(*)`,
       })
       .from(emails)
+      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
       .where(and(...typeBreakdownConditions))
       .groupBy(emails.emailType);
     
@@ -1414,12 +1448,16 @@ export class DatabaseStorage implements IStorage {
     if (emailAccountId) {
       priorityConditions.push(eq(emails.emailAccountId, emailAccountId));
     }
+    if (companyId) {
+      priorityConditions.push(eq(emailAccounts.companyId, companyId));
+    }
     const priorityBreakdown = await db
       .select({
         priority: emails.priority,
         count: sql<number>`count(*)`,
       })
       .from(emails)
+      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
       .where(and(...priorityConditions))
       .groupBy(emails.priority);
     
@@ -1463,7 +1501,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Dashboard charts data
-  async getDashboardCharts(): Promise<any> {
+  async getDashboardCharts(companyId?: string): Promise<any> {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     
@@ -1478,19 +1516,22 @@ export class DatabaseStorage implements IStorage {
       dayStart.setHours(0, 0, 0, 0);
       const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
       
+      const processedConditions = [
+        gte(emails.receivedAt, dayStart),
+        lte(emails.receivedAt, dayEnd),
+        or(
+          eq(emails.status, 'traite'),
+          eq(emails.status, 'archive')
+        )
+      ];
+      if (companyId) {
+        processedConditions.push(eq(emailAccounts.companyId, companyId));
+      }
       const [processed] = await db
         .select({ count: sql<number>`count(*)` })
         .from(emails)
-        .where(
-          and(
-            gte(emails.receivedAt, dayStart),
-            lte(emails.receivedAt, dayEnd),
-            or(
-              eq(emails.status, 'traite'),
-              eq(emails.status, 'archive')
-            )
-          )
-        );
+        .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
+        .where(and(...processedConditions));
       
       const dayNames = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
       emailEvolution.push({
@@ -1506,15 +1547,17 @@ export class DatabaseStorage implements IStorage {
       weekStart.setHours(0, 0, 0, 0);
       const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
       
+      const weekConditions = [
+        gte(appointments.startTime, weekStart),
+        lte(appointments.startTime, weekEnd)
+      ];
+      if (companyId) {
+        weekConditions.push(eq(appointments.companyId, companyId));
+      }
       const [count] = await db
         .select({ count: sql<number>`count(*)` })
         .from(appointments)
-        .where(
-          and(
-            gte(appointments.startTime, weekStart),
-            lte(appointments.startTime, weekEnd)
-          )
-        );
+        .where(and(...weekConditions));
       
       appointmentsByWeek.push({
         week: `${4 - i}`,
@@ -1523,13 +1566,18 @@ export class DatabaseStorage implements IStorage {
     }
     
     // Répartition des emails reçus par catégorie (avec couleurs)
+    const emailDistributionConditions = [gte(emails.receivedAt, startOfMonth)];
+    if (companyId) {
+      emailDistributionConditions.push(eq(emailAccounts.companyId, companyId));
+    }
     const emailDistribution = await db
       .select({
         type: emails.emailType,
         count: sql<number>`count(*)`,
       })
       .from(emails)
-      .where(gte(emails.receivedAt, startOfMonth))
+      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
+      .where(and(...emailDistributionConditions))
       .groupBy(emails.emailType);
     
     // Taux de traitement par catégorie (avec couleurs)
@@ -1537,23 +1585,31 @@ export class DatabaseStorage implements IStorage {
     const categoryKeys = Array.from(new Set(categoriesData.map(cat => cat.key)));
     
     for (const categoryKey of categoryKeys) {
+      const totalConditions = [eq(emails.emailType, categoryKey)];
+      if (companyId) {
+        totalConditions.push(eq(emailAccounts.companyId, companyId));
+      }
       const [total] = await db
         .select({ count: sql<number>`count(*)` })
         .from(emails)
-        .where(eq(emails.emailType, categoryKey));
+        .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
+        .where(and(...totalConditions));
       
+      const processedConditions = [
+        eq(emails.emailType, categoryKey),
+        or(
+          eq(emails.status, 'traite'),
+          eq(emails.status, 'archive')
+        )
+      ];
+      if (companyId) {
+        processedConditions.push(eq(emailAccounts.companyId, companyId));
+      }
       const [processed] = await db
         .select({ count: sql<number>`count(*)` })
         .from(emails)
-        .where(
-          and(
-            eq(emails.emailType, categoryKey),
-            or(
-              eq(emails.status, 'traite'),
-              eq(emails.status, 'archive')
-            )
-          )
-        );
+        .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
+        .where(and(...processedConditions));
       
       const totalCount = Number(total?.count || 0);
       const processedCount = Number(processed?.count || 0);
@@ -1569,29 +1625,47 @@ export class DatabaseStorage implements IStorage {
     }
     
     // Funnel de traitement des emails
+    const receivedConditions = companyId ? [eq(emailAccounts.companyId, companyId)] : [];
     const [received] = await db
       .select({ count: sql<number>`count(*)` })
-      .from(emails);
+      .from(emails)
+      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
+      .where(receivedConditions.length > 0 ? and(...receivedConditions) : undefined);
     
+    const sortedConditions = [ne(emails.status, 'nouveau')];
+    if (companyId) {
+      sortedConditions.push(eq(emailAccounts.companyId, companyId));
+    }
     const [sorted] = await db
       .select({ count: sql<number>`count(*)` })
       .from(emails)
-      .where(ne(emails.status, 'nouveau'));
+      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
+      .where(and(...sortedConditions));
     
+    const assignedConditions = [sql`${emails.assignedToId} IS NOT NULL`];
+    if (companyId) {
+      assignedConditions.push(eq(emailAccounts.companyId, companyId));
+    }
     const [assigned] = await db
       .select({ count: sql<number>`count(*)` })
       .from(emails)
-      .where(sql`${emails.assignedToId} IS NOT NULL`);
+      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
+      .where(and(...assignedConditions));
     
+    const funnelProcessedConditions = [
+      or(
+        eq(emails.status, 'traite'),
+        eq(emails.status, 'archive')
+      )
+    ];
+    if (companyId) {
+      funnelProcessedConditions.push(eq(emailAccounts.companyId, companyId));
+    }
     const [processed] = await db
       .select({ count: sql<number>`count(*)` })
       .from(emails)
-      .where(
-        or(
-          eq(emails.status, 'traite'),
-          eq(emails.status, 'archive')
-        )
-      );
+      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
+      .where(and(...funnelProcessedConditions));
     
     return {
       emailEvolution,
@@ -1655,7 +1729,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Get task evolution for a specific period
-  async getTaskEvolutionByWeek(weekOffset: number = 0, periodType: 'week' | 'month' = 'week'): Promise<any> {
+  async getTaskEvolutionByWeek(weekOffset: number = 0, periodType: 'week' | 'month' = 'week', companyId?: string): Promise<any> {
     const { periods } = this.getPeriodDates(periodType, weekOffset);
     const evolution = [];
     
@@ -1664,38 +1738,44 @@ export class DatabaseStorage implements IStorage {
       dayStart.setHours(0, 0, 0, 0);
       const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
       
+      const nouveauConditions = [
+        gte(tasks.createdAt, dayStart),
+        lte(tasks.createdAt, dayEnd),
+        eq(tasks.status, 'nouveau')
+      ];
+      if (companyId) {
+        nouveauConditions.push(eq(tasks.companyId, companyId));
+      }
       const [nouveau] = await db
         .select({ count: sql<number>`count(*)` })
         .from(tasks)
-        .where(
-          and(
-            gte(tasks.createdAt, dayStart),
-            lte(tasks.createdAt, dayEnd),
-            eq(tasks.status, 'nouveau')
-          )
-        );
+        .where(and(...nouveauConditions));
       
+      const enCoursConditions = [
+        gte(tasks.createdAt, dayStart),
+        lte(tasks.createdAt, dayEnd),
+        eq(tasks.status, 'en_cours')
+      ];
+      if (companyId) {
+        enCoursConditions.push(eq(tasks.companyId, companyId));
+      }
       const [enCours] = await db
         .select({ count: sql<number>`count(*)` })
         .from(tasks)
-        .where(
-          and(
-            gte(tasks.createdAt, dayStart),
-            lte(tasks.createdAt, dayEnd),
-            eq(tasks.status, 'en_cours')
-          )
-        );
+        .where(and(...enCoursConditions));
       
+      const termineConditions = [
+        gte(tasks.createdAt, dayStart),
+        lte(tasks.createdAt, dayEnd),
+        eq(tasks.status, 'termine')
+      ];
+      if (companyId) {
+        termineConditions.push(eq(tasks.companyId, companyId));
+      }
       const [termine] = await db
         .select({ count: sql<number>`count(*)` })
         .from(tasks)
-        .where(
-          and(
-            gte(tasks.createdAt, dayStart),
-            lte(tasks.createdAt, dayEnd),
-            eq(tasks.status, 'termine')
-          )
-        );
+        .where(and(...termineConditions));
       
       evolution.push({
         day: this.getPeriodLabel(periodDate, periodType),
@@ -1709,7 +1789,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Get alert evolution for a specific period
-  async getAlertEvolutionByWeek(weekOffset: number = 0, periodType: 'week' | 'month' = 'week'): Promise<any> {
+  async getAlertEvolutionByWeek(weekOffset: number = 0, periodType: 'week' | 'month' = 'week', companyId?: string): Promise<any> {
     const { periods } = this.getPeriodDates(periodType, weekOffset);
     const evolution = [];
     
@@ -1718,27 +1798,31 @@ export class DatabaseStorage implements IStorage {
       dayStart.setHours(0, 0, 0, 0);
       const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
       
+      const activeConditions = [
+        gte(alerts.createdAt, dayStart),
+        lte(alerts.createdAt, dayEnd),
+        isNull(alerts.resolvedAt)
+      ];
+      if (companyId) {
+        activeConditions.push(eq(alerts.companyId, companyId));
+      }
       const [active] = await db
         .select({ count: sql<number>`count(*)` })
         .from(alerts)
-        .where(
-          and(
-            gte(alerts.createdAt, dayStart),
-            lte(alerts.createdAt, dayEnd),
-            isNull(alerts.resolvedAt)
-          )
-        );
+        .where(and(...activeConditions));
       
+      const resolvedConditions = [
+        gte(alerts.createdAt, dayStart),
+        lte(alerts.createdAt, dayEnd),
+        sql`${alerts.resolvedAt} IS NOT NULL`
+      ];
+      if (companyId) {
+        resolvedConditions.push(eq(alerts.companyId, companyId));
+      }
       const [resolved] = await db
         .select({ count: sql<number>`count(*)` })
         .from(alerts)
-        .where(
-          and(
-            gte(alerts.createdAt, dayStart),
-            lte(alerts.createdAt, dayEnd),
-            sql`${alerts.resolvedAt} IS NOT NULL`
-          )
-        );
+        .where(and(...resolvedConditions));
       
       evolution.push({
         day: this.getPeriodLabel(periodDate, periodType),
@@ -1751,7 +1835,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Get appointments for a specific period
-  async getAppointmentsByWeek(weekOffset: number = 0, periodType: 'week' | 'month' = 'week'): Promise<any> {
+  async getAppointmentsByWeek(weekOffset: number = 0, periodType: 'week' | 'month' = 'week', companyId?: string): Promise<any> {
     const { periods } = this.getPeriodDates(periodType, weekOffset);
     const appointmentsData = [];
     
@@ -1760,15 +1844,17 @@ export class DatabaseStorage implements IStorage {
       dayStart.setHours(0, 0, 0, 0);
       const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
       
+      const conditions = [
+        gte(appointments.startTime, dayStart),
+        lte(appointments.startTime, dayEnd)
+      ];
+      if (companyId) {
+        conditions.push(eq(appointments.companyId, companyId));
+      }
       const [count] = await db
         .select({ count: sql<number>`count(*)` })
         .from(appointments)
-        .where(
-          and(
-            gte(appointments.startTime, dayStart),
-            lte(appointments.startTime, dayEnd)
-          )
-        );
+        .where(and(...conditions));
       
       appointmentsData.push({
         day: this.getPeriodLabel(periodDate, periodType),
@@ -1780,7 +1866,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Get email distribution for a specific period
-  async getEmailDistribution(offset: number = 0, periodType: 'week' | 'month' = 'week', emailAccountId?: string): Promise<any> {
+  async getEmailDistribution(offset: number = 0, periodType: 'week' | 'month' = 'week', emailAccountId?: string, companyId?: string): Promise<any> {
     const { start, end } = this.getPeriodDates(periodType, offset);
     
     const categoriesData = await db.select().from(emailCategories);
@@ -1793,6 +1879,9 @@ export class DatabaseStorage implements IStorage {
     if (emailAccountId) {
       conditions.push(eq(emails.emailAccountId, emailAccountId));
     }
+    if (companyId) {
+      conditions.push(eq(emailAccounts.companyId, companyId));
+    }
     
     const emailDistribution = await db
       .select({
@@ -1800,6 +1889,7 @@ export class DatabaseStorage implements IStorage {
         count: sql<number>`count(*)`,
       })
       .from(emails)
+      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
       .where(and(...conditions))
       .groupBy(emails.emailType);
     
@@ -1814,7 +1904,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Get email evolution for a specific period
-  async getEmailEvolution(offset: number = 0, periodType: 'week' | 'month' = 'week', emailAccountId?: string): Promise<any> {
+  async getEmailEvolution(offset: number = 0, periodType: 'week' | 'month' = 'week', emailAccountId?: string, companyId?: string): Promise<any> {
     const { periods } = this.getPeriodDates(periodType, offset);
     const evolution = [];
     
@@ -1834,10 +1924,14 @@ export class DatabaseStorage implements IStorage {
       if (emailAccountId) {
         conditions.push(eq(emails.emailAccountId, emailAccountId));
       }
+      if (companyId) {
+        conditions.push(eq(emailAccounts.companyId, companyId));
+      }
       
       const [processed] = await db
         .select({ count: sql<number>`count(*)` })
         .from(emails)
+        .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
         .where(and(...conditions));
       
       evolution.push({
@@ -1850,7 +1944,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Get category processing rate for a specific period
-  async getCategoryProcessing(offset: number = 0, periodType: 'week' | 'month' = 'week', emailAccountId?: string): Promise<any> {
+  async getCategoryProcessing(offset: number = 0, periodType: 'week' | 'month' = 'week', emailAccountId?: string, companyId?: string): Promise<any> {
     const { start, end } = this.getPeriodDates(periodType, offset);
     
     const categoriesData = await db.select().from(emailCategories);
@@ -1868,10 +1962,14 @@ export class DatabaseStorage implements IStorage {
       if (emailAccountId) {
         totalConditions.push(eq(emails.emailAccountId, emailAccountId));
       }
+      if (companyId) {
+        totalConditions.push(eq(emailAccounts.companyId, companyId));
+      }
       
       const [total] = await db
         .select({ count: sql<number>`count(*)` })
         .from(emails)
+        .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
         .where(and(...totalConditions));
       
       const processedConditions = [
@@ -1886,10 +1984,14 @@ export class DatabaseStorage implements IStorage {
       if (emailAccountId) {
         processedConditions.push(eq(emails.emailAccountId, emailAccountId));
       }
+      if (companyId) {
+        processedConditions.push(eq(emailAccounts.companyId, companyId));
+      }
       
       const [processed] = await db
         .select({ count: sql<number>`count(*)` })
         .from(emails)
+        .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
         .where(and(...processedConditions));
       
       const totalCount = Number(total?.count || 0);
@@ -1911,37 +2013,46 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Advanced KPIs
-  async getAdvancedKPIs(): Promise<any> {
+  async getAdvancedKPIs(companyId?: string): Promise<any> {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
     
     // 1. RESPONSE RATE - Percentage of emails that received a response
+    // Filter by companyId via email_accounts join
+    const responseRateConditions = [eq(emails.requiresResponse, true)];
+    if (companyId) {
+      responseRateConditions.push(eq(emailAccounts.companyId, companyId));
+    }
     const [totalEmailsRequiringResponse] = await db
       .select({ count: sql<number>`count(*)` })
       .from(emails)
-      .where(eq(emails.requiresResponse, true));
+      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
+      .where(and(...responseRateConditions));
     
     const totalRequiringResponse = Number(totalEmailsRequiringResponse?.count || 0);
     
     // Count emails that REQUIRE response AND have at least one response (approved or sent)
     // Use COUNT DISTINCT with subquery to ensure accurate count (no duplicates)
+    const responsesConditions = [
+      eq(emails.requiresResponse, true),
+      or(
+        eq(emailResponses.isApproved, true),
+        eq(emailResponses.isSent, true)
+      )
+    ];
+    if (companyId) {
+      responsesConditions.push(eq(emailAccounts.companyId, companyId));
+    }
     const [emailsWithResponses] = await db
       .select({ 
         count: sql<number>`count(DISTINCT ${emails.id})` 
       })
       .from(emails)
       .innerJoin(emailResponses, eq(emails.id, emailResponses.emailId))
-      .where(
-        and(
-          eq(emails.requiresResponse, true),
-          or(
-            eq(emailResponses.isApproved, true),
-            eq(emailResponses.isSent, true)
-          )
-        )
-      );
+      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
+      .where(and(...responsesConditions));
     
     const emailsWithResponseCount = Number(emailsWithResponses?.count || 0);
     const responseRate = totalRequiringResponse > 0 
@@ -1949,18 +2060,23 @@ export class DatabaseStorage implements IStorage {
       : 0;
     
     // 2. AVERAGE PROCESSING TIME - Average time from received to processed (in hours)
+    const processedConditions = [
+      or(
+        eq(emails.status, 'traite'),
+        eq(emails.status, 'archive')
+      )
+    ];
+    if (companyId) {
+      processedConditions.push(eq(emailAccounts.companyId, companyId));
+    }
     const processedEmails = await db
       .select({
         receivedAt: emails.receivedAt,
         updatedAt: emails.updatedAt,
       })
       .from(emails)
-      .where(
-        or(
-          eq(emails.status, 'traite'),
-          eq(emails.status, 'archive')
-        )
-      );
+      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
+      .where(and(...processedConditions));
     
     let totalProcessingTime = 0;
     let processedCount = 0;
@@ -1980,10 +2096,15 @@ export class DatabaseStorage implements IStorage {
       : 0;
     
     // 3. EXPECTED REVENUE - Sum of amounts from quotes (devis)
+    const quotesConditions = [eq(emails.emailType, 'devis')];
+    if (companyId) {
+      quotesConditions.push(eq(emailAccounts.companyId, companyId));
+    }
     const allQuotes = await db
       .select({ aiAnalysis: emails.aiAnalysis })
       .from(emails)
-      .where(eq(emails.emailType, 'devis'));
+      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
+      .where(and(...quotesConditions));
     
     let expectedRevenue = 0;
     let quotesWithAmount = 0;
@@ -2000,63 +2121,83 @@ export class DatabaseStorage implements IStorage {
     // 4. MONTHLY EVOLUTION - Compare current month vs last month
     
     // Current month
+    const currentMonthEmailsConditions = [gte(emails.receivedAt, startOfMonth)];
+    if (companyId) {
+      currentMonthEmailsConditions.push(eq(emailAccounts.companyId, companyId));
+    }
     const [currentMonthEmails] = await db
       .select({ count: sql<number>`count(*)` })
       .from(emails)
-      .where(gte(emails.receivedAt, startOfMonth));
+      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
+      .where(and(...currentMonthEmailsConditions));
     
+    const currentMonthProcessedConditions = [
+      gte(emails.receivedAt, startOfMonth),
+      or(
+        eq(emails.status, 'traite'),
+        eq(emails.status, 'archive')
+      )
+    ];
+    if (companyId) {
+      currentMonthProcessedConditions.push(eq(emailAccounts.companyId, companyId));
+    }
     const [currentMonthProcessed] = await db
       .select({ count: sql<number>`count(*)` })
       .from(emails)
-      .where(
-        and(
-          gte(emails.receivedAt, startOfMonth),
-          or(
-            eq(emails.status, 'traite'),
-            eq(emails.status, 'archive')
-          )
-        )
-      );
+      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
+      .where(and(...currentMonthProcessedConditions));
     
+    const currentMonthAppointmentsConditions = [gte(appointments.createdAt, startOfMonth)];
+    if (companyId) {
+      currentMonthAppointmentsConditions.push(eq(appointments.companyId, companyId));
+    }
     const [currentMonthAppointments] = await db
       .select({ count: sql<number>`count(*)` })
       .from(appointments)
-      .where(gte(appointments.createdAt, startOfMonth));
+      .where(and(...currentMonthAppointmentsConditions));
     
     // Last month
+    const lastMonthEmailsConditions = [
+      gte(emails.receivedAt, startOfLastMonth),
+      lte(emails.receivedAt, endOfLastMonth)
+    ];
+    if (companyId) {
+      lastMonthEmailsConditions.push(eq(emailAccounts.companyId, companyId));
+    }
     const [lastMonthEmails] = await db
       .select({ count: sql<number>`count(*)` })
       .from(emails)
-      .where(
-        and(
-          gte(emails.receivedAt, startOfLastMonth),
-          lte(emails.receivedAt, endOfLastMonth)
-        )
-      );
+      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
+      .where(and(...lastMonthEmailsConditions));
     
+    const lastMonthProcessedConditions = [
+      gte(emails.receivedAt, startOfLastMonth),
+      lte(emails.receivedAt, endOfLastMonth),
+      or(
+        eq(emails.status, 'traite'),
+        eq(emails.status, 'archive')
+      )
+    ];
+    if (companyId) {
+      lastMonthProcessedConditions.push(eq(emailAccounts.companyId, companyId));
+    }
     const [lastMonthProcessed] = await db
       .select({ count: sql<number>`count(*)` })
       .from(emails)
-      .where(
-        and(
-          gte(emails.receivedAt, startOfLastMonth),
-          lte(emails.receivedAt, endOfLastMonth),
-          or(
-            eq(emails.status, 'traite'),
-            eq(emails.status, 'archive')
-          )
-        )
-      );
+      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
+      .where(and(...lastMonthProcessedConditions));
     
+    const lastMonthAppointmentsConditions = [
+      gte(appointments.createdAt, startOfLastMonth),
+      lte(appointments.createdAt, endOfLastMonth)
+    ];
+    if (companyId) {
+      lastMonthAppointmentsConditions.push(eq(appointments.companyId, companyId));
+    }
     const [lastMonthAppointments] = await db
       .select({ count: sql<number>`count(*)` })
       .from(appointments)
-      .where(
-        and(
-          gte(appointments.createdAt, startOfLastMonth),
-          lte(appointments.createdAt, endOfLastMonth)
-        )
-      );
+      .where(and(...lastMonthAppointmentsConditions));
     
     const currentEmails = Number(currentMonthEmails?.count || 0);
     const lastEmails = Number(lastMonthEmails?.count || 0);

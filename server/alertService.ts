@@ -108,7 +108,15 @@ export class AlertService {
           );
 
           if (!hasUnresolvedAlert) {
+            // Get companyId from email account
+            const emailAccount = await this.storage.getEmailAccountById(email.emailAccountId);
+            if (!emailAccount) {
+              console.error(`[Alerts] Email account not found for email ${email.id}`);
+              continue;
+            }
+            
             const alertData: InsertAlert = {
+              companyId: emailAccount.companyId,
               type: 'devis_sans_reponse',
               severity: 'critical',
               title: `Devis sans réponse: ${email.subject}`,
@@ -154,7 +162,15 @@ export class AlertService {
           );
 
           if (!hasUnresolvedAlert) {
+            // Get companyId from email account
+            const emailAccount = await this.storage.getEmailAccountById(email.emailAccountId);
+            if (!emailAccount) {
+              console.error(`[Alerts] Email account not found for email ${email.id}`);
+              continue;
+            }
+            
             const alertData: InsertAlert = {
+              companyId: emailAccount.companyId,
               type: 'facture_impayee',
               severity: 'warning',
               title: `Facture impayée: ${email.subject}`,
@@ -205,7 +221,15 @@ export class AlertService {
         );
 
         if (!hasUnresolvedAlert) {
+          // Get companyId from email account
+          const emailAccount = await this.storage.getEmailAccountById(email.emailAccountId);
+          if (!emailAccount) {
+            console.error(`[Alerts] Email account not found for email ${email.id}`);
+            continue;
+          }
+          
           const alertData: InsertAlert = {
+            companyId: emailAccount.companyId,
             type: 'email_non_traite',
             severity: 'warning',
             title: `Email urgent non traité: ${email.subject}`,
@@ -285,6 +309,7 @@ export class AlertService {
     } else {
       // Create new alert for all matching emails
       const alertData: InsertAlert = {
+        companyId: rule.companyId,
         type: `custom_rule_${rule.id}`,
         severity: rule.severity,
         title: rule.name,
@@ -352,6 +377,7 @@ export class AlertService {
 
       if (existingAlerts.length === 0) {
         const alertData: InsertAlert = {
+          companyId: rule.companyId,
           type: `custom_rule_${rule.id}`,
           severity: rule.severity,
           title: rule.name,

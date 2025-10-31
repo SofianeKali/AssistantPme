@@ -149,10 +149,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Email distribution by period
   app.get('/api/dashboard/email-distribution', isAuthenticated, async (req, res) => {
     try {
+      const companyId = (req.user as any).companyId;
       const offset = parseInt(req.query.offset as string) || 0;
       const periodType = (req.query.periodType as string) || 'week';
       const emailAccountId = req.query.emailAccountId as string | undefined;
-      const distribution = await storage.getEmailDistribution(offset, periodType as 'week' | 'month', emailAccountId);
+      const distribution = await storage.getEmailDistribution(offset, periodType as 'week' | 'month', emailAccountId, companyId);
       res.json(distribution);
     } catch (error) {
       console.error("Error fetching email distribution:", error);
@@ -163,10 +164,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Email evolution by period
   app.get('/api/dashboard/email-evolution', isAuthenticated, async (req, res) => {
     try {
+      const companyId = (req.user as any).companyId;
       const offset = parseInt(req.query.offset as string) || 0;
       const periodType = (req.query.periodType as string) || 'week';
       const emailAccountId = req.query.emailAccountId as string | undefined;
-      const evolution = await storage.getEmailEvolution(offset, periodType as 'week' | 'month', emailAccountId);
+      const evolution = await storage.getEmailEvolution(offset, periodType as 'week' | 'month', emailAccountId, companyId);
       res.json(evolution);
     } catch (error) {
       console.error("Error fetching email evolution:", error);
@@ -177,10 +179,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Category processing by period
   app.get('/api/dashboard/category-processing', isAuthenticated, async (req, res) => {
     try {
+      const companyId = (req.user as any).companyId;
       const offset = parseInt(req.query.offset as string) || 0;
       const periodType = (req.query.periodType as string) || 'week';
       const emailAccountId = req.query.emailAccountId as string | undefined;
-      const processing = await storage.getCategoryProcessing(offset, periodType as 'week' | 'month', emailAccountId);
+      const processing = await storage.getCategoryProcessing(offset, periodType as 'week' | 'month', emailAccountId, companyId);
       res.json(processing);
     } catch (error) {
       console.error("Error fetching category processing:", error);
