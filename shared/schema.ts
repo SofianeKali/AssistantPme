@@ -26,9 +26,28 @@ export const sessions = pgTable(
   (table) => [index("IDX_session_expire").on(table.expire)],
 );
 
+// Companies table - Multi-tenant isolation
+export const companies = pgTable("companies", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(), // Raison sociale
+  address: text("address"), // Adresse complète
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertCompanySchema = createInsertSchema(companies).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertCompany = z.infer<typeof insertCompanySchema>;
+export type Company = typeof companies.$inferSelect;
+
 // User storage table - Required for Replit Auth
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  companyId: varchar("company_id").references(() => companies.id, { onDelete: "cascade" }),
   email: varchar("email").unique(),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
@@ -60,6 +79,7 @@ export type User = typeof users.$inferSelect;
 // Email configuration table
 export const emailAccounts = pgTable("email_accounts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  companyId: varchar("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   provider: varchar("provider").notNull(), // gmail, outlook
   email: varchar("email").notNull(),
@@ -105,10 +125,11 @@ export const insertTagSchema = createInsertSchema(tags).omit({
 export type InsertTag = z.infer<typeof insertTagSchema>;
 export type Tag = typeof tags.$inferSelect;
 
-// Email Categories table - Global custom categories for email classification
+// Email Categories table - Company-specific custom categories for email classification
 export const emailCategories = pgTable("email_categories", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  key: varchar("key").notNull().unique(), // Unique identifier: devis, facture, rdv, autre, custom-1, etc.
+  companyId: varchar("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
+  key: varchar("key").notNull(), // Unique identifier per company: devis, facture, rdv, autre, custom-1, etc.
   label: varchar("label").notNull(), // Display name: Devis, Factures, Rendez-vous, etc.
   color: varchar("color").notNull().default("#6366f1"), // Hex color for UI
   icon: varchar("icon").notNull().default("Mail"), // Lucide icon name
@@ -119,7 +140,9 @@ export const emailCategories = pgTable("email_categories", {
   redirectEmails: text("redirect_emails").array().default(sql`'{}'`), // Email addresses to forward attachments to
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => ({
+  uniqueKeyPerCompany: unique("unique_category_key_per_company").on(table.companyId, table.key)
+}));
 
 export const insertEmailCategorySchema = createInsertSchema(emailCategories).omit({
   id: true,
@@ -149,6 +172,7 @@ export type EmailAccountCategory = typeof emailAccountCategories.$inferSelect;
 // Emails table
 export const emails = pgTable("emails", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  companyId: varchar("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }), // Owner of this email
   emailAccountId: varchar("email_account_id").notNull().references(() => emailAccounts.id, { onDelete: "cascade" }),
   messageId: varchar("message_id").notNull(), // Original email message ID
@@ -238,6 +262,7 @@ export const documentTags = pgTable("document_tags", {
 // Appointments (RDV)
 export const appointments = pgTable("appointments", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  companyId: varchar("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
   emailId: varchar("email_id").references(() => emails.id),
   title: text("title").notNull(),
   description: text("description"),
@@ -274,6 +299,7 @@ export const appointmentTags = pgTable("appointment_tags", {
 // Tasks (Tâches à réaliser)
 export const tasks = pgTable("tasks", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  companyId: varchar("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
   emailId: varchar("email_id").references(() => emails.id, { onDelete: "cascade" }),
   categoryId: varchar("category_id").references(() => emailCategories.id),
   title: text("title").notNull(),
@@ -298,6 +324,7 @@ export type Task = typeof tasks.$inferSelect;
 // Alerts
 export const alerts = pgTable("alerts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  companyId: varchar("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
   type: varchar("type").notNull(), // devis_sans_reponse, facture_impayee, email_non_traite, rdv_a_venir
   severity: varchar("severity").notNull().default("info"), // critical, warning, info
   title: text("title").notNull(),
@@ -332,11 +359,14 @@ export const alertEmails = pgTable("alert_emails", {
 // Configuration settings
 export const settings = pgTable("settings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  key: varchar("key").notNull().unique(),
+  companyId: varchar("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
+  key: varchar("key").notNull(),
   value: jsonb("value").notNull(),
   description: text("description"),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => ({
+  uniqueKeyPerCompany: unique("unique_setting_key_per_company").on(table.companyId, table.key)
+}));
 
 export const insertSettingSchema = createInsertSchema(settings).omit({
   id: true,
@@ -422,6 +452,7 @@ export type Reminder = typeof reminders.$inferSelect;
 // Alert Rules (règles d'alertes personnalisées via IA)
 export const alertRules = pgTable("alert_rules", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  companyId: varchar("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
   name: text("name").notNull(), // Nom de la règle (ex: "Factures non traitées 24h")
   prompt: text("prompt").notNull(), // Prompt en langage naturel saisi par l'admin
   ruleData: jsonb("rule_data").notNull(), // Règle structurée générée par l'IA
