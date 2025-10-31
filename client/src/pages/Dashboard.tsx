@@ -1071,51 +1071,67 @@ export default function Dashboard() {
         </CardHeader>
         <CardContent>
           {tasksEvolutionLoading ? (
-            <Skeleton className="h-[250px]" />
+            <Skeleton className="h-[200px] sm:h-[250px]" />
           ) : (
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={tasksEvolution || []}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="hsl(var(--border))"
-                />
-                <XAxis
-                  dataKey="day"
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "6px",
-                  }}
-                />
-                <Legend />
-                <Bar
-                  dataKey="nouveau"
-                  stackId="a"
-                  fill={COLORS.chart3}
-                  radius={[0, 0, 0, 0]}
-                  name="Nouveau"
-                />
-                <Bar
-                  dataKey="enCours"
-                  stackId="a"
-                  fill={COLORS.primary}
-                  radius={[0, 0, 0, 0]}
-                  name="En cours"
-                />
-                <Bar
-                  dataKey="termine"
-                  stackId="a"
-                  fill={COLORS.chart2}
-                  radius={[4, 4, 0, 0]}
-                  name="Terminé"
-                />
-              </BarChart>
-            </ResponsiveContainer>
+            <div className="h-[200px] sm:h-[250px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart 
+                  data={tasksEvolution || []}
+                  margin={{ top: 5, right: 5, left: -10, bottom: 5 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="hsl(var(--border))"
+                  />
+                  <XAxis
+                    dataKey="day"
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                    tick={{ fontSize: 12 }}
+                  />
+                  <YAxis 
+                    stroke="hsl(var(--muted-foreground))" 
+                    fontSize={12}
+                    tick={{ fontSize: 12 }}
+                    width={40}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "6px",
+                      fontSize: "13px",
+                    }}
+                    cursor={{ fill: "hsl(var(--muted) / 0.2)" }}
+                  />
+                  <Legend 
+                    wrapperStyle={{ fontSize: "13px" }}
+                    iconType="circle"
+                  />
+                  <Bar
+                    dataKey="nouveau"
+                    stackId="a"
+                    fill={COLORS.chart3}
+                    radius={[0, 0, 0, 0]}
+                    name="Nouveau"
+                  />
+                  <Bar
+                    dataKey="enCours"
+                    stackId="a"
+                    fill={COLORS.primary}
+                    radius={[0, 0, 0, 0]}
+                    name="En cours"
+                  />
+                  <Bar
+                    dataKey="termine"
+                    stackId="a"
+                    fill={COLORS.chart2}
+                    radius={[4, 4, 0, 0]}
+                    name="Terminé"
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -1138,44 +1154,60 @@ export default function Dashboard() {
         </CardHeader>
         <CardContent>
           {alertsEvolutionLoading ? (
-            <Skeleton className="h-[250px]" />
+            <Skeleton className="h-[200px] sm:h-[250px]" />
           ) : (
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={alertsEvolution || []}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="hsl(var(--border))"
-                />
-                <XAxis
-                  dataKey="day"
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "6px",
-                  }}
-                />
-                <Legend />
-                <Bar
-                  dataKey="active"
-                  stackId="a"
-                  fill={COLORS.chart3}
-                  radius={[0, 0, 0, 0]}
-                  name="Actives"
-                />
-                <Bar
-                  dataKey="resolved"
-                  stackId="a"
-                  fill={COLORS.chart1}
-                  radius={[4, 4, 0, 0]}
-                  name="Résolues"
-                />
-              </BarChart>
-            </ResponsiveContainer>
+            <div className="h-[200px] sm:h-[250px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart 
+                  data={alertsEvolution || []}
+                  margin={{ top: 5, right: 5, left: -10, bottom: 5 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="hsl(var(--border))"
+                  />
+                  <XAxis
+                    dataKey="day"
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                    tick={{ fontSize: 12 }}
+                  />
+                  <YAxis 
+                    stroke="hsl(var(--muted-foreground))" 
+                    fontSize={12}
+                    tick={{ fontSize: 12 }}
+                    width={40}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "6px",
+                      fontSize: "13px",
+                    }}
+                    cursor={{ fill: "hsl(var(--muted) / 0.2)" }}
+                  />
+                  <Legend 
+                    wrapperStyle={{ fontSize: "13px" }}
+                    iconType="circle"
+                  />
+                  <Bar
+                    dataKey="active"
+                    stackId="a"
+                    fill={COLORS.chart3}
+                    radius={[0, 0, 0, 0]}
+                    name="Actives"
+                  />
+                  <Bar
+                    dataKey="resolved"
+                    stackId="a"
+                    fill={COLORS.chart1}
+                    radius={[4, 4, 0, 0]}
+                    name="Résolues"
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           )}
         </CardContent>
       </Card>
