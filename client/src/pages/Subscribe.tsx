@@ -1,54 +1,77 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import { loadStripe } from '@stripe/stripe-js';
+import {
+  Elements,
+  PaymentElement,
+  useStripe,
+  useElements,
+} from "@stripe/react-stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
 import { apiRequest } from "@/lib/queryClient";
 import { Loader2, Check, ArrowLeft } from "lucide-react";
 
 const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
 if (!stripePublicKey) {
-  throw new Error('Missing VITE_STRIPE_PUBLIC_KEY environment variable');
+  throw new Error("Missing VITE_STRIPE_PUBLIC_KEY environment variable");
 }
 const stripePromise = loadStripe(stripePublicKey);
 
 const subscriptionSchema = z.object({
   firstName: z.string().min(2, "Le prénom doit contenir au moins 2 caractères"),
   lastName: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
-  companyName: z.string().min(2, "La raison sociale doit contenir au moins 2 caractères"),
-  companyAddress: z.string().min(5, "L'adresse doit contenir au moins 5 caractères"),
+  companyName: z
+    .string()
+    .min(2, "La raison sociale doit contenir au moins 2 caractères"),
+  companyAddress: z
+    .string()
+    .min(5, "L'adresse doit contenir au moins 5 caractères"),
   email: z.string().email("Email invalide"),
-  plan: z.enum(['starter', 'professional', 'enterprise']),
+  plan: z.enum(["starter", "professional", "enterprise"]),
 });
 
 type SubscriptionFormData = z.infer<typeof subscriptionSchema>;
 
 const PLAN_DETAILS = {
   starter: {
-    name: 'Starter',
-    price: 59,
-    users: '1-5',
-    emails: '500/mois',
+    name: "Starter",
+    price: 1,
+    users: "1-5",
+    emails: "500/mois",
   },
   professional: {
-    name: 'Professional',
+    name: "Professional",
     price: 149,
-    users: '5-20',
-    emails: '2 000/mois',
+    users: "5-20",
+    emails: "2 000/mois",
   },
   enterprise: {
-    name: 'Enterprise',
+    name: "Enterprise",
     price: 399,
-    users: '20-100',
-    emails: 'Illimité',
+    users: "20-100",
+    emails: "Illimité",
   },
 };
 
@@ -120,13 +143,14 @@ function CheckoutForm({ plan, onBack }: { plan: string; onBack: () => void }) {
               Traitement...
             </>
           ) : (
-            'Confirmer le paiement'
+            "Confirmer le paiement"
           )}
         </Button>
       </div>
-      
+
       <p className="text-xs text-muted-foreground text-center">
-        Paiement sécurisé par Stripe • Prélèvement automatique le 5 de chaque mois
+        Paiement sécurisé par Stripe • Prélèvement automatique le 5 de chaque
+        mois
       </p>
     </form>
   );
@@ -137,11 +161,11 @@ export default function Subscribe() {
   const { toast } = useToast();
   const [clientSecret, setClientSecret] = useState<string>("");
   const [isCreating, setIsCreating] = useState(false);
-  const [step, setStep] = useState<'info' | 'payment'>('info');
-  
+  const [step, setStep] = useState<"info" | "payment">("info");
+
   // Get plan from URL query params
   const searchParams = new URLSearchParams(window.location.search);
-  const selectedPlan = searchParams.get('plan') || 'professional';
+  const selectedPlan = searchParams.get("plan") || "professional";
 
   const form = useForm<SubscriptionFormData>({
     resolver: zodResolver(subscriptionSchema),
@@ -151,25 +175,31 @@ export default function Subscribe() {
       companyName: "",
       companyAddress: "",
       email: "",
-      plan: selectedPlan as 'starter' | 'professional' | 'enterprise',
+      plan: selectedPlan as "starter" | "professional" | "enterprise",
     },
   });
 
-  const plan = form.watch('plan');
+  const plan = form.watch("plan");
   const planDetails = PLAN_DETAILS[plan as keyof typeof PLAN_DETAILS];
 
   const onSubmit = async (data: SubscriptionFormData) => {
     setIsCreating(true);
     try {
-      const response = await apiRequest('POST', '/api/create-subscription', data);
+      const response = await apiRequest(
+        "POST",
+        "/api/create-subscription",
+        data,
+      );
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.message || 'Erreur lors de la création de l\'abonnement');
+        throw new Error(
+          result.message || "Erreur lors de la création de l'abonnement",
+        );
       }
 
       setClientSecret(result.clientSecret);
-      setStep('payment');
+      setStep("payment");
 
       toast({
         title: "Étape suivante",
@@ -188,11 +218,18 @@ export default function Subscribe() {
 
   const handleStartTrial = async () => {
     const formData = form.getValues();
-    
-    if (!formData.firstName || !formData.lastName || !formData.companyName || !formData.companyAddress || !formData.email) {
+
+    if (
+      !formData.firstName ||
+      !formData.lastName ||
+      !formData.companyName ||
+      !formData.companyAddress ||
+      !formData.email
+    ) {
       toast({
         title: "Informations manquantes",
-        description: "Veuillez remplir toutes les informations avant de démarrer l'essai",
+        description:
+          "Veuillez remplir toutes les informations avant de démarrer l'essai",
         variant: "destructive",
       });
       return;
@@ -200,7 +237,7 @@ export default function Subscribe() {
 
     setIsCreating(true);
     try {
-      const response = await apiRequest('POST', '/api/start-trial', {
+      const response = await apiRequest("POST", "/api/start-trial", {
         firstName: formData.firstName,
         lastName: formData.lastName,
         companyName: formData.companyName,
@@ -210,7 +247,9 @@ export default function Subscribe() {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.message || 'Erreur lors de la création de l\'essai gratuit');
+        throw new Error(
+          result.message || "Erreur lors de la création de l'essai gratuit",
+        );
       }
 
       toast({
@@ -220,7 +259,7 @@ export default function Subscribe() {
 
       // Redirect to payment success with trial info
       setTimeout(() => {
-        navigate('/payment-success?trial=true');
+        navigate("/payment-success?trial=true");
       }, 1500);
     } catch (error: any) {
       toast({
@@ -234,8 +273,8 @@ export default function Subscribe() {
   };
 
   const handleBack = () => {
-    setStep('info');
-    setClientSecret('');
+    setStep("info");
+    setClientSecret("");
   };
 
   return (
@@ -249,18 +288,22 @@ export default function Subscribe() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          {(['starter', 'professional', 'enterprise'] as const).map((p) => (
+          {(["starter", "professional", "enterprise"] as const).map((p) => (
             <Card
               key={p}
               className={`cursor-pointer transition-all ${
-                plan === p ? 'border-primary ring-2 ring-primary' : ''
+                plan === p ? "border-primary ring-2 ring-primary" : ""
               }`}
-              onClick={() => form.setValue('plan', p)}
+              onClick={() => form.setValue("plan", p)}
               data-testid={`card-plan-${p}`}
             >
               <CardHeader className="pb-4">
-                <CardTitle className="text-lg">{PLAN_DETAILS[p].name}</CardTitle>
-                <div className="text-2xl font-semibold">{PLAN_DETAILS[p].price}€/mois</div>
+                <CardTitle className="text-lg">
+                  {PLAN_DETAILS[p].name}
+                </CardTitle>
+                <div className="text-2xl font-semibold">
+                  {PLAN_DETAILS[p].price}€/mois
+                </div>
               </CardHeader>
               <CardContent>
                 <ul className="space-y-1 text-sm text-muted-foreground">
@@ -281,18 +324,21 @@ export default function Subscribe() {
         <Card>
           <CardHeader>
             <CardTitle>
-              {step === 'info' ? 'Vos informations' : 'Paiement sécurisé'}
+              {step === "info" ? "Vos informations" : "Paiement sécurisé"}
             </CardTitle>
             <CardDescription>
-              {step === 'info'
-                ? 'Complétez vos informations pour créer votre compte'
+              {step === "info"
+                ? "Complétez vos informations pour créer votre compte"
                 : `Finalisez votre souscription au plan ${planDetails.name}`}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {step === 'info' ? (
+            {step === "info" ? (
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  className="space-y-4"
+                >
                   <FormField
                     control={form.control}
                     name="firstName"
@@ -321,7 +367,9 @@ export default function Subscribe() {
                   />
 
                   <div className="pt-2 border-t">
-                    <h3 className="text-sm font-semibold mb-3 text-foreground">Informations entreprise</h3>
+                    <h3 className="text-sm font-semibold mb-3 text-foreground">
+                      Informations entreprise
+                    </h3>
                     <div className="space-y-4">
                       <FormField
                         control={form.control}
@@ -330,7 +378,11 @@ export default function Subscribe() {
                           <FormItem>
                             <FormLabel>Raison sociale</FormLabel>
                             <FormControl>
-                              <Input {...field} placeholder="Nom de votre entreprise" data-testid="input-companyName" />
+                              <Input
+                                {...field}
+                                placeholder="Nom de votre entreprise"
+                                data-testid="input-companyName"
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -343,7 +395,11 @@ export default function Subscribe() {
                           <FormItem>
                             <FormLabel>Adresse de l'entreprise</FormLabel>
                             <FormControl>
-                              <Input {...field} placeholder="Adresse complète" data-testid="input-companyAddress" />
+                              <Input
+                                {...field}
+                                placeholder="Adresse complète"
+                                data-testid="input-companyAddress"
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -359,7 +415,11 @@ export default function Subscribe() {
                       <FormItem>
                         <FormLabel>Email professionnel</FormLabel>
                         <FormControl>
-                          <Input {...field} type="email" data-testid="input-email" />
+                          <Input
+                            {...field}
+                            type="email"
+                            data-testid="input-email"
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -371,10 +431,13 @@ export default function Subscribe() {
                     <div className="bg-primary/10 border border-primary/20 rounded-md p-4">
                       <div className="flex items-center gap-2 mb-2">
                         <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                        <span className="font-semibold text-primary">Essai gratuit 14 jours</span>
+                        <span className="font-semibold text-primary">
+                          Essai gratuit 14 jours
+                        </span>
                       </div>
                       <p className="text-sm text-muted-foreground mb-3">
-                        Commencez dès maintenant sans carte bancaire • Aucun engagement
+                        Commencez dès maintenant sans carte bancaire • Aucun
+                        engagement
                       </p>
                       <Button
                         type="button"
@@ -389,7 +452,7 @@ export default function Subscribe() {
                             Création...
                           </>
                         ) : (
-                          'Démarrer l\'essai gratuit'
+                          "Démarrer l'essai gratuit"
                         )}
                       </Button>
                     </div>
@@ -409,11 +472,16 @@ export default function Subscribe() {
                     {/* Paid Subscription */}
                     <div>
                       <div className="flex justify-between items-center mb-4">
-                        <span className="font-medium">Plan {planDetails.name}</span>
-                        <span className="text-2xl font-semibold">{planDetails.price}€/mois</span>
+                        <span className="font-medium">
+                          Plan {planDetails.name}
+                        </span>
+                        <span className="text-2xl font-semibold">
+                          {planDetails.price}€/mois
+                        </span>
                       </div>
                       <p className="text-sm text-muted-foreground mb-4">
-                        Premier prélèvement aujourd'hui, puis le 5 de chaque mois
+                        Premier prélèvement aujourd'hui, puis le 5 de chaque
+                        mois
                       </p>
                       <Button
                         type="submit"
@@ -428,7 +496,7 @@ export default function Subscribe() {
                             Création...
                           </>
                         ) : (
-                          'Continuer vers le paiement'
+                          "Continuer vers le paiement"
                         )}
                       </Button>
                     </div>
@@ -450,7 +518,7 @@ export default function Subscribe() {
         <div className="text-center mt-6">
           <Button
             variant="ghost"
-            onClick={() => navigate('/')}
+            onClick={() => navigate("/")}
             data-testid="button-back-home"
           >
             Retour à l'accueil
