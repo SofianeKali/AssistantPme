@@ -23,6 +23,8 @@ const stripePromise = loadStripe(stripePublicKey);
 const subscriptionSchema = z.object({
   firstName: z.string().min(2, "Le prénom doit contenir au moins 2 caractères"),
   lastName: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
+  companyName: z.string().min(2, "La raison sociale doit contenir au moins 2 caractères"),
+  companyAddress: z.string().min(5, "L'adresse doit contenir au moins 5 caractères"),
   email: z.string().email("Email invalide"),
   plan: z.enum(['starter', 'professional', 'enterprise']),
 });
@@ -146,6 +148,8 @@ export default function Subscribe() {
     defaultValues: {
       firstName: "",
       lastName: "",
+      companyName: "",
+      companyAddress: "",
       email: "",
       plan: selectedPlan as 'starter' | 'professional' | 'enterprise',
     },
@@ -185,10 +189,10 @@ export default function Subscribe() {
   const handleStartTrial = async () => {
     const formData = form.getValues();
     
-    if (!formData.firstName || !formData.lastName || !formData.email) {
+    if (!formData.firstName || !formData.lastName || !formData.companyName || !formData.companyAddress || !formData.email) {
       toast({
         title: "Informations manquantes",
-        description: "Veuillez remplir vos informations avant de démarrer l'essai",
+        description: "Veuillez remplir toutes les informations avant de démarrer l'essai",
         variant: "destructive",
       });
       return;
@@ -199,6 +203,8 @@ export default function Subscribe() {
       const response = await apiRequest('POST', '/api/start-trial', {
         firstName: formData.firstName,
         lastName: formData.lastName,
+        companyName: formData.companyName,
+        companyAddress: formData.companyAddress,
         email: formData.email,
       });
       const result = await response.json();
@@ -313,6 +319,39 @@ export default function Subscribe() {
                       </FormItem>
                     )}
                   />
+
+                  <div className="pt-2 border-t">
+                    <h3 className="text-sm font-semibold mb-3 text-foreground">Informations entreprise</h3>
+                    <div className="space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="companyName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Raison sociale</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="Nom de votre entreprise" data-testid="input-companyName" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="companyAddress"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Adresse de l'entreprise</FormLabel>
+                            <FormControl>
+                              <Input {...field} placeholder="Adresse complète" data-testid="input-companyAddress" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+
                   <FormField
                     control={form.control}
                     name="email"
