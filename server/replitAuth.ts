@@ -55,8 +55,22 @@ function updateUserSession(
 }
 
 async function upsertUser(claims: any) {
-  // Check if user already exists
-  const existingUser = await storage.getUser(claims["sub"]);
+  // Check if user already exists by OIDC ID
+  const existingUserById = await storage.getUser(claims["sub"]);
+  
+  // Check if a user with this email already exists (from trial/subscription flows)
+  const existingUserByEmail = claims["email"] ? await storage.getUserByEmail(claims["email"]) : null;
+  
+  // If a user exists with this email but different ID, it means they were created via trial/subscription
+  // In this case, we should NOT create a duplicate user - just return the existing one
+  if (existingUserByEmail && existingUserByEmail.id !== claims["sub"]) {
+    console.log(`[Auth] User with email ${claims["email"]} already exists (ID: ${existingUserByEmail.id}). Skipping OIDC user creation to avoid conflict.`);
+    console.log(`[Auth] Note: OIDC sub (${claims["sub"]}) differs from existing user ID. Using existing user.`);
+    
+    // Return the existing user - they should use email/password login instead of OIDC
+    // This prevents duplicate users with the same email
+    return;
+  }
   
   // Check if this is the first user in the system
   const allUsers = await storage.getAllUsers();
@@ -68,13 +82,33 @@ async function upsertUser(claims: any) {
   // 3. If first user, make admin
   // 4. Otherwise, use simple
   let role = "simple";
-  if (existingUser) {
+  if (existingUserById) {
     // Preserve existing user's role
-    role = existingUser.role;
+    role = existingUserById.role;
   } else if (claims["is_admin"] === true || claims["is_admin"] === "true" || claims["role"] === "admin") {
     role = "admin";
   } else if (isFirstUser) {
     role = "admin";
+  }
+  
+  // CRITICAL: For new users, create a company automatically to satisfy companyId constraint
+  let companyId: string | undefined;
+  if (existingUserById) {
+    // Existing user - keep their companyId
+    companyId = existingUserById.companyId || undefined;
+  } else {
+    // New user - create a company automatically
+    const firstName = claims["first_name"] || "User";
+    const lastName = claims["last_name"] || "";
+    const companyName = `${firstName} ${lastName}`.trim() || "Personal Workspace";
+    
+    const company = await storage.createCompany({
+      name: companyName,
+      address: "", // Optional address for OIDC users
+    });
+    
+    companyId = company.id;
+    console.log(`[Auth] Created company for new OIDC user: ${companyName} (${company.id})`);
   }
   
   await storage.upsertUser({
@@ -84,6 +118,7 @@ async function upsertUser(claims: any) {
     lastName: claims["last_name"],
     profileImageUrl: claims["profile_image_url"],
     role,
+    companyId,
   });
 }
 
@@ -107,7 +142,16 @@ export async function setupAuth(app: Express) {
     await upsertUser(claims);
     
     // Fetch the full user from database to get role and other fields
-    const dbUser = await storage.getUser(claims["sub"]);
+    // Try both OIDC ID and email (in case user was created via trial/subscription)
+    let dbUser = await storage.getUser(claims["sub"]);
+    
+    if (!dbUser && claims["email"]) {
+      // User might exist with email but different ID (trial/subscription flow)
+      dbUser = await storage.getUserByEmail(claims["email"]);
+      if (dbUser) {
+        console.log(`[Auth] OIDC login using existing trial/subscription user (email: ${claims["email"]})`);
+      }
+    }
     
     if (!dbUser) {
       return verified(new Error("User not found"), undefined);
