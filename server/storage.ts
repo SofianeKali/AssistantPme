@@ -91,7 +91,7 @@ export interface IStorage {
   
   // Documents
   createDocument(doc: InsertDocument): Promise<Document>;
-  getDocuments(filters?: { type?: string; search?: string }): Promise<Document[]>;
+  getDocuments(filters?: { type?: string; search?: string; companyId?: string }): Promise<Document[]>;
   getDocumentsByEmailId(emailId: string): Promise<Document[]>;
   getDocumentById(id: string): Promise<Document | undefined>;
   updateDocument(id: string, data: Partial<Document>): Promise<Document>;
@@ -878,10 +878,36 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async getDocuments(filters?: { type?: string; search?: string }): Promise<Document[]> {
-    let query = db.select().from(documents);
+  async getDocuments(filters?: { type?: string; search?: string; companyId?: string }): Promise<Document[]> {
+    let query = db
+      .select({
+        id: documents.id,
+        emailId: documents.emailId,
+        filename: documents.filename,
+        originalFilename: documents.originalFilename,
+        mimeType: documents.mimeType,
+        size: documents.size,
+        storageProvider: documents.storageProvider,
+        storagePath: documents.storagePath,
+        driveFileId: documents.driveFileId,
+        driveUrl: documents.driveUrl,
+        documentType: documents.documentType,
+        extractedData: documents.extractedData,
+        ocrText: documents.ocrText,
+        ocrProcessed: documents.ocrProcessed,
+        createdAt: documents.createdAt,
+      })
+      .from(documents)
+      .innerJoin(emails, eq(documents.emailId, emails.id));
     
     const conditions = [];
+    
+    // CRITICAL: Filter by companyId to enforce multi-tenant isolation
+    if (!filters?.companyId) {
+      throw new Error('getDocuments requires companyId for multi-tenant security');
+    }
+    conditions.push(eq(emails.companyId, filters.companyId));
+    
     if (filters?.type && filters.type !== 'all') {
       conditions.push(eq(documents.documentType, filters.type));
     }

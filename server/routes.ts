@@ -1246,6 +1246,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     isAuthenticated,
     async (req: any, res) => {
       try {
+        const companyId = req.user!.companyId;
+        if (!companyId) {
+          return res.status(403).json({ message: "Access denied: no company associated with user" });
+        }
+        
         // Verify the email exists and user has access to it
         const email = await storage.getEmailById(
           req.params.id,
@@ -1255,6 +1260,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res
             .status(404)
             .json({ message: "Email not found or access denied" });
+        }
+        
+        // SECURITY: Verify email belongs to user's company
+        if (email.companyId !== companyId) {
+          return res.status(403).json({ message: "Access denied: email belongs to another company" });
         }
 
         const documents = await storage.getDocumentsByEmailId(req.params.id);
@@ -1270,9 +1280,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/documents", isAuthenticated, async (req, res) => {
     try {
       const { type, search } = req.query;
+      const companyId = req.user!.companyId;
+      
+      if (!companyId) {
+        return res.status(403).json({ message: "Access denied: no company associated with user" });
+      }
+      
       const documents = await storage.getDocuments({
         type: type as string,
         search: search as string,
+        companyId, // CRITICAL: Enforce multi-tenant isolation
       });
       res.json(documents);
     } catch (error) {
@@ -1284,12 +1301,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Download document from Google Drive
   app.get("/api/documents/:id/download", isAuthenticated, async (req, res) => {
     try {
+      const companyId = req.user!.companyId;
+      if (!companyId) {
+        return res.status(403).json({ message: "Access denied: no company associated with user" });
+      }
+      
       const document = await storage.getDocumentById(req.params.id);
       if (!document) {
         return res.status(404).json({ message: "Document not found" });
       }
 
-      // Verify document is associated with an email (shared inbox - no ownership check)
+      // CRITICAL: Verify document belongs to user's company (multi-tenant security)
       if (!document.emailId) {
         return res
           .status(400)
@@ -1299,6 +1321,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!email) {
         return res.status(404).json({ message: "Associated email not found" });
       }
+      
+      // SECURITY: Verify email belongs to user's company
+      if (email.companyId !== companyId) {
+        return res.status(403).json({ message: "Access denied: document belongs to another company" });
+      }
 
       if (!document.driveFileId) {
         return res
@@ -1307,7 +1334,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       console.log(
-        `[Download] Downloading document: ${document.filename} from Drive`,
+        `[Download] Downloading document: ${document.filename} from Drive (company: ${companyId})`,
       );
       const fileBuffer = await downloadFileFromDrive(document.driveFileId);
 
@@ -1337,9 +1364,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // OCR processing for documents
   app.post("/api/documents/:id/ocr", isAuthenticated, async (req, res) => {
     try {
+      const companyId = req.user!.companyId;
+      if (!companyId) {
+        return res.status(403).json({ message: "Access denied: no company associated with user" });
+      }
+      
       const document = await storage.getDocumentById(req.params.id);
       if (!document) {
         return res.status(404).json({ message: "Document not found" });
+      }
+
+      // CRITICAL: Verify document belongs to user's company (multi-tenant security)
+      if (!document.emailId) {
+        return res.status(400).json({ message: "Document not associated with any email" });
+      }
+      const email = await storage.getEmailById(document.emailId);
+      if (!email) {
+        return res.status(404).json({ message: "Associated email not found" });
+      }
+      
+      // SECURITY: Verify email belongs to user's company
+      if (email.companyId !== companyId) {
+        return res.status(403).json({ message: "Access denied: document belongs to another company" });
       }
 
       // Check if already processed
@@ -1357,7 +1403,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .json({ message: "Document not in Google Drive" });
       }
 
-      console.log(`[OCR] Processing document: ${document.filename}`);
+      console.log(`[OCR] Processing document: ${document.filename} (company: ${companyId})`);
       const fileBuffer = await downloadFileFromDrive(document.driveFileId);
 
       // Process with OCR
