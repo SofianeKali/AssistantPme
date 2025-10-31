@@ -84,7 +84,7 @@ export interface IStorage {
   // Emails
   createEmail(email: InsertEmail): Promise<Email>;
   getEmails(userId: string, filters?: { type?: string; status?: string; search?: string; limit?: number }): Promise<Email[]>;
-  getAllEmails(filters?: { type?: string; status?: string; priority?: string; search?: string; olderThanHours?: number; limit?: number; offset?: number; companyId?: string }): Promise<(Email & { attachmentCount: number })[]>; // For backend services - MUST pass companyId for tenant isolation
+  getAllEmails(filters: { type?: string; status?: string; priority?: string; search?: string; olderThanHours?: number; limit?: number; offset?: number; companyId: string }): Promise<(Email & { attachmentCount: number })[]>; // SECURITY: companyId is REQUIRED for tenant isolation
   getEmailById(id: string, userId?: string): Promise<Email | undefined>;
   getEmailByMessageId(messageId: string): Promise<Email | undefined>;
   updateEmail(id: string, userId: string | undefined, data: Partial<Email>): Promise<Email>;
@@ -490,7 +490,11 @@ export class DatabaseStorage implements IStorage {
     return await query;
   }
 
-  async getAllEmails(filters?: { type?: string; status?: string; priority?: string; search?: string; olderThanHours?: number; limit?: number; offset?: number; companyId?: string }): Promise<(Email & { attachmentCount: number })[]> {
+  async getAllEmails(filters: { type?: string; status?: string; priority?: string; search?: string; olderThanHours?: number; limit?: number; offset?: number; companyId: string }): Promise<(Email & { attachmentCount: number })[]> {
+    // CRITICAL SECURITY: Enforce companyId requirement at runtime
+    if (!filters.companyId) {
+      throw new Error('SECURITY VIOLATION: getAllEmails() REQUIRES companyId for multi-tenant isolation. This is a critical security bug.');
+    }
     const allColumns = {
       id: emails.id,
       companyId: emails.companyId,
@@ -587,15 +591,18 @@ export class DatabaseStorage implements IStorage {
     return await query;
   }
 
-  async getEmailsCount(filters?: { type?: string; status?: string; priority?: string; search?: string; olderThanHours?: number; companyId?: string }): Promise<number> {
+  async getEmailsCount(filters: { type?: string; status?: string; priority?: string; search?: string; olderThanHours?: number; companyId: string }): Promise<number> {
+    // CRITICAL SECURITY: Enforce companyId requirement at runtime
+    if (!filters.companyId) {
+      throw new Error('SECURITY VIOLATION: getEmailsCount() REQUIRES companyId for multi-tenant isolation. This is a critical security bug.');
+    }
+    
     let query = db.select({ count: sql<number>`count(*)` }).from(emails);
     
     const conditions = [];
     
     // CRITICAL: Filter by companyId for multi-tenant isolation
-    if (filters?.companyId) {
-      conditions.push(eq(emails.companyId, filters.companyId));
-    }
+    conditions.push(eq(emails.companyId, filters.companyId));
     
     if (filters?.type && filters.type !== 'all') {
       conditions.push(eq(emails.emailType, filters.type));

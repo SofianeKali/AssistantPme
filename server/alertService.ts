@@ -86,49 +86,56 @@ export class AlertService {
 
   private async checkQuotesWithoutResponse(result: { created: number; errors: number }): Promise<void> {
     try {
-      const emails = await this.storage.getAllEmails({ type: 'devis' });
+      // CRITICAL SECURITY: Iterate per company for tenant isolation
+      const companies = await this.storage.getAllCompanies();
       const now = new Date();
-      
-      // Fetch all existing unresolved alerts once
-      const existingAlerts = await this.storage.getAlerts();
-      const unresolvedAlerts = existingAlerts.filter(a => !a.isResolved);
 
-      for (const email of emails) {
-        // Skip if already processed (status is 'traite' or 'archive')
-        if (email.status === 'traite' || email.status === 'archive') continue;
+      for (const company of companies) {
+        try {
+          // Get emails for THIS COMPANY ONLY - tenant isolation enforced
+          const emails = await this.storage.getAllEmails({ 
+            type: 'devis',
+            companyId: company.id 
+          });
+          
+          // Fetch all existing unresolved alerts for THIS COMPANY
+          const existingAlerts = await this.storage.getAlerts(company.id);
+          const unresolvedAlerts = existingAlerts.filter(a => !a.isResolved);
 
-        // Check if 48 hours have passed since responseDeadline
-        if (email.responseDeadline && email.responseDeadline < now) {
-          // Check if unresolved alert already exists for this email
-          const hasUnresolvedAlert = unresolvedAlerts.some(
-            alert => 
-              alert.relatedEntityType === 'email' &&
-              alert.relatedEntityId === email.id && 
-              alert.type === 'devis_sans_reponse'
-          );
+          for (const email of emails) {
+            // Skip if already processed (status is 'traite' or 'archive')
+            if (email.status === 'traite' || email.status === 'archive') continue;
 
-          if (!hasUnresolvedAlert) {
-            // Get companyId from email account
-            const emailAccount = await this.storage.getEmailAccountById(email.emailAccountId);
-            if (!emailAccount) {
-              console.error(`[Alerts] Email account not found for email ${email.id}`);
-              continue;
+            // Check if 48 hours have passed since responseDeadline
+            if (email.responseDeadline && email.responseDeadline < now) {
+              // Check if unresolved alert already exists for this email
+              const hasUnresolvedAlert = unresolvedAlerts.some(
+                alert => 
+                  alert.relatedEntityType === 'email' &&
+                  alert.relatedEntityId === email.id && 
+                  alert.type === 'devis_sans_reponse'
+              );
+
+              if (!hasUnresolvedAlert) {
+                const alertData: InsertAlert = {
+                  companyId: company.id, // Use company.id directly - already scoped
+                  type: 'devis_sans_reponse',
+                  severity: 'critical',
+                  title: `Devis sans réponse: ${email.subject}`,
+                  message: `Le devis de ${email.from} n'a pas reçu de réponse depuis plus de 48h`,
+                  relatedEntityType: 'email',
+                  relatedEntityId: email.id,
+                };
+
+                await this.storage.createAlert(alertData);
+                result.created++;
+                console.log(`[Alerts] Created quote alert for company ${company.id}, email: ${email.id}`);
+              }
             }
-            
-            const alertData: InsertAlert = {
-              companyId: emailAccount.companyId,
-              type: 'devis_sans_reponse',
-              severity: 'critical',
-              title: `Devis sans réponse: ${email.subject}`,
-              message: `Le devis de ${email.from} n'a pas reçu de réponse depuis plus de 48h`,
-              relatedEntityType: 'email',
-              relatedEntityId: email.id,
-            };
-
-            await this.storage.createAlert(alertData);
-            result.created++;
-            console.log(`[Alerts] Created quote alert for email: ${email.id}`);
           }
+        } catch (companyError) {
+          console.error(`[Alerts] Error checking quotes for company ${company.id}:`, companyError);
+          result.errors++;
         }
       }
     } catch (error) {
@@ -139,50 +146,57 @@ export class AlertService {
 
   private async checkUnpaidInvoices(result: { created: number; errors: number }): Promise<void> {
     try {
-      const emails = await this.storage.getAllEmails({ type: 'facture' });
+      // CRITICAL SECURITY: Iterate per company for tenant isolation
+      const companies = await this.storage.getAllCompanies();
       const now = new Date();
       const fifteenDaysAgo = new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000);
-      
-      // Fetch all existing unresolved alerts once
-      const existingAlerts = await this.storage.getAlerts();
-      const unresolvedAlerts = existingAlerts.filter(a => !a.isResolved);
 
-      for (const email of emails) {
-        // Skip if already processed (status is 'traite' or 'archive')
-        if (email.status === 'traite' || email.status === 'archive') continue;
+      for (const company of companies) {
+        try {
+          // Get emails for THIS COMPANY ONLY - tenant isolation enforced
+          const emails = await this.storage.getAllEmails({ 
+            type: 'facture',
+            companyId: company.id 
+          });
+          
+          // Fetch all existing unresolved alerts for THIS COMPANY
+          const existingAlerts = await this.storage.getAlerts(company.id);
+          const unresolvedAlerts = existingAlerts.filter(a => !a.isResolved);
 
-        // Check if email is older than 15 days
-        if (email.receivedAt < fifteenDaysAgo) {
-          // Check if unresolved alert already exists for this email
-          const hasUnresolvedAlert = unresolvedAlerts.some(
-            alert => 
-              alert.relatedEntityType === 'email' &&
-              alert.relatedEntityId === email.id && 
-              alert.type === 'facture_impayee'
-          );
+          for (const email of emails) {
+            // Skip if already processed (status is 'traite' or 'archive')
+            if (email.status === 'traite' || email.status === 'archive') continue;
 
-          if (!hasUnresolvedAlert) {
-            // Get companyId from email account
-            const emailAccount = await this.storage.getEmailAccountById(email.emailAccountId);
-            if (!emailAccount) {
-              console.error(`[Alerts] Email account not found for email ${email.id}`);
-              continue;
+            // Check if email is older than 15 days
+            if (email.receivedAt < fifteenDaysAgo) {
+              // Check if unresolved alert already exists for this email
+              const hasUnresolvedAlert = unresolvedAlerts.some(
+                alert => 
+                  alert.relatedEntityType === 'email' &&
+                  alert.relatedEntityId === email.id && 
+                  alert.type === 'facture_impayee'
+              );
+
+              if (!hasUnresolvedAlert) {
+                const alertData: InsertAlert = {
+                  companyId: company.id, // Use company.id directly - already scoped
+                  type: 'facture_impayee',
+                  severity: 'warning',
+                  title: `Facture impayée: ${email.subject}`,
+                  message: `La facture de ${email.from} n'a pas été traitée depuis plus de 15 jours`,
+                  relatedEntityType: 'email',
+                  relatedEntityId: email.id,
+                };
+
+                await this.storage.createAlert(alertData);
+                result.created++;
+                console.log(`[Alerts] Created invoice alert for company ${company.id}, email: ${email.id}`);
+              }
             }
-            
-            const alertData: InsertAlert = {
-              companyId: emailAccount.companyId,
-              type: 'facture_impayee',
-              severity: 'warning',
-              title: `Facture impayée: ${email.subject}`,
-              message: `La facture de ${email.from} n'a pas été traitée depuis plus de 15 jours`,
-              relatedEntityType: 'email',
-              relatedEntityId: email.id,
-            };
-
-            await this.storage.createAlert(alertData);
-            result.created++;
-            console.log(`[Alerts] Created invoice alert for email: ${email.id}`);
           }
+        } catch (companyError) {
+          console.error(`[Alerts] Error checking invoices for company ${company.id}:`, companyError);
+          result.errors++;
         }
       }
     } catch (error) {
@@ -193,54 +207,57 @@ export class AlertService {
 
   private async checkUnprocessedEmails(result: { created: number; errors: number }): Promise<void> {
     try {
-      // Get all emails - we'll filter in memory for proper logic
-      const allEmails = await this.storage.getAllEmails();
+      // CRITICAL SECURITY: Iterate per company for tenant isolation
+      const companies = await this.storage.getAllCompanies();
       const now = new Date();
       const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-      // Filter for unprocessed urgent emails older than 24h (status is not 'traite' or 'archive')
-      const urgentUnprocessedEmails = allEmails.filter(
-        email => 
-          email.status !== 'traite' && 
-          email.status !== 'archive' && 
-          email.priority === 'urgent' &&
-          email.receivedAt < twentyFourHoursAgo
-      );
-      
-      // Fetch all existing unresolved alerts once
-      const existingAlerts = await this.storage.getAlerts();
-      const unresolvedAlerts = existingAlerts.filter(a => !a.isResolved);
+      for (const company of companies) {
+        try {
+          // Get emails for THIS COMPANY ONLY - tenant isolation enforced
+          const allEmails = await this.storage.getAllEmails({ companyId: company.id });
 
-      for (const email of urgentUnprocessedEmails) {
-        // Check if unresolved alert already exists for this email
-        const hasUnresolvedAlert = unresolvedAlerts.some(
-          alert => 
-            alert.relatedEntityType === 'email' &&
-            alert.relatedEntityId === email.id && 
-            alert.type === 'email_non_traite'
-        );
-
-        if (!hasUnresolvedAlert) {
-          // Get companyId from email account
-          const emailAccount = await this.storage.getEmailAccountById(email.emailAccountId);
-          if (!emailAccount) {
-            console.error(`[Alerts] Email account not found for email ${email.id}`);
-            continue;
-          }
+          // Filter for unprocessed urgent emails older than 24h (status is not 'traite' or 'archive')
+          const urgentUnprocessedEmails = allEmails.filter(
+            email => 
+              email.status !== 'traite' && 
+              email.status !== 'archive' && 
+              email.priority === 'urgent' &&
+              email.receivedAt < twentyFourHoursAgo
+          );
           
-          const alertData: InsertAlert = {
-            companyId: emailAccount.companyId,
-            type: 'email_non_traite',
-            severity: 'warning',
-            title: `Email urgent non traité: ${email.subject}`,
-            message: `L'email urgent de ${email.from} n'a pas été traité depuis plus de 24h`,
-            relatedEntityType: 'email',
-            relatedEntityId: email.id,
-          };
+          // Fetch all existing unresolved alerts for THIS COMPANY
+          const existingAlerts = await this.storage.getAlerts(company.id);
+          const unresolvedAlerts = existingAlerts.filter(a => !a.isResolved);
 
-          await this.storage.createAlert(alertData);
-          result.created++;
-          console.log(`[Alerts] Created unprocessed email alert for: ${email.id}`);
+          for (const email of urgentUnprocessedEmails) {
+            // Check if unresolved alert already exists for this email
+            const hasUnresolvedAlert = unresolvedAlerts.some(
+              alert => 
+                alert.relatedEntityType === 'email' &&
+                alert.relatedEntityId === email.id && 
+                alert.type === 'email_non_traite'
+            );
+
+            if (!hasUnresolvedAlert) {
+              const alertData: InsertAlert = {
+                companyId: company.id, // Use company.id directly - already scoped
+                type: 'email_non_traite',
+                severity: 'warning',
+                title: `Email urgent non traité: ${email.subject}`,
+                message: `L'email urgent de ${email.from} n'a pas été traité depuis plus de 24h`,
+                relatedEntityType: 'email',
+                relatedEntityId: email.id,
+              };
+
+              await this.storage.createAlert(alertData);
+              result.created++;
+              console.log(`[Alerts] Created unprocessed email alert for company ${company.id}, email: ${email.id}`);
+            }
+          }
+        } catch (companyError) {
+          console.error(`[Alerts] Error checking unprocessed emails for company ${company.id}:`, companyError);
+          result.errors++;
         }
       }
     } catch (error) {
@@ -257,8 +274,10 @@ export class AlertService {
   ): Promise<void> {
     const filters = ruleData.filters || {};
 
-    // Build database query filters
-    const emailFilters: any = {};
+    // Build database query filters - CRITICAL: Include companyId for tenant isolation
+    const emailFilters: any = {
+      companyId: rule.companyId, // SECURITY: Enforce tenant isolation
+    };
     if (filters.category) {
       emailFilters.type = filters.category;
     }
@@ -272,7 +291,7 @@ export class AlertService {
       emailFilters.olderThanHours = filters.ageInHours;
     }
 
-    // Get matching emails using optimized database query
+    // Get matching emails using optimized database query - scoped to THIS COMPANY ONLY
     const matchingEmails = await this.storage.getAllEmails(emailFilters);
 
     // If no emails match, do nothing
