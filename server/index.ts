@@ -38,8 +38,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// Initialize default email categories
-async function initializeDefaultCategories() {
+// Initialize default email categories for a specific company
+export async function createDefaultCategoriesForCompany(companyId: string) {
   const defaultCategories = [
     {
       key: 'autre',
@@ -50,6 +50,7 @@ async function initializeDefaultCategories() {
       generateAutoResponse: false, // Don't auto-respond to "other" emails
       autoCreateTask: false,
       autoMarkAsProcessed: false,
+      companyId,
     },
     {
       key: 'devis',
@@ -60,6 +61,7 @@ async function initializeDefaultCategories() {
       generateAutoResponse: true,
       autoCreateTask: true,
       autoMarkAsProcessed: false,
+      companyId,
     },
     {
       key: 'facture',
@@ -70,6 +72,7 @@ async function initializeDefaultCategories() {
       generateAutoResponse: true,
       autoCreateTask: true,
       autoMarkAsProcessed: false,
+      companyId,
     },
     {
       key: 'rdv',
@@ -80,15 +83,13 @@ async function initializeDefaultCategories() {
       generateAutoResponse: true,
       autoCreateTask: false,
       autoMarkAsProcessed: false,
+      companyId,
     },
   ];
 
   for (const category of defaultCategories) {
-    const existing = await storage.getEmailCategoryByKey(category.key);
-    if (!existing) {
-      await storage.createEmailCategory(category);
-      console.log(`[Init] Created default category: ${category.key}`);
-    }
+    await storage.createEmailCategory(category);
+    console.log(`[Init] Created default category for company ${companyId}: ${category.key}`);
   }
 }
 
@@ -119,9 +120,8 @@ async function initializeDefaultSettings() {
 (async () => {
   const server = await registerRoutes(app);
 
-  // Initialize default email categories if they don't exist
-  await initializeDefaultCategories();
-  console.log('[App] Default categories initialized');
+  // Note: Default categories are now created per-company when companies are created
+  // See: replitAuth.ts, routes.ts (trial signup, stripe webhook)
 
   // Initialize default settings if they don't exist
   await initializeDefaultSettings();
