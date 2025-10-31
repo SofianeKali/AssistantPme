@@ -121,9 +121,9 @@ export interface IStorage {
   addAppointmentTag(appointmentId: string, tagId: string): Promise<void>;
   
   // Settings
-  getSetting(key: string): Promise<Setting | undefined>;
+  getSetting(key: string, companyId: string): Promise<Setting | undefined>;
   upsertSetting(setting: InsertSetting): Promise<Setting>;
-  getAllSettings(): Promise<Record<string, any>>;
+  getAllSettings(companyId?: string): Promise<Record<string, any>>;
   
   // Cloud Storage Configurations
   createCloudStorageConfig(config: InsertCloudStorageConfig): Promise<CloudStorageConfig>;
@@ -1158,17 +1158,24 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Settings
-  async getSetting(key: string): Promise<Setting | undefined> {
-    const [setting] = await db.select().from(settings).where(eq(settings.key, key));
+  async getSetting(key: string, companyId: string): Promise<Setting | undefined> {
+    const [setting] = await db
+      .select()
+      .from(settings)
+      .where(and(eq(settings.key, key), eq(settings.companyId, companyId)));
     return setting;
   }
 
   async upsertSetting(setting: InsertSetting): Promise<Setting> {
+    if (!setting.companyId) {
+      throw new Error("companyId is required for upsertSetting");
+    }
+    
     const [result] = await db
       .insert(settings)
       .values(setting)
       .onConflictDoUpdate({
-        target: settings.key,
+        target: [settings.companyId, settings.key],
         set: {
           value: setting.value,
           updatedAt: new Date(),

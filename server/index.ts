@@ -93,39 +93,34 @@ export async function createDefaultCategoriesForCompany(companyId: string) {
   }
 }
 
-// Initialize default settings for document storage
-async function initializeDefaultSettings() {
+// Initialize default settings for document storage for a specific company
+export async function createDefaultSettingsForCompany(companyId: string) {
   const defaultSettings = [
     {
       key: 'documentStorageProvider',
       value: 'disabled', // disabled, google_drive, onedrive
       description: 'Provider for document storage (disabled by default)',
+      companyId,
     },
     {
       key: 'documentExtractionEnabled',
       value: false,
       description: 'Enable/disable automatic document extraction from email attachments',
+      companyId,
     },
   ];
 
   for (const setting of defaultSettings) {
-    const existing = await storage.getSetting(setting.key);
-    if (!existing) {
-      await storage.upsertSetting({ key: setting.key, value: setting.value, description: setting.description });
-      console.log(`[Init] Created default setting: ${setting.key}`);
-    }
+    await storage.upsertSetting({ key: setting.key, value: setting.value, description: setting.description, companyId });
+    console.log(`[Init] Created default setting for company ${companyId}: ${setting.key}`);
   }
 }
 
 (async () => {
   const server = await registerRoutes(app);
 
-  // Note: Default categories are now created per-company when companies are created
+  // Note: Default categories and settings are now created per-company when companies are created
   // See: replitAuth.ts, routes.ts (trial signup, stripe webhook)
-
-  // Initialize default settings if they don't exist
-  await initializeDefaultSettings();
-  console.log('[App] Default settings initialized');
 
   // Start email scheduler for automatic email scanning
   const emailScheduler = new EmailScheduler(storage);

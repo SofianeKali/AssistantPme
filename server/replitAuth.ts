@@ -110,10 +110,11 @@ async function upsertUser(claims: any) {
     companyId = company.id;
     console.log(`[Auth] Created company for new OIDC user: ${companyName} (${company.id})`);
     
-    // Create default categories for the new company
-    const { createDefaultCategoriesForCompany } = await import("./index");
+    // Create default categories and settings for the new company
+    const { createDefaultCategoriesForCompany, createDefaultSettingsForCompany } = await import("./index");
     await createDefaultCategoriesForCompany(company.id);
-    console.log(`[Auth] Created default categories for company ${company.id}`);
+    await createDefaultSettingsForCompany(company.id);
+    console.log(`[Auth] Created default categories and settings for company ${company.id}`);
   }
   
   await storage.upsertUser({

@@ -2515,10 +2515,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`[Trial] Created company: ${companyName} (${company.id})`);
       
-      // Create default categories for the new company
-      const { createDefaultCategoriesForCompany } = await import("./index");
+      // Create default categories and settings for the new company
+      const { createDefaultCategoriesForCompany, createDefaultSettingsForCompany } = await import("./index");
       await createDefaultCategoriesForCompany(company.id);
-      console.log(`[Trial] Created default categories for company ${company.id}`);
+      await createDefaultSettingsForCompany(company.id);
+      console.log(`[Trial] Created default categories and settings for company ${company.id}`);
 
       // Generate temporary password
       const tempPassword = crypto
@@ -2664,10 +2665,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `[Stripe] Created company: ${companyName} (${company.id})`,
       );
       
-      // Create default categories for the new company
-      const { createDefaultCategoriesForCompany } = await import("./index");
+      // Create default categories and settings for the new company
+      const { createDefaultCategoriesForCompany, createDefaultSettingsForCompany } = await import("./index");
       await createDefaultCategoriesForCompany(company.id);
-      console.log(`[Stripe] Created default categories for company ${company.id}`);
+      await createDefaultSettingsForCompany(company.id);
+      console.log(`[Stripe] Created default categories and settings for company ${company.id}`);
 
       // Create Stripe Product and Price for recurring subscription
       const product = await stripe.products.create({
@@ -2829,10 +2831,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             `[Stripe] Created company: ${companyName} (${company.id})`,
           );
           
-          // Create default categories for the new company
-          const { createDefaultCategoriesForCompany } = await import("./index");
+          // Create default categories and settings for the new company
+          const { createDefaultCategoriesForCompany, createDefaultSettingsForCompany } = await import("./index");
           await createDefaultCategoriesForCompany(company.id);
-          console.log(`[Stripe] Created default categories for company ${company.id}`);
+          await createDefaultSettingsForCompany(company.id);
+          console.log(`[Stripe] Created default categories and settings for company ${company.id}`);
 
           // Create Stripe Product and Price for recurring subscription
           const product = await stripe.products.create({
