@@ -2540,6 +2540,184 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Verify payment and create account (fallback if webhook not configured)
+  app.post("/api/verify-payment", async (req, res) => {
+    if (!stripe) {
+      return res
+        .status(503)
+        .json({ message: "Service de paiement non configuré" });
+    }
+
+    try {
+      const { paymentIntentId } = req.body;
+
+      if (!paymentIntentId) {
+        return res
+          .status(400)
+          .json({ message: "paymentIntentId requis" });
+      }
+
+      console.log(`[Stripe] Verifying payment: ${paymentIntentId}`);
+
+      // Retrieve PaymentIntent from Stripe
+      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+
+      console.log(`[Stripe] PaymentIntent status: ${paymentIntent.status}`);
+
+      if (paymentIntent.status !== "succeeded") {
+        return res
+          .status(400)
+          .json({
+            message: "Le paiement n'a pas encore été validé",
+            status: paymentIntent.status,
+          });
+      }
+
+      // Check if this is a subscription initial payment
+      if (paymentIntent.metadata.type !== "subscription_initial_payment") {
+        return res
+          .status(400)
+          .json({ message: "Type de paiement invalide" });
+      }
+
+      const {
+        email,
+        firstName,
+        lastName,
+        plan,
+        companyName,
+        companyAddress,
+      } = paymentIntent.metadata;
+
+      // Check if user already exists (webhook might have already processed this)
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        console.log(`[Stripe] User already exists: ${email}`);
+        return res.json({
+          success: true,
+          alreadyProcessed: true,
+          message: "Compte déjà créé",
+        });
+      }
+
+      const customerId = paymentIntent.customer as string;
+
+      // Create company first
+      const company = await storage.createCompany({
+        name: companyName,
+        address: companyAddress,
+      });
+
+      console.log(
+        `[Stripe] Created company: ${companyName} (${company.id})`,
+      );
+
+      // Create Stripe Product and Price for recurring subscription
+      const product = await stripe.products.create({
+        name: `IzyInbox ${PRICING_PLANS[plan as keyof typeof PRICING_PLANS].name}`,
+        description: `Plan ${PRICING_PLANS[plan as keyof typeof PRICING_PLANS].name}`,
+      });
+
+      const price = await stripe.prices.create({
+        product: product.id,
+        currency: "eur",
+        unit_amount:
+          PRICING_PLANS[plan as keyof typeof PRICING_PLANS].priceMonthly,
+        recurring: {
+          interval: "month",
+          interval_count: 1,
+        },
+      });
+
+      // Create subscription for future recurring payments
+      const subscription = await stripe.subscriptions.create({
+        customer: customerId,
+        items: [{ price: price.id }],
+        payment_settings: {
+          payment_method_types: ["card"],
+          save_default_payment_method: "on_subscription",
+        },
+        default_payment_method: paymentIntent.payment_method as string,
+        metadata: {
+          email,
+          firstName,
+          lastName,
+          plan,
+        },
+      });
+
+      console.log(`[Stripe] Created subscription: ${subscription.id}`);
+
+      // Generate temporary password
+      const tempPassword = crypto
+        .randomBytes(12)
+        .toString("base64")
+        .slice(0, 16);
+
+      // Create admin user with password, linked to company
+      const user = await storage.createUserWithPassword(
+        email,
+        tempPassword,
+        firstName,
+        lastName,
+        company.id,
+        plan,
+        customerId,
+        subscription.id,
+      );
+
+      console.log(
+        `[Stripe] Created new admin user: ${email} for plan ${plan}, company ${company.id}`,
+      );
+
+      // Send welcome email with credentials via SMTP
+      try {
+        const { sendWelcomeEmail } = await import("./emailService");
+
+        // Get the default email account (kalizahir@yahoo.fr) for sending
+        const allEmailAccounts = await storage.getEmailAccounts();
+        const defaultAccount = allEmailAccounts.find(
+          (acc) => acc.email === "kalizahir@yahoo.fr" && acc.isActive,
+        );
+
+        if (!defaultAccount) {
+          console.warn(
+            "[Stripe] Default email account (kalizahir@yahoo.fr) not found or not active - skipping welcome email",
+          );
+        } else {
+          await sendWelcomeEmail({
+            to: email,
+            firstName,
+            lastName,
+            temporaryPassword: tempPassword,
+            adminEmailAccount: defaultAccount,
+          });
+          console.log(
+            `[Stripe] Welcome email sent to ${email} via SMTP (${defaultAccount.email})`,
+          );
+        }
+      } catch (emailError) {
+        console.error("[Stripe] Failed to send welcome email:", emailError);
+        // Don't fail if email sending fails
+      }
+
+      res.json({
+        success: true,
+        userId: user.id,
+        companyId: company.id,
+        message: "Compte créé avec succès",
+      });
+    } catch (error: any) {
+      console.error("[Stripe] Error verifying payment:", error);
+      res
+        .status(500)
+        .json({
+          message: "Erreur lors de la vérification du paiement",
+          error: error.message,
+        });
+    }
+  });
+
   // Stripe webhook to handle payment confirmations
   app.post("/api/stripe-webhook", async (req, res) => {
     if (!stripe) {
