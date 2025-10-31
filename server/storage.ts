@@ -61,6 +61,7 @@ export interface IStorage {
   // Company operations
   createCompany(company: InsertCompany): Promise<Company>;
   getCompanyById(id: string): Promise<Company | undefined>;
+  getAllCompanies(): Promise<Company[]>;
   
   // User operations (required for Replit Auth)
   getUser(id: string): Promise<User | undefined>;
@@ -206,6 +207,10 @@ export class DatabaseStorage implements IStorage {
   async getCompanyById(id: string): Promise<Company | undefined> {
     const [company] = await db.select().from(companies).where(eq(companies.id, id));
     return company;
+  }
+
+  async getAllCompanies(): Promise<Company[]> {
+    return await db.select().from(companies);
   }
 
   // User operations
