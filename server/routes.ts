@@ -1916,10 +1916,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      const { plan, email, firstName, lastName } = req.body;
+      const { plan, email, firstName, lastName, companyName, companyAddress } = req.body;
 
-      if (!plan || !email || !firstName || !lastName) {
-        return res.status(400).json({ message: 'Données manquantes (plan, email, firstName, lastName requis)' });
+      if (!plan || !email || !firstName || !lastName || !companyName || !companyAddress) {
+        return res.status(400).json({ message: 'Données manquantes (plan, email, firstName, lastName, companyName, companyAddress requis)' });
       }
 
       if (!['starter', 'professional', 'enterprise'].includes(plan)) {
@@ -1938,6 +1938,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name: `${firstName} ${lastName}`,
         metadata: {
           plan,
+          companyName,
+          companyAddress,
         },
       });
 
@@ -1951,6 +1953,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email,
           firstName,
           lastName,
+          companyName,
+          companyAddress,
           plan,
           type: 'subscription_initial_payment',
         },
@@ -1974,10 +1978,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Start free trial - No payment required
   app.post('/api/start-trial', async (req, res) => {
     try {
-      const { email, firstName, lastName } = req.body;
+      const { email, firstName, lastName, companyName, companyAddress } = req.body;
 
-      if (!email || !firstName || !lastName) {
-        return res.status(400).json({ message: 'Données manquantes (email, firstName, lastName requis)' });
+      if (!email || !firstName || !lastName || !companyName || !companyAddress) {
+        return res.status(400).json({ message: 'Données manquantes (email, firstName, lastName, companyName, companyAddress requis)' });
       }
 
       // Check if user already exists
@@ -1986,6 +1990,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Un compte existe déjà avec cet email' });
       }
 
+      // Create company first
+      const company = await storage.createCompany({
+        name: companyName,
+        address: companyAddress,
+      });
+
+      console.log(`[Trial] Created company: ${companyName} (${company.id})`);
+
       // Generate temporary password
       const tempPassword = crypto.randomBytes(12).toString('base64').slice(0, 16);
 
@@ -1993,16 +2005,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const trialEndsAt = new Date();
       trialEndsAt.setDate(trialEndsAt.getDate() + 14);
 
-      // Create trial user using storage method
+      // Create trial user using storage method, linked to company
       const user = await storage.createTrialUser(
         email,
         tempPassword,
         firstName,
         lastName,
+        company.id,
         trialEndsAt
       );
 
-      console.log(`[Trial] Created trial user: ${email}`);
+      console.log(`[Trial] Created trial user: ${email} for company ${company.id}`);
 
       // Send welcome email with credentials via SMTP
       try {
@@ -2072,8 +2085,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Check if this is a subscription initial payment
         if (paymentIntent.metadata.type === 'subscription_initial_payment') {
-          const { email, firstName, lastName, plan } = paymentIntent.metadata;
+          const { email, firstName, lastName, plan, companyName, companyAddress } = paymentIntent.metadata;
           const customerId = paymentIntent.customer as string;
+
+          // Create company first
+          const company = await storage.createCompany({
+            name: companyName,
+            address: companyAddress,
+          });
+
+          console.log(`[Stripe] Created company: ${companyName} (${company.id})`);
 
           // Create Stripe Product and Price for recurring subscription
           const product = await stripe.products.create({
@@ -2113,18 +2134,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Generate temporary password
           const tempPassword = crypto.randomBytes(12).toString('base64').slice(0, 16);
 
-          // Create admin user with password
+          // Create admin user with password, linked to company
           const user = await storage.createUserWithPassword(
             email,
             tempPassword,
             firstName,
             lastName,
+            company.id,
             plan,
             customerId,
             subscription.id
           );
 
-          console.log(`[Stripe] Created new admin user: ${email} for plan ${plan}`);
+          console.log(`[Stripe] Created new admin user: ${email} for plan ${plan}, company ${company.id}`);
 
           // Send welcome email with credentials via SMTP
           try {

@@ -1,5 +1,6 @@
 import bcrypt from 'bcrypt';
 import {
+  companies,
   users,
   emailAccounts,
   emails,
@@ -19,6 +20,8 @@ import {
   emailCategories,
   tasks,
   userDashboardLayout,
+  type Company,
+  type InsertCompany,
   type User,
   type UpsertUser,
   type EmailAccount,
@@ -55,6 +58,10 @@ import { eq, and, desc, gte, lte, like, or, isNull, sql, ne, inArray } from "dri
 import { encryptPassword, decryptPassword, isEncrypted } from "./encryption";
 
 export interface IStorage {
+  // Company operations
+  createCompany(company: InsertCompany): Promise<Company>;
+  getCompanyById(id: string): Promise<Company | undefined>;
+  
   // User operations (required for Replit Auth)
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
@@ -62,8 +69,8 @@ export interface IStorage {
   getAllUsers(): Promise<User[]>;
   deleteUser(id: string): Promise<void>;
   updateUserStripeInfo(userId: string, stripeCustomerId: string, stripeSubscriptionId: string, plan: string): Promise<User>;
-  createUserWithPassword(email: string, password: string, firstName: string, lastName: string, plan: string, stripeCustomerId: string, stripeSubscriptionId: string): Promise<User>;
-  createTrialUser(email: string, password: string, firstName: string, lastName: string, trialEndsAt: Date): Promise<User>;
+  createUserWithPassword(email: string, password: string, firstName: string, lastName: string, companyId: string, plan: string, stripeCustomerId: string, stripeSubscriptionId: string): Promise<User>;
+  createTrialUser(email: string, password: string, firstName: string, lastName: string, companyId: string, trialEndsAt: Date): Promise<User>;
   
   // Email accounts
   createEmailAccount(account: InsertEmailAccount): Promise<EmailAccount>;
@@ -190,6 +197,17 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  // Company operations
+  async createCompany(company: InsertCompany): Promise<Company> {
+    const [result] = await db.insert(companies).values(company).returning();
+    return result;
+  }
+
+  async getCompanyById(id: string): Promise<Company | undefined> {
+    const [company] = await db.select().from(companies).where(eq(companies.id, id));
+    return company;
+  }
+
   // User operations
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
@@ -242,7 +260,7 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async createUserWithPassword(email: string, password: string, firstName: string, lastName: string, plan: string, stripeCustomerId: string, stripeSubscriptionId: string): Promise<User> {
+  async createUserWithPassword(email: string, password: string, firstName: string, lastName: string, companyId: string, plan: string, stripeCustomerId: string, stripeSubscriptionId: string): Promise<User> {
     const passwordHash = await bcrypt.hash(password, 10);
     
     const [user] = await db
@@ -252,6 +270,7 @@ export class DatabaseStorage implements IStorage {
         passwordHash,
         firstName,
         lastName,
+        companyId,
         role: 'admin', // Subscribed users become admins
         stripeCustomerId,
         stripeSubscriptionId,
@@ -262,7 +281,7 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async createTrialUser(email: string, password: string, firstName: string, lastName: string, trialEndsAt: Date): Promise<User> {
+  async createTrialUser(email: string, password: string, firstName: string, lastName: string, companyId: string, trialEndsAt: Date): Promise<User> {
     const passwordHash = await bcrypt.hash(password, 10);
     
     const [user] = await db
@@ -272,6 +291,7 @@ export class DatabaseStorage implements IStorage {
         passwordHash,
         firstName,
         lastName,
+        companyId,
         role: 'admin', // Trial users also get admin access
         subscriptionPlan: 'trial',
         subscriptionStatus: 'trialing',
