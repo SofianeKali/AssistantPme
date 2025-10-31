@@ -170,9 +170,10 @@ export type InsertEmailAccountCategory = z.infer<typeof insertEmailAccountCatego
 export type EmailAccountCategory = typeof emailAccountCategories.$inferSelect;
 
 // Emails table
+// TODO: Add companyId once migration issue is resolved
 export const emails = pgTable("emails", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  companyId: varchar("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
+  // companyId: varchar("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }), // TODO: Enable once DB migration works
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }), // Owner of this email
   emailAccountId: varchar("email_account_id").notNull().references(() => emailAccounts.id, { onDelete: "cascade" }),
   messageId: varchar("message_id").notNull(), // Original email message ID
