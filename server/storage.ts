@@ -237,7 +237,10 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async getAllUsers(): Promise<User[]> {
+  async getAllUsers(companyId?: string): Promise<User[]> {
+    if (companyId) {
+      return await db.select().from(users).where(eq(users.companyId, companyId));
+    }
     return await db.select().from(users);
   }
 
@@ -318,13 +321,22 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async getEmailAccounts(userId?: string): Promise<EmailAccount[]> {
-    let accounts: EmailAccount[];
+  async getEmailAccounts(userId?: string, companyId?: string): Promise<EmailAccount[]> {
+    let query = db.select().from(emailAccounts);
+    const conditions = [];
+    
     if (userId) {
-      accounts = await db.select().from(emailAccounts).where(eq(emailAccounts.userId, userId));
-    } else {
-      accounts = await db.select().from(emailAccounts);
+      conditions.push(eq(emailAccounts.userId, userId));
     }
+    if (companyId) {
+      conditions.push(eq(emailAccounts.companyId, companyId));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
+    }
+    
+    const accounts = await query;
     
     // Decrypt passwords before returning (and auto-migrate plaintext)
     return await Promise.all(accounts.map(async (account) => ({
@@ -894,10 +906,16 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async getAppointments(filters?: { start?: string; end?: string }): Promise<Appointment[]> {
+  async getAppointments(filters?: { start?: string; end?: string; companyId?: string }): Promise<Appointment[]> {
     let query = db.select().from(appointments);
     
     const conditions = [];
+    
+    // Filter by company first (critical for multi-tenancy)
+    if (filters?.companyId) {
+      conditions.push(eq(appointments.companyId, filters.companyId));
+    }
+    
     if (filters?.start) {
       conditions.push(gte(appointments.startTime, new Date(filters.start)));
     }
@@ -939,9 +957,10 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async getAlerts(filters?: { userId?: string; adminUserIds?: string[]; resolved?: boolean; type?: string; relatedEntityType?: string; relatedEntityId?: string; ruleId?: string; limit?: number }): Promise<Alert[]> {
+  async getAlerts(filters?: { userId?: string; adminUserIds?: string[]; resolved?: boolean; type?: string; relatedEntityType?: string; relatedEntityId?: string; ruleId?: string; limit?: number; companyId?: string }): Promise<Alert[]> {
     let query = db.select({
       id: alerts.id,
+      companyId: alerts.companyId,
       type: alerts.type,
       severity: alerts.severity,
       title: alerts.title,
@@ -959,6 +978,11 @@ export class DatabaseStorage implements IStorage {
     .leftJoin(alertRules, eq(alerts.ruleId, alertRules.id));
     
     const conditions = [];
+    
+    // Filter by company first (critical for multi-tenancy)
+    if (filters?.companyId) {
+      conditions.push(eq(alerts.companyId, filters.companyId));
+    }
     
     // Filter by user access:
     // - Show alerts for rules created by this user
@@ -1103,8 +1127,12 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async getAllSettings(): Promise<Record<string, any>> {
-    const allSettings = await db.select().from(settings);
+  async getAllSettings(companyId?: string): Promise<Record<string, any>> {
+    let query = db.select().from(settings);
+    if (companyId) {
+      query = query.where(eq(settings.companyId, companyId)) as any;
+    }
+    const allSettings = await query;
     return allSettings.reduce((acc, setting) => {
       acc[setting.key] = setting.value;
       return acc;
@@ -1215,11 +1243,22 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async getAlertRules(filters?: { isActive?: boolean }): Promise<AlertRule[]> {
+  async getAlertRules(filters?: { isActive?: boolean; companyId?: string }): Promise<AlertRule[]> {
     let query = db.select().from(alertRules);
     
+    const conditions = [];
+    
+    // Filter by company first (critical for multi-tenancy)
+    if (filters?.companyId) {
+      conditions.push(eq(alertRules.companyId, filters.companyId));
+    }
+    
     if (filters?.isActive !== undefined) {
-      query = query.where(eq(alertRules.isActive, filters.isActive)) as any;
+      conditions.push(eq(alertRules.isActive, filters.isActive));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
     }
     
     query = query.orderBy(desc(alertRules.createdAt)) as any;
@@ -1246,7 +1285,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Dashboard stats
-  async getDashboardStats(emailAccountId?: string): Promise<any> {
+  async getDashboardStats(emailAccountId?: string, companyId?: string): Promise<any> {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -1254,6 +1293,7 @@ export class DatabaseStorage implements IStorage {
     const startOfWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     
     // Count quotes without response (emails with type 'devis' and status 'nouveau')
+    // Filter by companyId via email_accounts join since emails table doesn't have companyId yet
     const quotesConditions = [
       eq(emails.emailType, 'devis'),
       eq(emails.status, 'nouveau')
@@ -1261,9 +1301,13 @@ export class DatabaseStorage implements IStorage {
     if (emailAccountId) {
       quotesConditions.push(eq(emails.emailAccountId, emailAccountId));
     }
+    if (companyId) {
+      quotesConditions.push(eq(emailAccounts.companyId, companyId));
+    }
     const [quotesNoResponse] = await db
       .select({ count: sql<number>`count(*)` })
       .from(emails)
+      .leftJoin(emailAccounts, eq(emails.emailAccountId, emailAccounts.id))
       .where(and(...quotesConditions));
     
     // Count unpaid invoices (emails with type 'facture' and status 'nouveau')
@@ -2245,7 +2289,12 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async getAllEmailCategories(): Promise<EmailCategory[]> {
+  async getAllEmailCategories(companyId?: string): Promise<EmailCategory[]> {
+    if (companyId) {
+      return await db.select().from(emailCategories)
+        .where(eq(emailCategories.companyId, companyId))
+        .orderBy(emailCategories.createdAt);
+    }
     return await db.select().from(emailCategories).orderBy(emailCategories.createdAt);
   }
 
@@ -2325,6 +2374,7 @@ export class DatabaseStorage implements IStorage {
     const results = await db
       .select({
         id: emailCategories.id,
+        companyId: emailCategories.companyId,
         key: emailCategories.key,
         label: emailCategories.label,
         color: emailCategories.color,
@@ -2363,10 +2413,15 @@ export class DatabaseStorage implements IStorage {
     return newTask;
   }
   
-  async getTasks(filters?: { status?: string; emailId?: string; userId?: string; adminUserIds?: string[] }): Promise<Task[]> {
+  async getTasks(filters?: { status?: string; emailId?: string; userId?: string; adminUserIds?: string[]; companyId?: string }): Promise<Task[]> {
     let query = db.select().from(tasks);
     
     const conditions = [];
+    
+    // Filter by company first (critical for multi-tenancy)
+    if (filters?.companyId) {
+      conditions.push(eq(tasks.companyId, filters.companyId));
+    }
     
     // Filter by user access:
     // - Show tasks created by OR assigned to the user

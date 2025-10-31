@@ -82,8 +82,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Dashboard stats
   app.get('/api/dashboard/stats', isAuthenticated, async (req, res) => {
     try {
+      const companyId = (req.user as any).companyId;
       const emailAccountId = req.query.emailAccountId as string | undefined;
-      const stats = await storage.getDashboardStats(emailAccountId);
+      const stats = await storage.getDashboardStats(emailAccountId, companyId);
       res.json(stats);
     } catch (error) {
       console.error("Error fetching dashboard stats:", error);
@@ -94,7 +95,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Dashboard charts
   app.get('/api/dashboard/charts', isAuthenticated, async (req, res) => {
     try {
-      const charts = await storage.getDashboardCharts();
+      const companyId = (req.user as any).companyId;
+      const charts = await storage.getDashboardCharts(companyId);
       res.json(charts);
     } catch (error) {
       console.error("Error fetching dashboard charts:", error);
@@ -105,9 +107,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Task evolution by period
   app.get('/api/dashboard/tasks-evolution', isAuthenticated, async (req, res) => {
     try {
+      const companyId = (req.user as any).companyId;
       const offset = parseInt(req.query.offset as string) || 0;
       const periodType = (req.query.periodType as string) || 'week';
-      const evolution = await storage.getTaskEvolutionByWeek(offset, periodType as 'week' | 'month');
+      const evolution = await storage.getTaskEvolutionByWeek(offset, periodType as 'week' | 'month', companyId);
       res.json(evolution);
     } catch (error) {
       console.error("Error fetching task evolution:", error);
@@ -118,9 +121,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Alert evolution by period
   app.get('/api/dashboard/alerts-evolution', isAuthenticated, async (req, res) => {
     try {
+      const companyId = (req.user as any).companyId;
       const offset = parseInt(req.query.offset as string) || 0;
       const periodType = (req.query.periodType as string) || 'week';
-      const evolution = await storage.getAlertEvolutionByWeek(offset, periodType as 'week' | 'month');
+      const evolution = await storage.getAlertEvolutionByWeek(offset, periodType as 'week' | 'month', companyId);
       res.json(evolution);
     } catch (error) {
       console.error("Error fetching alert evolution:", error);
@@ -131,9 +135,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Appointments by period
   app.get('/api/dashboard/appointments-week', isAuthenticated, async (req, res) => {
     try {
+      const companyId = (req.user as any).companyId;
       const offset = parseInt(req.query.offset as string) || 0;
       const periodType = (req.query.periodType as string) || 'week';
-      const appointments = await storage.getAppointmentsByWeek(offset, periodType as 'week' | 'month');
+      const appointments = await storage.getAppointmentsByWeek(offset, periodType as 'week' | 'month', companyId);
       res.json(appointments);
     } catch (error) {
       console.error("Error fetching appointments by week:", error);
@@ -186,7 +191,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Advanced KPIs
   app.get('/api/dashboard/kpis', isAuthenticated, async (req, res) => {
     try {
-      const kpis = await storage.getAdvancedKPIs();
+      const companyId = (req.user as any).companyId;
+      const kpis = await storage.getAdvancedKPIs(companyId);
       res.json(kpis);
     } catch (error) {
       console.error("Error fetching advanced KPIs:", error);
@@ -233,7 +239,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!isAdmin) {
         // Regular users need to include admin-created items in their counts
-        const allUsers = await storage.getAllUsers();
+        const companyId = user.companyId;
+        const allUsers = await storage.getAllUsers(companyId);
         adminUserIds = allUsers
           .filter(u => u.role === 'admin')
           .map(u => u.id);
@@ -254,7 +261,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/email-accounts', isAuthenticated, isAdmin, async (req, res) => {
     try {
       const userId = (req.user as any).id;
-      const accounts = await storage.getEmailAccounts(userId);
+      const companyId = (req.user as any).companyId;
+      const accounts = await storage.getEmailAccounts(userId, companyId);
       res.json(accounts);
     } catch (error) {
       console.error("Error fetching email accounts:", error);
@@ -408,7 +416,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get available categories for the AI analysis
-      const categories = await storage.getAllEmailCategories();
+      const companyId = (req.user as any).companyId;
+      const categories = await storage.getAllEmailCategories(companyId);
       const availableCategories = categories.map(cat => ({
         key: cat.key,
         label: cat.label
@@ -470,7 +479,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const emailData = req.body;
       
       // Get available email categories
-      const categories = await storage.getAllEmailCategories();
+      const companyId = (req.user as any).companyId;
+      const categories = await storage.getAllEmailCategories(companyId);
       const availableCategories = categories.map(c => ({ key: c.key, label: c.label }));
       
       // Analyze email with GPT (with advanced sentiment analysis)
@@ -1121,9 +1131,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/appointments', isAuthenticated, async (req, res) => {
     try {
       const { start, end } = req.query;
+      const companyId = (req.user as any).companyId;
       const appointments = await storage.getAppointments({
         start: start as string,
         end: end as string,
+        companyId,
       });
       res.json(appointments);
     } catch (error) {
@@ -1236,6 +1248,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let filters: any = {
         resolved: resolved === 'true',
         limit: limit ? parseInt(limit as string) : undefined,
+        companyId: user.companyId,
       };
       
       if (isAdmin) {
@@ -1243,7 +1256,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         filters.userId = undefined;
       } else {
         // Regular users see their own alerts + alerts created by admins
-        const adminUsers = await storage.getAllUsers();
+        const adminUsers = await storage.getAllUsers(user.companyId);
         const adminUserIds = adminUsers
           .filter(u => u.role === 'admin')
           .map(u => u.id);
@@ -1379,8 +1392,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/alert-rules', isAuthenticated, isAdmin, async (req, res) => {
     try {
       const { isActive } = req.query;
+      const companyId = (req.user as any).companyId;
       const rules = await storage.getAlertRules({
         isActive: isActive === 'true' ? true : isActive === 'false' ? false : undefined,
+        companyId,
       });
       res.json(rules);
     } catch (error) {
@@ -1444,6 +1459,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let filters: any = {
         status: status as string | undefined,
         emailId: emailId as string | undefined,
+        companyId: user.companyId,
       };
       
       if (isAdmin) {
@@ -1451,7 +1467,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         filters.userId = undefined;
       } else {
         // Regular users see their own tasks + tasks created by admins
-        const adminUsers = await storage.getAllUsers();
+        const adminUsers = await storage.getAllUsers(user.companyId);
         const adminUserIds = adminUsers
           .filter(u => u.role === 'admin')
           .map(u => u.id);
@@ -1562,12 +1578,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/email-categories', isAuthenticated, async (req, res) => {
     try {
       const { emailAccountId } = req.query;
+      const companyId = (req.user as any).companyId;
       
       // If emailAccountId is provided, return categories for that account (system + custom)
-      // Otherwise, return all categories
+      // Otherwise, return all categories for this company
       const categories = emailAccountId 
         ? await storage.getEmailCategoriesForAccount(emailAccountId as string)
-        : await storage.getAllEmailCategories();
+        : await storage.getAllEmailCategories(companyId);
       
       res.json(categories);
     } catch (error) {
@@ -1601,7 +1618,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete('/api/email-categories/:id', isAuthenticated, isAdmin, async (req, res) => {
     try {
       // Check if category is system category
-      const category = await storage.getAllEmailCategories();
+      const companyId = (req.user as any).companyId;
+      const category = await storage.getAllEmailCategories(companyId);
       const toDelete = category.find(c => c.id === req.params.id);
       if (toDelete?.isSystem) {
         return res.status(400).json({ message: "Cannot delete system category" });
@@ -1625,7 +1643,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Settings
   app.get('/api/settings', isAuthenticated, isAdmin, async (req, res) => {
     try {
-      const settings = await storage.getAllSettings();
+      const companyId = (req.user as any).companyId;
+      const settings = await storage.getAllSettings(companyId);
       res.json(settings);
     } catch (error) {
       console.error("Error fetching settings:", error);
@@ -1770,7 +1789,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Only returns safe user fields (no passwordHash)
   app.get('/api/users', isAuthenticated, async (req, res) => {
     try {
-      const users = await storage.getAllUsers();
+      const companyId = (req.user as any).companyId;
+      const users = await storage.getAllUsers(companyId);
       // Remove sensitive fields before sending response
       const safeUsers = users.map(({ passwordHash, ...user }) => user);
       res.json(safeUsers);
@@ -1800,18 +1820,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`[API] Password hashed successfully`);
       
-      // Create the user with hashed password (using normalized email)
+      // Inherit companyId from admin creating the user (multi-tenancy)
+      const adminCompanyId = (req.user as any).companyId;
+      
+      // Create the user with hashed password and inherited companyId
       const user = await storage.upsertUser({
         ...validatedData,
         email: normalizedEmail,
         passwordHash,
+        companyId: adminCompanyId,
       });
       
       // Send welcome email with temporary password via admin's email account
       try {
         // Get admin's active email account
         const adminId = (req.user as any).id;
-        const adminEmailAccounts = await storage.getEmailAccounts(adminId);
+        const adminCompanyId = (req.user as any).companyId;
+        const adminEmailAccounts = await storage.getEmailAccounts(adminId, adminCompanyId);
         const activeAccount = adminEmailAccounts.find(acc => acc.isActive);
         
         if (!activeAccount) {
@@ -1858,7 +1883,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // If deleting an admin, ensure at least one admin remains
       if (userToDelete.role === 'admin') {
-        const allUsers = await storage.getAllUsers();
+        const companyId = (req.user as any).companyId;
+        const allUsers = await storage.getAllUsers(companyId);
         const adminCount = allUsers.filter(u => u.role === 'admin').length;
         
         if (adminCount <= 1) {
