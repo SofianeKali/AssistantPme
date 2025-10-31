@@ -846,36 +846,51 @@ export default function Dashboard() {
         </CardHeader>
         <CardContent>
           {emailEvolutionLoading ? (
-            <Skeleton className="h-[250px]" />
+            <Skeleton className="h-[200px] sm:h-[250px]" />
           ) : (
-            <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={emailEvolution || []}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="hsl(var(--border))"
-                />
-                <XAxis
-                  dataKey="day"
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "6px",
-                  }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="count"
-                  stroke={COLORS.primary}
-                  strokeWidth={2}
-                  name="Emails traités"
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            <div className="h-[200px] sm:h-[250px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart 
+                  data={emailEvolution || []}
+                  margin={{ top: 5, right: 5, left: -10, bottom: 5 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="hsl(var(--border))"
+                  />
+                  <XAxis
+                    dataKey="day"
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                    tick={{ fontSize: 12 }}
+                  />
+                  <YAxis 
+                    stroke="hsl(var(--muted-foreground))" 
+                    fontSize={12}
+                    tick={{ fontSize: 12 }}
+                    width={40}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "6px",
+                      fontSize: "13px",
+                    }}
+                    cursor={{ fill: "hsl(var(--muted) / 0.2)" }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="count"
+                    stroke={COLORS.primary}
+                    strokeWidth={2}
+                    name="Emails traités"
+                    dot={{ r: 3 }}
+                    activeDot={{ r: 5 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -901,41 +916,44 @@ export default function Dashboard() {
         </CardHeader>
         <CardContent>
           {emailDistributionLoading ? (
-            <Skeleton className="h-[250px]" />
+            <Skeleton className="h-[200px] sm:h-[250px]" />
           ) : (
-            <ResponsiveContainer width="100%" height={250}>
-              <PieChart>
-                <Pie
-                  data={emailDistribution || []}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, value }) => `${name}: ${value}`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {(emailDistribution || []).map(
-                    (entry: any, index: number) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={
-                          entry.color ||
-                          CHART_COLORS[index % CHART_COLORS.length]
-                        }
-                      />
-                    ),
-                  )}
-                </Pie>
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "6px",
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+            <div className="h-[200px] sm:h-[250px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={emailDistribution || []}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, value }) => `${name}: ${value}`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {(emailDistribution || []).map(
+                      (entry: any, index: number) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={
+                            entry.color ||
+                            CHART_COLORS[index % CHART_COLORS.length]
+                          }
+                        />
+                      ),
+                    )}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "6px",
+                      fontSize: "13px",
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -958,35 +976,48 @@ export default function Dashboard() {
         </CardHeader>
         <CardContent>
           {appointmentsWeekLoading ? (
-            <Skeleton className="h-[250px]" />
+            <Skeleton className="h-[200px] sm:h-[250px]" />
           ) : (
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={appointmentsWeek || []}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="hsl(var(--border))"
-                />
-                <XAxis
-                  dataKey="day"
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "6px",
-                  }}
-                />
-                <Bar
-                  dataKey="count"
-                  fill={COLORS.chart3}
-                  radius={[4, 4, 0, 0]}
-                  name="Rendez-vous"
-                />
-              </BarChart>
-            </ResponsiveContainer>
+            <div className="h-[200px] sm:h-[250px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart 
+                  data={appointmentsWeek || []}
+                  margin={{ top: 5, right: 5, left: -10, bottom: 5 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="hsl(var(--border))"
+                  />
+                  <XAxis
+                    dataKey="day"
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                    tick={{ fontSize: 12 }}
+                  />
+                  <YAxis 
+                    stroke="hsl(var(--muted-foreground))" 
+                    fontSize={12}
+                    tick={{ fontSize: 12 }}
+                    width={40}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "6px",
+                      fontSize: "13px",
+                    }}
+                    cursor={{ fill: "hsl(var(--muted) / 0.2)" }}
+                  />
+                  <Bar
+                    dataKey="count"
+                    fill={COLORS.chart3}
+                    radius={[4, 4, 0, 0]}
+                    name="Rendez-vous"
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -1012,43 +1043,56 @@ export default function Dashboard() {
         </CardHeader>
         <CardContent>
           {categoryProcessingLoading ? (
-            <Skeleton className="h-[250px]" />
+            <Skeleton className="h-[200px] sm:h-[250px]" />
           ) : (
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={categoryProcessing || []}>
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="hsl(var(--border))"
-                />
-                <XAxis
-                  dataKey="category"
-                  stroke="hsl(var(--muted-foreground))"
-                  fontSize={12}
-                />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: "6px",
-                  }}
-                />
-                <Bar
-                  dataKey="rate"
-                  radius={[4, 4, 0, 0]}
-                  name="Taux de traitement (%)"
+            <div className="h-[200px] sm:h-[250px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart 
+                  data={categoryProcessing || []}
+                  margin={{ top: 5, right: 5, left: -10, bottom: 5 }}
                 >
-                  {(categoryProcessing || []).map(
-                    (entry: any, index: number) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={entry.color || COLORS.chart1}
-                      />
-                    ),
-                  )}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="hsl(var(--border))"
+                  />
+                  <XAxis
+                    dataKey="category"
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                    tick={{ fontSize: 12 }}
+                  />
+                  <YAxis 
+                    stroke="hsl(var(--muted-foreground))" 
+                    fontSize={12}
+                    tick={{ fontSize: 12 }}
+                    width={40}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "6px",
+                      fontSize: "13px",
+                    }}
+                    cursor={{ fill: "hsl(var(--muted) / 0.2)" }}
+                  />
+                  <Bar
+                    dataKey="rate"
+                    radius={[4, 4, 0, 0]}
+                    name="Taux de traitement (%)"
+                  >
+                    {(categoryProcessing || []).map(
+                      (entry: any, index: number) => (
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={entry.color || COLORS.chart1}
+                        />
+                      ),
+                    )}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           )}
         </CardContent>
       </Card>
