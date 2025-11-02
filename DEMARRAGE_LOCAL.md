@@ -48,6 +48,10 @@ RESEND_API_KEY=re_votre_cle_resend
 # Environnement
 NODE_ENV=development
 PORT=5000
+
+# ⚠️ NE PAS définir REPLIT_DOMAINS, ISSUER_URL ou REPL_ID en local !
+# Ces variables sont uniquement pour Replit.com
+# L'application utilisera automatiquement l'auth Email/Password en local
 ```
 
 **💡 Générer des secrets sécurisés :**

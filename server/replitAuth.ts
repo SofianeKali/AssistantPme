@@ -8,11 +8,15 @@ import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
 import { storage } from "./storage";
 
-if (!process.env.REPLIT_DOMAINS) {
-  throw new Error("Environment variable REPLIT_DOMAINS not provided");
+// Check if Replit Auth is available (only on Replit platform)
+const isReplitAuthAvailable = !!process.env.REPLIT_DOMAINS;
+
+if (!isReplitAuthAvailable) {
+  console.log("[Auth] Replit OIDC authentication disabled (local environment)");
+  console.log("[Auth] Only Email/Password authentication will be available");
 }
 
-const getOidcConfig = memoize(
+const getOidcConfig = isReplitAuthAvailable ? memoize(
   async () => {
     return await client.discovery(
       new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),
@@ -20,7 +24,7 @@ const getOidcConfig = memoize(
     );
   },
   { maxAge: 3600 * 1000 }
-);
+) : null;
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
@@ -133,6 +137,45 @@ export async function setupAuth(app: Express) {
   app.use(getSession());
   app.use(passport.initialize());
   app.use(passport.session());
+
+  // Skip Replit OIDC setup if not available (local environment)
+  if (!isReplitAuthAvailable || !getOidcConfig) {
+    console.log("[Auth] Skipping Replit OIDC setup - using local auth only");
+    
+    // Still need to setup passport serialization for local auth
+    passport.serializeUser((user: Express.User, cb) => {
+      cb(null, (user as any).id);
+    });
+    
+    passport.deserializeUser(async (id: string, cb) => {
+      try {
+        let userId: string;
+        
+        if (typeof id === 'string') {
+          userId = id;
+        } else if (typeof id === 'object' && id !== null) {
+          userId = (id as any).claims?.sub || (id as any).id;
+        } else {
+          return cb(null, false);
+        }
+        
+        if (!userId) {
+          return cb(null, false);
+        }
+        
+        const dbUser = await storage.getUser(userId);
+        if (!dbUser) {
+          return cb(null, false);
+        }
+        
+        cb(null, dbUser);
+      } catch (err) {
+        cb(err);
+      }
+    });
+    
+    return;
+  }
 
   const config = await getOidcConfig();
 
