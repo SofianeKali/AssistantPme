@@ -155,7 +155,46 @@ npm install cross-env --save-dev
 
 ---
 
-### 7. Chemins de fichiers avec antislash (\)
+### 7. Erreur : "listen ENOTSUP: operation not supported on socket 0.0.0.0"
+
+**Symptôme :**
+```
+Error: listen ENOTSUP: operation not supported on socket 0.0.0.0:5000
+```
+
+**Cause :** Windows ne permet pas à Node.js d'écouter sur `0.0.0.0` en raison de restrictions réseau.
+
+**✅ Solution :**
+
+**Option 1 : Automatique (Recommandé)**
+
+Assurez-vous que votre fichier `.env` **ne contient PAS** ces variables :
+```bash
+# ⚠️ Ne PAS définir ces variables en local !
+# REPL_ID=...
+# REPLIT_DOMAINS=...
+```
+
+L'application détectera automatiquement qu'elle est en local et utilisera `localhost` au lieu de `0.0.0.0`.
+
+**Option 2 : Explicite**
+
+Ajoutez cette ligne dans votre `.env` :
+```bash
+HOST=localhost
+```
+
+**Option 3 : Changez le port et testez**
+
+Essayez un autre port :
+```bash
+PORT=3000
+HOST=localhost
+```
+
+---
+
+### 8. Chemins de fichiers avec antislash (\)
 
 **Symptôme :**
 Les imports de fichiers ne fonctionnent pas sur Windows à cause des `\` au lieu de `/`.

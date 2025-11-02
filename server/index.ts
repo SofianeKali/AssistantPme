@@ -149,11 +149,17 @@ export async function createDefaultSettingsForCompany(companyId: string) {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || '5000', 10);
+  
+  // Detect environment: Replit requires 0.0.0.0, but Windows/local dev needs localhost
+  // Allow explicit override via HOST env var, or detect Replit presence
+  const isReplit = process.env.REPL_ID !== undefined && process.env.REPLIT_DOMAINS !== undefined;
+  const host = process.env.HOST || (isReplit ? "0.0.0.0" : "localhost");
+  
   server.listen({
     port,
-    host: "0.0.0.0",
-    reusePort: true,
+    host,
+    reusePort: isReplit, // Only use reusePort on Replit
   }, () => {
-    log(`serving on port ${port}`);
+    log(`serving on port ${port} (host: ${host})`);
   });
 })();
