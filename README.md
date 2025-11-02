@@ -129,9 +129,48 @@ Cette commande créera automatiquement toutes les tables nécessaires.
 
 ### Mode développement
 
+#### Méthode 1 : Scripts Windows (Recommandé pour Windows)
+
+**CMD :**
+```bash
+start-dev.bat
+```
+
+**PowerShell :**
+```powershell
+.\start-dev.ps1
+```
+
+#### Méthode 2 : NPM (tous systèmes)
+
+Si vous modifiez `package.json` ligne 7 pour utiliser :
+```json
+"dev": "cross-env NODE_ENV=development node --import tsx/esm server/index.ts"
+```
+
+Puis :
 ```bash
 npm run dev
 ```
+
+#### Méthode 3 : Commande directe
+
+**Windows CMD :**
+```bash
+set NODE_ENV=development && node --import tsx/esm server/index.ts
+```
+
+**Windows PowerShell :**
+```powershell
+$env:NODE_ENV="development"; node --import tsx/esm server/index.ts
+```
+
+**Linux/macOS :**
+```bash
+NODE_ENV=development node --import tsx/esm server/index.ts
+```
+
+> **💡 Note :** Pour Node.js v18.19.0+ ou v20.6.0+, utilisez `--import tsx/esm` au lieu de `--loader tsx` (déprécié).
 
 L'application sera accessible sur [http://localhost:5000](http://localhost:5000)
 

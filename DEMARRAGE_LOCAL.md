@@ -76,11 +76,50 @@ npm run db:push
 
 ### 5️⃣ Lancer l'application
 
+#### Option 1 : Scripts Windows (Recommandé pour Windows)
+
+**Pour CMD :**
+```bash
+start-dev.bat
+```
+
+**Pour PowerShell :**
+```powershell
+.\start-dev.ps1
+```
+
+#### Option 2 : NPM (Linux, macOS, Windows)
+
+Si vous modifiez `package.json` ligne 7 :
+```json
+"dev": "cross-env NODE_ENV=development node --import tsx/esm server/index.ts"
+```
+
+Puis :
 ```bash
 npm run dev
 ```
 
+#### Option 3 : Commande directe
+
+**Windows CMD :**
+```bash
+set NODE_ENV=development && node --import tsx/esm server/index.ts
+```
+
+**Windows PowerShell :**
+```powershell
+$env:NODE_ENV="development"; node --import tsx/esm server/index.ts
+```
+
+**Linux/macOS :**
+```bash
+NODE_ENV=development node --import tsx/esm server/index.ts
+```
+
 🎉 **C'est fait !** Ouvrez [http://localhost:5000](http://localhost:5000)
+
+> **💡 Note :** Si vous utilisez Node.js v18.19.0+ ou v20.6.0+, utilisez `--import tsx/esm` au lieu de `--loader tsx` (déprécié).
 
 ## 🔑 Obtenir les clés API
 
