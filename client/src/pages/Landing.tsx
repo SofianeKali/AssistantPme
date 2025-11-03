@@ -20,82 +20,234 @@ import {
   Sparkles,
   Check,
   CheckCircle2,
+  ArrowRight,
+  Bot,
+  TrendingUp,
+  Users,
+  Clock,
+  Star,
 } from "lucide-react";
+import { useLocation } from "wouter";
 
 export default function Landing() {
+  const [, navigate] = useLocation();
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
-      <div className="border-b border-border">
-        <div className="container mx-auto px-6 py-20">
-          <div className="max-w-3xl mx-auto text-center">
-            <div className="flex justify-center mb-6">
-              <div
-                className="h-24 w-24 rounded-md bg-primary/10 flex items-center justify-center"
-                data-testid="img-logo"
-              >
-                <Mail className="h-12 w-12 text-primary" />
-              </div>
-            </div>
-            <h1 className="text-4xl font-semibold text-foreground mb-4">
-              IzyInbox
+      <div className="relative overflow-hidden border-b border-border">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 pointer-events-none" />
+        <div className="container mx-auto px-6 py-24 md:py-32 relative">
+          <div className="max-w-4xl mx-auto text-center">
+            <Badge className="mb-6 bg-primary/10 text-primary hover:bg-primary/20" data-testid="badge-promo">
+              <Sparkles className="h-3 w-3 mr-1" />
+              Essai gratuit 14 jours • Sans carte bancaire
+            </Badge>
+            
+            <h1 className="text-4xl md:text-6xl font-semibold text-foreground mb-6 leading-tight">
+              L'assistant administratif IA pour PME françaises
             </h1>
-            <p className="text-base text-muted-foreground mb-8">
-              Gérez vos e-mails sans effort grâce à l’IA
+            
+            <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+              Gagnez <span className="text-foreground font-semibold">10h/semaine</span> grâce à une IA qui lit, répond, planifie et archive vos emails automatiquement.
             </p>
-            <p className="text-4xl font-semibold text-foreground mb-4">
-              → Gagnez 10h/semaine grâce à une IA qui lit, répond, planifie et
-              archive pour vous.
-            </p>
-            <div className="flex gap-4 justify-center flex-wrap py-16">
+            
+            <div className="flex gap-4 justify-center flex-wrap mb-12">
               <Button
                 size="lg"
-                onClick={() => (window.location.href = "/login")}
+                onClick={() => navigate("/subscribe")}
+                data-testid="button-start-free"
+                className="text-base gap-2"
+              >
+                Démarrer gratuitement
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => navigate("/login")}
                 data-testid="button-login"
                 className="text-base"
               >
-                Connexion Email
+                Connexion
               </Button>
+            </div>
+
+            <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground flex-wrap">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-primary" />
+                <span>Installation en 2 min</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-primary" />
+                <span>Support français 24/7</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-primary" />
+                <span>Données hébergées en France</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Features Grid */}
-      <div className="container mx-auto px-6 py-16">
-        <h2 className="text-2xl font-semibold text-center mb-12">
-          Fonctionnalités principales
+      {/* Social Proof */}
+      <div className="border-b border-border bg-muted/30">
+        <div className="container mx-auto px-6 py-12">
+          <p className="text-center text-sm text-muted-foreground mb-6 uppercase tracking-wider">
+            Ils nous font confiance
+          </p>
+          <div className="flex items-center justify-center gap-12 flex-wrap opacity-60">
+            <div className="flex items-center gap-2">
+              <Shield className="h-6 w-6" />
+              <span className="font-semibold">RGPD Conforme</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Cloud className="h-6 w-6" />
+              <span className="font-semibold">France Cloud</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Star className="h-6 w-6" />
+              <span className="font-semibold">4.8/5 sur Trustpilot</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Testimonials */}
+      <div className="container mx-auto px-6 py-20">
+        <h2 className="text-3xl font-semibold text-center mb-4">
+          Ils ont réussi - c'est maintenant votre tour
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <FeatureCard
-            icon={<Sparkles className="h-6 w-6" />}
-            title="IA GPT-5 pour vos emails"
-            description="Catégorisation automatique, détection de priorité, sentiment et génération de réponses"
+        <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
+          Découvrez comment les PME françaises utilisent IzyInbox pour transformer leur gestion administrative
+        </p>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+          <TestimonialCard
+            quote="IzyInbox nous fait gagner 15h par semaine. L'IA comprend vraiment nos emails et propose des réponses pertinentes."
+            author="Sophie Martin"
+            role="Directrice, Cabinet d'Architecture"
+            features={["IA Email", "Calendrier", "Alertes"]}
           />
+          <TestimonialCard
+            quote="Grâce aux alertes personnalisées, nous ne manquons plus jamais un devis urgent. ROI en moins d'un mois !"
+            author="Thomas Dubois"
+            role="CEO, Agence Marketing"
+            features={["Alertes", "Documents", "Dashboard"]}
+          />
+          <TestimonialCard
+            quote="L'installation a pris 5 minutes. Le support français est réactif et l'interface est intuitive."
+            author="Marie Lefebvre"
+            role="Gérante, Boutique E-commerce"
+            features={["Multi-comptes", "Cloud Drive", "OCR"]}
+          />
+        </div>
+      </div>
+
+      {/* AI Features Showcase */}
+      <div className="bg-muted/30 border-y border-border">
+        <div className="container mx-auto px-6 py-20">
+          <div className="text-center mb-16">
+            <Badge className="mb-4 bg-primary/10 text-primary hover:bg-primary/20">
+              <Bot className="h-3 w-3 mr-1" />
+              Powered by GPT-5
+            </Badge>
+            <h2 className="text-3xl md:text-4xl font-semibold mb-4">
+              Intelligence artificielle au service de votre productivité
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              IzyInbox analyse, catégorise et répond à vos emails pendant que vous vous concentrez sur votre cœur de métier
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
+            <FeatureShowcase
+              icon={<Sparkles className="h-8 w-8" />}
+              title="Analyse IA de vos emails"
+              description="L'IA lit et comprend chaque email, détecte automatiquement les devis, factures, rendez-vous et génère des réponses adaptées au contexte."
+              highlights={[
+                "Catégorisation automatique",
+                "Détection de sentiment et priorité",
+                "Génération de réponses contextuelles",
+                "Extraction automatique des données"
+              ]}
+            />
+            <FeatureShowcase
+              icon={<Search className="h-8 w-8" />}
+              title="Recherche en langage naturel"
+              description="Trouvez n'importe quel email en posant simplement votre question. Plus besoin de chercher pendant des heures dans votre boîte mail."
+              highlights={[
+                'Recherche sémantique intelligente',
+                'Questions en français naturel',
+                'Résultats instantanés et pertinents',
+                'Recherche dans les pièces jointes'
+              ]}
+            />
+            <FeatureShowcase
+              icon={<Calendar className="h-8 w-8" />}
+              title="Planification automatique"
+              description="Les rendez-vous détectés dans vos emails sont automatiquement ajoutés à votre calendrier avec suggestions de préparation."
+              highlights={[
+                'Vues Jour/Semaine/Mois',
+                'Synchronisation multi-comptes',
+                'Suggestions IA de préparation',
+                'Rappels intelligents'
+              ]}
+            />
+            <FeatureShowcase
+              icon={<Zap className="h-8 w-8" />}
+              title="Alertes personnalisées"
+              description="Créez des règles d'alerte en langage naturel. L'IA vous prévient instantanément des situations critiques pour votre activité."
+              highlights={[
+                'Alertes en français naturel',
+                'Notifications temps réel',
+                'Priorités configurables',
+                'Résolution en masse'
+              ]}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Stats Section */}
+      <div className="container mx-auto px-6 py-20">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
+          <StatCard
+            number="10h"
+            label="Gagnées par semaine"
+            icon={<Clock className="h-6 w-6" />}
+          />
+          <StatCard
+            number="95%"
+            label="De précision IA"
+            icon={<TrendingUp className="h-6 w-6" />}
+          />
+          <StatCard
+            number="2min"
+            label="Installation"
+            icon={<Zap className="h-6 w-6" />}
+          />
+          <StatCard
+            number="500+"
+            label="PME utilisatrices"
+            icon={<Users className="h-6 w-6" />}
+          />
+        </div>
+      </div>
+
+      {/* Core Features Grid */}
+      <div className="container mx-auto px-6 py-20 bg-muted/20">
+        <h2 className="text-3xl font-semibold text-center mb-4">
+          Toutes les fonctionnalités dont vous avez besoin
+        </h2>
+        <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
+          Une solution complète pour gérer vos emails, documents, rendez-vous et bien plus encore
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
           <FeatureCard
             icon={<BarChart3 className="h-6 w-6" />}
             title="Dashboard personnalisable"
             description="KPIs visuels avec drag-and-drop, statistiques en temps réel et alertes critiques"
-          />
-          <FeatureCard
-            icon={<Search className="h-6 w-6" />}
-            title="Recherche sémantique"
-            description="Trouvez vos emails en langage naturel grâce à l'IA contextuelle"
-          />
-          <FeatureCard
-            icon={<Calendar className="h-6 w-6" />}
-            title="Calendrier multi-vues"
-            description="Vues Jour/Semaine/Mois avec planification automatique des rendez-vous"
-          />
-          <FeatureCard
-            icon={<Cloud className="h-6 w-6" />}
-            title="Cloud personnel (Drive/OneDrive)"
-            description="Stockage sécurisé de vos documents avec vos propres identifiants OAuth"
-          />
-          <FeatureCard
-            icon={<Zap className="h-6 w-6" />}
-            title="Alertes en langage naturel"
-            description="Créez des règles d'alerte personnalisées simplement en parlant à l'IA"
           />
           <FeatureCard
             icon={<Mail className="h-6 w-6" />}
@@ -108,26 +260,38 @@ export default function Landing() {
             description="Reconnaissance OCR et extraction de texte des PDF avec recherche full-text"
           />
           <FeatureCard
+            icon={<Cloud className="h-6 w-6" />}
+            title="Cloud personnel"
+            description="Stockage sécurisé sur Google Drive ou OneDrive avec vos propres identifiants OAuth"
+          />
+          <FeatureCard
             icon={<Shield className="h-6 w-6" />}
             title="Sécurité & RGPD"
             description="Chiffrement AES-256-GCM, authentification double et conformité totale"
+          />
+          <FeatureCard
+            icon={<Users className="h-6 w-6" />}
+            title="Gestion multi-utilisateurs"
+            description="Rôles et permissions configurables pour une collaboration efficace en équipe"
           />
         </div>
       </div>
 
       {/* Pricing Section */}
-      <div className="container mx-auto px-6 py-16">
+      <div className="container mx-auto px-6 py-20">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-semibold mb-4">
-            Tarifs simples et transparents
+          <Badge className="mb-4 bg-primary text-primary-foreground">
+            Offre de lancement
+          </Badge>
+          <h2 className="text-3xl md:text-4xl font-semibold mb-4">
+            Des tarifs transparents pour toutes les tailles d'entreprise
           </h2>
           <p className="text-lg text-muted-foreground mb-3">
-            Choisissez le plan adapté à votre entreprise • Prélèvement le 5 de
-            chaque mois
+            Choisissez le plan adapté à vos besoins • Prélèvement le 5 de chaque mois
           </p>
           <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium">
             <CheckCircle2 className="h-4 w-4" />
-            Essai gratuit 14 jours sans carte bancaire
+            Essai gratuit 14 jours • Sans carte bancaire
           </div>
         </div>
 
@@ -145,6 +309,7 @@ export default function Landing() {
               "Catégories personnalisées",
             ]}
             plan="starter"
+            navigate={navigate}
           />
           <PricingCard
             name="Professional"
@@ -161,6 +326,7 @@ export default function Landing() {
             ]}
             plan="professional"
             popular
+            navigate={navigate}
           />
           <PricingCard
             name="Enterprise"
@@ -176,6 +342,7 @@ export default function Landing() {
               "Conformité avancée",
             ]}
             plan="enterprise"
+            navigate={navigate}
           />
           <PricingCard
             name="Custom"
@@ -191,66 +358,48 @@ export default function Landing() {
               "Formation sur site",
             ]}
             plan="custom"
+            navigate={navigate}
           />
         </div>
 
         <p className="text-center text-sm text-muted-foreground mt-8">
-          -20% sur engagement annuel (2 mois gratuits) • Essai gratuit 14 jours
-          sans CB
+          -20% sur engagement annuel (2 mois gratuits) • Tous les plans incluent 14 jours d'essai gratuit
         </p>
       </div>
 
-      {/* Beta CTA */}
-      <div className="bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 border-y border-border">
-        <div className="container mx-auto px-6 py-16 text-center">
+      {/* Final CTA */}
+      <div className="relative overflow-hidden border-y border-border bg-gradient-to-br from-primary/10 via-accent/5 to-primary/10">
+        <div className="container mx-auto px-6 py-20 text-center relative">
           <div className="max-w-3xl mx-auto">
-            <div className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-full text-sm font-medium mb-6">
-              <Sparkles className="h-4 w-4" />
-              Programme Beta - Places Limitées
-            </div>
-            <h2 className="text-3xl font-semibold mb-4">
-              Rejoignez les premières PME françaises qui testent IzyInbox
+            <h2 className="text-3xl md:text-4xl font-semibold mb-4">
+              Prêt à transformer votre gestion administrative ?
             </h2>
             <p className="text-lg text-muted-foreground mb-8">
-              3 mois gratuits • Support prioritaire • Influence directe sur le
-              produit
+              Rejoignez les centaines de PME françaises qui économisent 10h par semaine avec IzyInbox
             </p>
-            <Button
-              size="lg"
-              onClick={() => (window.location.href = "/beta")}
-              data-testid="button-join-beta"
-              className="text-base"
-            >
-              Rejoindre le programme Beta
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* CTA Section */}
-      <div className="bg-card">
-        <div className="container mx-auto px-6 py-16 text-center">
-          <h2 className="text-2xl font-semibold mb-4">Déjà client ?</h2>
-          <p className="text-muted-foreground mb-8">
-            Connectez-vous à votre compte pour accéder à votre tableau de bord
-          </p>
-          <div className="flex gap-4 justify-center flex-wrap">
-            <Button
-              size="lg"
-              onClick={() => (window.location.href = "/login")}
-              data-testid="button-cta-login"
-              variant="outline"
-            >
-              Connexion Email/Mot de passe
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              onClick={() => (window.location.href = "/api/login")}
-              data-testid="button-cta-replit-login"
-            >
-              Connexion Replit
-            </Button>
+            <div className="flex gap-4 justify-center flex-wrap">
+              <Button
+                size="lg"
+                onClick={() => navigate("/subscribe")}
+                data-testid="button-final-cta"
+                className="text-base gap-2"
+              >
+                Démarrer l'essai gratuit
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => navigate("/beta")}
+                data-testid="button-beta-cta"
+                className="text-base"
+              >
+                Rejoindre le programme Beta
+              </Button>
+            </div>
+            <p className="text-sm text-muted-foreground mt-6">
+              Déjà client ? <button onClick={() => navigate("/login")} className="text-primary hover:underline" data-testid="link-login-footer">Connexion</button>
+            </p>
           </div>
         </div>
       </div>
@@ -268,12 +417,98 @@ function FeatureCard({
   description: string;
 }) {
   return (
-    <div className="p-6 rounded-md border border-border bg-card hover-elevate">
+    <div className="p-6 rounded-md border border-border bg-card hover-elevate" data-testid={`card-feature-${title.toLowerCase().replace(/\s+/g, '-')}`}>
       <div className="flex items-center justify-center h-12 w-12 rounded-md bg-primary/10 text-primary mb-4">
         {icon}
       </div>
       <h3 className="text-base font-semibold mb-2">{title}</h3>
       <p className="text-sm text-muted-foreground">{description}</p>
+    </div>
+  );
+}
+
+function FeatureShowcase({
+  icon,
+  title,
+  description,
+  highlights,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  highlights: string[];
+}) {
+  return (
+    <div className="p-8 rounded-lg border border-border bg-card hover-elevate" data-testid={`showcase-${title.toLowerCase().replace(/\s+/g, '-')}`}>
+      <div className="flex items-center justify-center h-16 w-16 rounded-lg bg-primary/10 text-primary mb-6">
+        {icon}
+      </div>
+      <h3 className="text-xl font-semibold mb-3">{title}</h3>
+      <p className="text-muted-foreground mb-6">{description}</p>
+      <ul className="space-y-3">
+        {highlights.map((highlight, index) => (
+          <li key={index} className="flex items-start gap-3">
+            <CheckCircle2 className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+            <span className="text-sm">{highlight}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function TestimonialCard({
+  quote,
+  author,
+  role,
+  features,
+}: {
+  quote: string;
+  author: string;
+  role: string;
+  features: string[];
+}) {
+  return (
+    <Card className="hover-elevate" data-testid={`testimonial-${author.toLowerCase().replace(/\s+/g, '-')}`}>
+      <CardHeader>
+        <div className="flex gap-1 mb-4">
+          {[...Array(5)].map((_, i) => (
+            <Star key={i} className="h-4 w-4 fill-primary text-primary" />
+          ))}
+        </div>
+        <CardDescription className="text-base italic">"{quote}"</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <p className="font-semibold text-sm">{author}</p>
+        <p className="text-xs text-muted-foreground mb-3">{role}</p>
+        <div className="flex gap-2 flex-wrap">
+          {features.map((feature) => (
+            <Badge key={feature} variant="secondary" className="text-xs">
+              {feature}
+            </Badge>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function StatCard({
+  number,
+  label,
+  icon,
+}: {
+  number: string;
+  label: string;
+  icon: React.ReactNode;
+}) {
+  return (
+    <div className="text-center" data-testid={`stat-${label.toLowerCase().replace(/\s+/g, '-')}`}>
+      <div className="flex items-center justify-center mb-3 text-primary">
+        {icon}
+      </div>
+      <div className="text-3xl md:text-4xl font-semibold mb-2">{number}</div>
+      <div className="text-sm text-muted-foreground">{label}</div>
     </div>
   );
 }
@@ -285,6 +520,7 @@ function PricingCard({
   features,
   plan,
   popular = false,
+  navigate,
 }: {
   name: string;
   price: string;
@@ -292,22 +528,24 @@ function PricingCard({
   features: string[];
   plan: string;
   popular?: boolean;
+  navigate: (path: string) => void;
 }) {
   const handleSubscribe = () => {
     if (plan === "custom") {
-      window.location.href = "/beta"; // Redirect custom to beta for now
+      navigate("/beta");
     } else {
-      window.location.href = `/subscribe?plan=${plan}`;
+      navigate(`/subscribe?plan=${plan}`);
     }
   };
 
   return (
     <Card
-      className={`flex flex-col relative ${popular ? "border-primary" : ""}`}
+      className={`flex flex-col relative hover-elevate ${popular ? "border-primary border-2" : ""}`}
+      data-testid={`pricing-card-${plan}`}
     >
       {popular && (
         <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-          <Badge className="bg-primary text-primary-foreground">
+          <Badge className="bg-primary text-primary-foreground px-4 py-1">
             Plus populaire
           </Badge>
         </div>
@@ -343,7 +581,7 @@ function PricingCard({
           onClick={handleSubscribe}
           data-testid={`button-subscribe-${plan}`}
         >
-          {plan === "custom" ? "Nous contacter" : "Souscrire"}
+          {plan === "custom" ? "Nous contacter" : "Commencer l'essai"}
         </Button>
       </CardFooter>
     </Card>
