@@ -1,7 +1,26 @@
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Mail, Zap, BarChart3, Calendar, FileText, Shield, Search, Cloud, Sparkles, Check, CheckCircle2 } from "lucide-react";
+import {
+  Mail,
+  Zap,
+  BarChart3,
+  Calendar,
+  FileText,
+  Shield,
+  Search,
+  Cloud,
+  Sparkles,
+  Check,
+  CheckCircle2,
+} from "lucide-react";
 
 export default function Landing() {
   return (
@@ -11,7 +30,7 @@ export default function Landing() {
         <div className="container mx-auto px-6 py-20">
           <div className="max-w-3xl mx-auto text-center">
             <div className="flex justify-center mb-6">
-              <div 
+              <div
                 className="h-24 w-24 rounded-md bg-primary/10 flex items-center justify-center"
                 data-testid="img-logo"
               >
@@ -21,29 +40,21 @@ export default function Landing() {
             <h1 className="text-4xl font-semibold text-foreground mb-4">
               IzyInbox
             </h1>
-            <p className="text-lg text-muted-foreground mb-2">
-              Smart Automation
-            </p>
             <p className="text-base text-muted-foreground mb-8">
-              Automatisez la gestion de vos emails, devis, factures et rendez-vous grâce à l'intelligence artificielle
+              Gérez vos e-mails sans effort grâce à l’IA
             </p>
-            <div className="flex gap-4 justify-center flex-wrap">
+            <p className="text-4xl font-semibold text-foreground mb-4">
+              → Gagnez 10h/semaine grâce à une IA qui lit, répond, planifie et
+              archive pour vous.
+            </p>
+            <div className="flex gap-4 justify-center flex-wrap py-16">
               <Button
                 size="lg"
                 onClick={() => (window.location.href = "/login")}
                 data-testid="button-login"
                 className="text-base"
               >
-                Connexion Email/Mot de passe
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                onClick={() => (window.location.href = "/api/login")}
-                data-testid="button-replit-login"
-                className="text-base"
-              >
-                Connexion avec Replit
+                Connexion Email
               </Button>
             </div>
           </div>
@@ -111,7 +122,8 @@ export default function Landing() {
             Tarifs simples et transparents
           </h2>
           <p className="text-lg text-muted-foreground mb-3">
-            Choisissez le plan adapté à votre entreprise • Prélèvement le 5 de chaque mois
+            Choisissez le plan adapté à votre entreprise • Prélèvement le 5 de
+            chaque mois
           </p>
           <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium">
             <CheckCircle2 className="h-4 w-4" />
@@ -183,7 +195,8 @@ export default function Landing() {
         </div>
 
         <p className="text-center text-sm text-muted-foreground mt-8">
-          -20% sur engagement annuel (2 mois gratuits) • Essai gratuit 14 jours sans CB
+          -20% sur engagement annuel (2 mois gratuits) • Essai gratuit 14 jours
+          sans CB
         </p>
       </div>
 
@@ -199,7 +212,8 @@ export default function Landing() {
               Rejoignez les premières PME françaises qui testent IzyInbox
             </h2>
             <p className="text-lg text-muted-foreground mb-8">
-              3 mois gratuits • Support prioritaire • Influence directe sur le produit
+              3 mois gratuits • Support prioritaire • Influence directe sur le
+              produit
             </p>
             <Button
               size="lg"
@@ -216,9 +230,7 @@ export default function Landing() {
       {/* CTA Section */}
       <div className="bg-card">
         <div className="container mx-auto px-6 py-16 text-center">
-          <h2 className="text-2xl font-semibold mb-4">
-            Déjà client ?
-          </h2>
+          <h2 className="text-2xl font-semibold mb-4">Déjà client ?</h2>
           <p className="text-muted-foreground mb-8">
             Connectez-vous à votre compte pour accéder à votre tableau de bord
           </p>
@@ -282,15 +294,17 @@ function PricingCard({
   popular?: boolean;
 }) {
   const handleSubscribe = () => {
-    if (plan === 'custom') {
-      window.location.href = '/beta'; // Redirect custom to beta for now
+    if (plan === "custom") {
+      window.location.href = "/beta"; // Redirect custom to beta for now
     } else {
       window.location.href = `/subscribe?plan=${plan}`;
     }
   };
 
   return (
-    <Card className={`flex flex-col relative ${popular ? 'border-primary' : ''}`}>
+    <Card
+      className={`flex flex-col relative ${popular ? "border-primary" : ""}`}
+    >
       {popular && (
         <div className="absolute -top-4 left-1/2 -translate-x-1/2">
           <Badge className="bg-primary text-primary-foreground">
@@ -302,7 +316,7 @@ function PricingCard({
         <CardTitle className="text-xl">{name}</CardTitle>
         <CardDescription>{description}</CardDescription>
         <div className="mt-4">
-          {price === 'Sur devis' ? (
+          {price === "Sur devis" ? (
             <div className="text-2xl font-semibold">{price}</div>
           ) : (
             <>
@@ -325,11 +339,11 @@ function PricingCard({
       <CardFooter>
         <Button
           className="w-full"
-          variant={popular ? 'default' : 'outline'}
+          variant={popular ? "default" : "outline"}
           onClick={handleSubscribe}
           data-testid={`button-subscribe-${plan}`}
         >
-          {plan === 'custom' ? 'Nous contacter' : 'Souscrire'}
+          {plan === "custom" ? "Nous contacter" : "Souscrire"}
         </Button>
       </CardFooter>
     </Card>
