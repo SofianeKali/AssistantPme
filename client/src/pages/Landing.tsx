@@ -545,7 +545,7 @@ function PricingCard({
     >
       {popular && (
         <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-          <Badge className="bg-primary text-primary-foreground px-4 py-1">
+          <Badge className="bg-primary text-primary-foreground px-4 py-1" data-testid="badge-popular">
             Plus populaire
           </Badge>
         </div>
