@@ -4,14 +4,28 @@ import { Menu, X } from "lucide-react";
 import { useState } from "react";
 
 export function LandingNavbar() {
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const scrollToSection = (sectionId: string) => {
-    const element = document.getElementById(sectionId);
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth", block: "start" });
-      setMobileMenuOpen(false);
+    setMobileMenuOpen(false);
+    
+    // If we're not on the landing page, navigate to it first
+    if (location !== "/") {
+      navigate("/");
+      // Wait for navigation and DOM update before scrolling
+      setTimeout(() => {
+        const element = document.getElementById(sectionId);
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 100);
+    } else {
+      // We're already on the landing page, just scroll
+      const element = document.getElementById(sectionId);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
     }
   };
 

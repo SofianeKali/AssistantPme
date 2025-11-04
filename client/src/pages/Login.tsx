@@ -87,8 +87,8 @@ export default function Login() {
   return (
     <>
       <LandingNavbar />
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-pink-500/10 dark:from-blue-900/20 dark:via-purple-900/10 dark:to-pink-900/20 p-4 pt-24">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-400/10 via-transparent to-pink-400/10 dark:from-blue-600/10 dark:to-pink-600/10" />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-pink-500/10 dark:from-blue-900/20 dark:via-purple-900/10 dark:to-pink-900/20 p-4 pt-24 relative">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-400/10 via-transparent to-pink-400/10 dark:from-blue-600/10 dark:to-pink-600/10 pointer-events-none" />
         <Card className="w-full max-w-md relative z-10">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
