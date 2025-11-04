@@ -4,8 +4,22 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Mail, Lock, LogIn } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -73,14 +87,16 @@ export default function Login() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
-            <div 
+            <div
               className="h-16 w-16 rounded-md bg-primary/10 flex items-center justify-center"
               data-testid="img-logo"
             >
               <Mail className="h-8 w-8 text-primary" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-semibold">Bienvenue sur IzyInbox</CardTitle>
+          <CardTitle className="text-2xl font-semibold">
+            Bienvenue sur IzyInbox
+          </CardTitle>
           <CardDescription>
             Connectez-vous avec vos identifiants
           </CardDescription>
@@ -162,9 +178,7 @@ export default function Login() {
               <span className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">
-                Ou
-              </span>
+              <span className="bg-card px-2 text-muted-foreground">Ou</span>
             </div>
           </div>
 
@@ -179,7 +193,8 @@ export default function Login() {
           </Button>
 
           <p className="text-xs text-center text-muted-foreground">
-            Une gestion intteligente de vos emails au service de votre productivité.
+            Une gestion intteligente de vos emails au service de votre
+            productivité.
           </p>
         </CardFooter>
       </Card>

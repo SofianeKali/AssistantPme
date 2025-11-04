@@ -617,7 +617,7 @@ function PricingCard({
           onClick={handleSubscribe}
           data-testid={`button-subscribe-${plan}`}
         >
-          {plan === "custom" ? "Nous contacter" : "Commencer l'essai"}
+          {plan === "custom" ? "Nous contacter" : "Sélectionner"}
         </Button>
       </CardFooter>
     </Card>
