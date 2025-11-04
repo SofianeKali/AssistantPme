@@ -36,9 +36,12 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-background">
       <LandingNavbar />
-      
+
       {/* Hero Section */}
-      <div id="hero" className="relative overflow-hidden border-b border-border">
+      <div
+        id="hero"
+        className="relative overflow-hidden border-b border-border"
+      >
         <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-pink-500/10 pointer-events-none" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.1),transparent_50%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(168,85,247,0.1),transparent_50%)]" />
@@ -158,7 +161,10 @@ export default function Landing() {
       </div>
  */}
       {/* AI Features Showcase */}
-      <div id="features" className="bg-gradient-to-br from-blue-50/50 via-purple-50/30 to-pink-50/50 dark:from-blue-950/20 dark:via-purple-950/10 dark:to-pink-950/20 border-y border-border">
+      <div
+        id="features"
+        className="bg-gradient-to-br from-blue-50/50 via-purple-50/30 to-pink-50/50 dark:from-blue-950/20 dark:via-purple-950/10 dark:to-pink-950/20 border-y border-border"
+      >
         <div className="container mx-auto px-6 py-20">
           <div className="text-center mb-16">
             <Badge className="mb-4 bg-primary/10 text-primary hover:bg-primary/20">
@@ -405,7 +411,7 @@ export default function Landing() {
                 Démarrer l'essai gratuit
                 <ArrowRight className="h-4 w-4" />
               </Button>
-              <Button
+              {/* <Button
                 size="lg"
                 variant="outline"
                 onClick={() => navigate("/beta")}
@@ -413,7 +419,7 @@ export default function Landing() {
                 className="text-base"
               >
                 Rejoindre le programme Beta
-              </Button>
+              </Button> */}
             </div>
             <p className="text-sm text-muted-foreground mt-6">
               Déjà client ?{" "}
