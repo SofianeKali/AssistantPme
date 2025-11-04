@@ -428,7 +428,7 @@ export default function Subscribe() {
 
                   <div className="pt-4 border-t space-y-4">
                     {/* Free Trial Option */}
-                    <div className="bg-primary/10 border border-primary/20 rounded-md p-4">
+                    {/* <div className="bg-primary/10 border border-primary/20 rounded-md p-4">
                       <div className="flex items-center gap-2 mb-2">
                         <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
                         <span className="font-semibold text-primary">
@@ -455,10 +455,10 @@ export default function Subscribe() {
                           "Démarrer l'essai gratuit"
                         )}
                       </Button>
-                    </div>
+                    </div> */}
 
                     {/* Divider */}
-                    <div className="relative">
+                    {/* <div className="relative">
                       <div className="absolute inset-0 flex items-center">
                         <div className="w-full border-t" />
                       </div>
@@ -467,7 +467,7 @@ export default function Subscribe() {
                           Ou souscrire directement
                         </span>
                       </div>
-                    </div>
+                    </div> */}
 
                     {/* Paid Subscription */}
                     <div>
@@ -485,7 +485,7 @@ export default function Subscribe() {
                       </p>
                       <Button
                         type="submit"
-                        variant="outline"
+                        variant="default"
                         className="w-full"
                         disabled={isCreating}
                         data-testid="button-next"

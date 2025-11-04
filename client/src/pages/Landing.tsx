@@ -38,19 +38,25 @@ export default function Landing() {
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 pointer-events-none" />
         <div className="container mx-auto px-6 py-24 md:py-32 relative">
           <div className="max-w-4xl mx-auto text-center">
-            <Badge className="mb-6 bg-primary/10 text-primary hover:bg-primary/20" data-testid="badge-promo">
+            <Badge
+              className="mb-6 bg-primary/10 text-primary hover:bg-primary/20"
+              data-testid="badge-promo"
+            >
               <Sparkles className="h-3 w-3 mr-1" />
-              Essai gratuit 14 jours • Sans carte bancaire
+              Essai gratuit 14 jours
             </Badge>
-            
+
             <h1 className="text-4xl md:text-6xl font-semibold text-foreground mb-6 leading-tight">
               L'assistant administratif IA pour PME françaises
             </h1>
-            
+
             <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Gagnez <span className="text-foreground font-semibold">10h/semaine</span> grâce à une IA qui lit, répond, planifie et archive vos emails automatiquement.
+              Gagnez{" "}
+              <span className="text-foreground font-semibold">10h/semaine</span>{" "}
+              grâce à une IA qui lit, répond, planifie et archive vos emails
+              automatiquement.
             </p>
-            
+
             <div className="flex gap-4 justify-center flex-wrap mb-12">
               <Button
                 size="lg"
@@ -89,8 +95,8 @@ export default function Landing() {
           </div>
         </div>
       </div>
-
-      {/* Social Proof */}
+      {/* 
+      
       <div className="border-b border-border bg-muted/30">
         <div className="container mx-auto px-6 py-12">
           <p className="text-center text-sm text-muted-foreground mb-6 uppercase tracking-wider">
@@ -113,15 +119,16 @@ export default function Landing() {
         </div>
       </div>
 
-      {/* Testimonials */}
+      
       <div className="container mx-auto px-6 py-20">
         <h2 className="text-3xl font-semibold text-center mb-4">
           Ils ont réussi - c'est maintenant votre tour
         </h2>
         <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
-          Découvrez comment les PME françaises utilisent IzyInbox pour transformer leur gestion administrative
+          Découvrez comment les PME françaises utilisent IzyInbox pour
+          transformer leur gestion administrative
         </p>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
           <TestimonialCard
             quote="IzyInbox nous fait gagner 15h par semaine. L'IA comprend vraiment nos emails et propose des réponses pertinentes."
@@ -143,7 +150,7 @@ export default function Landing() {
           />
         </div>
       </div>
-
+ */}
       {/* AI Features Showcase */}
       <div className="bg-muted/30 border-y border-border">
         <div className="container mx-auto px-6 py-20">
@@ -156,7 +163,8 @@ export default function Landing() {
               Intelligence artificielle au service de votre productivité
             </h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              IzyInbox analyse, catégorise et répond à vos emails pendant que vous vous concentrez sur votre cœur de métier
+              IzyInbox analyse, catégorise et répond à vos emails pendant que
+              vous vous concentrez sur votre cœur de métier
             </p>
           </div>
 
@@ -164,12 +172,12 @@ export default function Landing() {
             <FeatureShowcase
               icon={<Sparkles className="h-8 w-8" />}
               title="Analyse IA de vos emails"
-              description="L'IA lit et comprend chaque email, détecte automatiquement les devis, factures, rendez-vous et génère des réponses adaptées au contexte."
+              description="L'IA lit et comprend chaque email, détecte automatiquement sa catégorie et génère des réponses adaptées au contexte."
               highlights={[
                 "Catégorisation automatique",
                 "Détection de sentiment et priorité",
                 "Génération de réponses contextuelles",
-                "Extraction automatique des données"
+                "Extraction automatique des données",
               ]}
             />
             <FeatureShowcase
@@ -177,10 +185,10 @@ export default function Landing() {
               title="Recherche en langage naturel"
               description="Trouvez n'importe quel email en posant simplement votre question. Plus besoin de chercher pendant des heures dans votre boîte mail."
               highlights={[
-                'Recherche sémantique intelligente',
-                'Questions en français naturel',
-                'Résultats instantanés et pertinents',
-                'Recherche dans les pièces jointes'
+                "Recherche sémantique intelligente",
+                "Questions en français naturel",
+                "Résultats instantanés et pertinents",
+                "Recherche dans les pièces jointes",
               ]}
             />
             <FeatureShowcase
@@ -188,10 +196,10 @@ export default function Landing() {
               title="Planification automatique"
               description="Les rendez-vous détectés dans vos emails sont automatiquement ajoutés à votre calendrier avec suggestions de préparation."
               highlights={[
-                'Vues Jour/Semaine/Mois',
-                'Synchronisation multi-comptes',
-                'Suggestions IA de préparation',
-                'Rappels intelligents'
+                "Vues Jour/Semaine/Mois",
+                "Synchronisation multi-comptes",
+                "Suggestions IA de préparation",
+                "Rappels intelligents",
               ]}
             />
             <FeatureShowcase
@@ -199,10 +207,10 @@ export default function Landing() {
               title="Alertes personnalisées"
               description="Créez des règles d'alerte en langage naturel. L'IA vous prévient instantanément des situations critiques pour votre activité."
               highlights={[
-                'Alertes en français naturel',
-                'Notifications temps réel',
-                'Priorités configurables',
-                'Résolution en masse'
+                "Alertes en français naturel",
+                "Notifications temps réel",
+                "Priorités configurables",
+                "Résolution en masse",
               ]}
             />
           </div>
@@ -211,7 +219,7 @@ export default function Landing() {
 
       {/* Stats Section */}
       <div className="container mx-auto px-6 py-20">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
           <StatCard
             number="10h"
             label="Gagnées par semaine"
@@ -227,11 +235,11 @@ export default function Landing() {
             label="Installation"
             icon={<Zap className="h-6 w-6" />}
           />
-          <StatCard
+          {/* <StatCard
             number="500+"
             label="PME utilisatrices"
             icon={<Users className="h-6 w-6" />}
-          />
+          /> */}
         </div>
       </div>
 
@@ -241,7 +249,8 @@ export default function Landing() {
           Toutes les fonctionnalités dont vous avez besoin
         </h2>
         <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
-          Une solution complète pour gérer vos emails, documents, rendez-vous et bien plus encore
+          Une solution complète pour gérer vos emails, documents, rendez-vous et
+          bien plus encore
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
           <FeatureCard
@@ -287,11 +296,12 @@ export default function Landing() {
             Des tarifs transparents pour toutes les tailles d'entreprise
           </h2>
           <p className="text-lg text-muted-foreground mb-3">
-            Choisissez le plan adapté à vos besoins • Prélèvement le 5 de chaque mois
+            Choisissez le plan adapté à vos besoins • Prélèvement le 5 de chaque
+            mois
           </p>
           <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium">
             <CheckCircle2 className="h-4 w-4" />
-            Essai gratuit 14 jours • Sans carte bancaire
+            Essai gratuit 14 jours
           </div>
         </div>
 
@@ -363,7 +373,8 @@ export default function Landing() {
         </div>
 
         <p className="text-center text-sm text-muted-foreground mt-8">
-          -20% sur engagement annuel (2 mois gratuits) • Tous les plans incluent 14 jours d'essai gratuit
+          -20% sur engagement annuel (2 mois gratuits) • Tous les plans incluent
+          14 jours d'essai gratuit
         </p>
       </div>
 
@@ -375,7 +386,8 @@ export default function Landing() {
               Prêt à transformer votre gestion administrative ?
             </h2>
             <p className="text-lg text-muted-foreground mb-8">
-              Rejoignez les centaines de PME françaises qui économisent 10h par semaine avec IzyInbox
+              Rejoignez les centaines de PME françaises qui économisent 10h par
+              semaine avec IzyInbox
             </p>
             <div className="flex gap-4 justify-center flex-wrap">
               <Button
@@ -398,7 +410,14 @@ export default function Landing() {
               </Button>
             </div>
             <p className="text-sm text-muted-foreground mt-6">
-              Déjà client ? <button onClick={() => navigate("/login")} className="text-primary hover:underline" data-testid="link-login-footer">Connexion</button>
+              Déjà client ?{" "}
+              <button
+                onClick={() => navigate("/login")}
+                className="text-primary hover:underline"
+                data-testid="link-login-footer"
+              >
+                Connexion
+              </button>
             </p>
           </div>
         </div>
@@ -417,7 +436,10 @@ function FeatureCard({
   description: string;
 }) {
   return (
-    <div className="p-6 rounded-md border border-border bg-card hover-elevate" data-testid={`card-feature-${title.toLowerCase().replace(/\s+/g, '-')}`}>
+    <div
+      className="p-6 rounded-md border border-border bg-card hover-elevate"
+      data-testid={`card-feature-${title.toLowerCase().replace(/\s+/g, "-")}`}
+    >
       <div className="flex items-center justify-center h-12 w-12 rounded-md bg-primary/10 text-primary mb-4">
         {icon}
       </div>
@@ -439,7 +461,10 @@ function FeatureShowcase({
   highlights: string[];
 }) {
   return (
-    <div className="p-8 rounded-lg border border-border bg-card hover-elevate" data-testid={`showcase-${title.toLowerCase().replace(/\s+/g, '-')}`}>
+    <div
+      className="p-8 rounded-lg border border-border bg-card hover-elevate"
+      data-testid={`showcase-${title.toLowerCase().replace(/\s+/g, "-")}`}
+    >
       <div className="flex items-center justify-center h-16 w-16 rounded-lg bg-primary/10 text-primary mb-6">
         {icon}
       </div>
@@ -469,14 +494,19 @@ function TestimonialCard({
   features: string[];
 }) {
   return (
-    <Card className="hover-elevate" data-testid={`testimonial-${author.toLowerCase().replace(/\s+/g, '-')}`}>
+    <Card
+      className="hover-elevate"
+      data-testid={`testimonial-${author.toLowerCase().replace(/\s+/g, "-")}`}
+    >
       <CardHeader>
         <div className="flex gap-1 mb-4">
           {[...Array(5)].map((_, i) => (
             <Star key={i} className="h-4 w-4 fill-primary text-primary" />
           ))}
         </div>
-        <CardDescription className="text-base italic">"{quote}"</CardDescription>
+        <CardDescription className="text-base italic">
+          "{quote}"
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <p className="font-semibold text-sm">{author}</p>
@@ -503,7 +533,10 @@ function StatCard({
   icon: React.ReactNode;
 }) {
   return (
-    <div className="text-center" data-testid={`stat-${label.toLowerCase().replace(/\s+/g, '-')}`}>
+    <div
+      className="text-center"
+      data-testid={`stat-${label.toLowerCase().replace(/\s+/g, "-")}`}
+    >
       <div className="flex items-center justify-center mb-3 text-primary">
         {icon}
       </div>
@@ -545,7 +578,10 @@ function PricingCard({
     >
       {popular && (
         <div className="absolute -top-4 left-1/2 -translate-x-1/2">
-          <Badge className="bg-primary text-primary-foreground px-4 py-1" data-testid="badge-popular">
+          <Badge
+            className="bg-primary text-primary-foreground px-4 py-1"
+            data-testid="badge-popular"
+          >
             Plus populaire
           </Badge>
         </div>
