@@ -28,14 +28,20 @@ import {
   Star,
 } from "lucide-react";
 import { useLocation } from "wouter";
+import { LandingNavbar } from "@/components/LandingNavbar";
+import { LandingFooter } from "@/components/LandingFooter";
 
 export default function Landing() {
   const [, navigate] = useLocation();
   return (
     <div className="min-h-screen bg-background">
+      <LandingNavbar />
+      
       {/* Hero Section */}
-      <div className="relative overflow-hidden border-b border-border">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 pointer-events-none" />
+      <div id="hero" className="relative overflow-hidden border-b border-border">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-pink-500/10 pointer-events-none" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.1),transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(168,85,247,0.1),transparent_50%)]" />
         <div className="container mx-auto px-6 py-24 md:py-32 relative">
           <div className="max-w-4xl mx-auto text-center">
             <Badge
@@ -46,7 +52,7 @@ export default function Landing() {
               Essai gratuit 14 jours
             </Badge>
 
-            <h1 className="text-4xl md:text-6xl font-semibold text-foreground mb-6 leading-tight">
+            <h1 className="text-4xl md:text-6xl font-semibold mb-6 leading-tight bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent dark:from-blue-400 dark:via-purple-400 dark:to-pink-400">
               L'assistant administratif IA pour PME françaises
             </h1>
 
@@ -152,7 +158,7 @@ export default function Landing() {
       </div>
  */}
       {/* AI Features Showcase */}
-      <div className="bg-muted/30 border-y border-border">
+      <div id="features" className="bg-gradient-to-br from-blue-50/50 via-purple-50/30 to-pink-50/50 dark:from-blue-950/20 dark:via-purple-950/10 dark:to-pink-950/20 border-y border-border">
         <div className="container mx-auto px-6 py-20">
           <div className="text-center mb-16">
             <Badge className="mb-4 bg-primary/10 text-primary hover:bg-primary/20">
@@ -287,7 +293,7 @@ export default function Landing() {
       </div>
 
       {/* Pricing Section */}
-      <div className="container mx-auto px-6 py-20">
+      <div id="pricing" className="container mx-auto px-6 py-20">
         <div className="text-center mb-12">
           <Badge className="mb-4 bg-primary text-primary-foreground">
             Offre de lancement
@@ -379,7 +385,7 @@ export default function Landing() {
       </div>
 
       {/* Final CTA */}
-      <div className="relative overflow-hidden border-y border-border bg-gradient-to-br from-primary/10 via-accent/5 to-primary/10">
+      <div className="relative overflow-hidden border-y border-border bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-pink-500/10 dark:from-blue-900/20 dark:via-purple-900/10 dark:to-pink-900/20">
         <div className="container mx-auto px-6 py-20 text-center relative">
           <div className="max-w-3xl mx-auto">
             <h2 className="text-3xl md:text-4xl font-semibold mb-4">
@@ -422,6 +428,8 @@ export default function Landing() {
           </div>
         </div>
       </div>
+
+      <LandingFooter />
     </div>
   );
 }
