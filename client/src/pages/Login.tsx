@@ -22,6 +22,8 @@ import {
 } from "@/components/ui/form";
 import { Mail, Lock, LogIn } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { LandingNavbar } from "@/components/LandingNavbar";
+import { LandingFooter } from "@/components/LandingFooter";
 
 const loginSchema = z.object({
   email: z.string().email("Adresse email invalide"),
@@ -83,8 +85,11 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-cyan/5 p-4">
-      <Card className="w-full max-w-md">
+    <>
+      <LandingNavbar />
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-pink-500/10 dark:from-blue-900/20 dark:via-purple-900/10 dark:to-pink-900/20 p-4 pt-24">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-400/10 via-transparent to-pink-400/10 dark:from-blue-600/10 dark:to-pink-600/10" />
+        <Card className="w-full max-w-md relative z-10">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
             <div
@@ -94,7 +99,7 @@ export default function Login() {
               <Mail className="h-8 w-8 text-primary" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-semibold">
+          <CardTitle className="text-2xl font-semibold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent dark:from-blue-400 dark:via-purple-400 dark:to-pink-400">
             Bienvenue sur IzyInbox
           </CardTitle>
           <CardDescription>
@@ -197,7 +202,9 @@ export default function Login() {
             productivité.
           </p>
         </CardFooter>
-      </Card>
-    </div>
+        </Card>
+      </div>
+      <LandingFooter />
+    </>
   );
 }

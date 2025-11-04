@@ -32,6 +32,8 @@ import {
 import { loadStripe } from "@stripe/stripe-js";
 import { apiRequest } from "@/lib/queryClient";
 import { Loader2, Check, ArrowLeft } from "lucide-react";
+import { LandingNavbar } from "@/components/LandingNavbar";
+import { LandingFooter } from "@/components/LandingFooter";
 
 const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
 if (!stripePublicKey) {
@@ -278,16 +280,21 @@ export default function Subscribe() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-6">
-      <div className="w-full max-w-2xl">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-semibold mb-2">Souscrire à IzyInbox</h1>
-          <p className="text-muted-foreground">
-            Automatisez votre gestion administrative dès aujourd'hui
-          </p>
-        </div>
+    <>
+      <LandingNavbar />
+      <div className="min-h-screen bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-pink-500/10 dark:from-blue-900/20 dark:via-purple-900/10 dark:to-pink-900/20 flex items-center justify-center p-6 pt-24 pb-16 relative">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-400/10 via-transparent to-pink-400/10 dark:from-blue-600/10 dark:to-pink-600/10" />
+        <div className="w-full max-w-2xl relative z-10">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl md:text-4xl font-semibold mb-2 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent dark:from-blue-400 dark:via-purple-400 dark:to-pink-400">
+              Souscrire à IzyInbox
+            </h1>
+            <p className="text-muted-foreground">
+              Automatisez votre gestion administrative dès aujourd'hui
+            </p>
+          </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           {(["starter", "professional", "enterprise"] as const).map((p) => (
             <Card
               key={p}
@@ -319,9 +326,9 @@ export default function Subscribe() {
               </CardContent>
             </Card>
           ))}
-        </div>
+          </div>
 
-        <Card>
+          <Card>
           <CardHeader>
             <CardTitle>
               {step === "info" ? "Vos informations" : "Paiement sécurisé"}
@@ -513,18 +520,20 @@ export default function Subscribe() {
               </div>
             )}
           </CardContent>
-        </Card>
+          </Card>
 
-        <div className="text-center mt-6">
-          <Button
-            variant="ghost"
-            onClick={() => navigate("/")}
-            data-testid="button-back-home"
-          >
-            Retour à l'accueil
-          </Button>
+          <div className="text-center mt-6">
+            <Button
+              variant="ghost"
+              onClick={() => navigate("/")}
+              data-testid="button-back-home"
+            >
+              Retour à l'accueil
+            </Button>
+          </div>
         </div>
       </div>
-    </div>
+      <LandingFooter />
+    </>
   );
 }
