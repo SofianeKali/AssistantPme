@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
-import logo2 from "@/assets/logo2.svg";
+import logo from "@/assets/logo.svg";
 
 export function LandingNavbar() {
   const [location, navigate] = useLocation();
@@ -42,9 +42,12 @@ export function LandingNavbar() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/">
-            <div className="flex items-center gap-2 cursor-pointer" data-testid="link-home-logo">
+            <div
+              className="flex items-center gap-2 cursor-pointer"
+              data-testid="link-home-logo"
+            >
               <img
-                src={logo2}
+                src={logo}
                 alt="Logo IzyInbox"
                 className="h-10 w-auto"
                 data-testid="logo-landing"
