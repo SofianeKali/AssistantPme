@@ -458,10 +458,10 @@ export default function BetaSignup() {
           </p>
           <div className="flex flex-wrap justify-center gap-6 text-sm">
             <a
-              href="mailto:hello@izyinbox.fr"
+              href="mailto:contact@izyinbox.fr"
               className="text-primary hover:underline"
             >
-              hello@izyinbox.fr
+              contact@izyinbox.fr
             </a>
             <span className="text-muted-foreground">•</span>
             <a href="tel:+33123456789" className="text-primary hover:underline">

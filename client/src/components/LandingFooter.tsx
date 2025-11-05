@@ -113,12 +113,12 @@ export function LandingFooter() {
             <h3 className="font-semibold text-lg mb-4">Nous suivre</h3>
             <div className="space-y-3 mb-4">
               <a
-                href="mailto:hello@izyinbox.fr"
+                href="mailto:contact@izyinbox.fr"
                 className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
                 data-testid="footer-email"
               >
                 <Mail className="h-4 w-4" />
-                hello@izyinbox.fr
+                contact@izyinbox.fr
               </a>
             </div>
             <div className="flex items-center gap-3">
