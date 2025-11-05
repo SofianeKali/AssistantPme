@@ -37,7 +37,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import logoUrl from "../assets/logo.png";
+import logoUrl from "../assets/logo.svg";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useQuery } from "@tanstack/react-query";
 
