@@ -184,16 +184,17 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader className="p-4 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
-          <img
-            src={logoUrl}
-            alt="IzyInbox Logo"
-            className="h-10 w-10 rounded-md object-contain"
-          />
-          <div className="flex flex-col">
-            <span className="text-sm font-semibold">IzyInbox</span>
-            <span className="text-xs text-muted-foreground">
-              Automatisation Intelligentes
-            </span>
+          <div className="flex items-center gap-2">
+            <img
+              src={logoUrl}
+              alt="IzyInbox"
+              className="h-10 w-10 rounded-md object-contain"
+            />
+            {!isMobile && (
+              <span className="font-semibold text-lg bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent dark:from-blue-400 dark:via-purple-400 dark:to-pink-400">
+                IzyInbox
+              </span>
+            )}
           </div>
         </div>
       </SidebarHeader>

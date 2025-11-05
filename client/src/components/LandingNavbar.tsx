@@ -9,7 +9,7 @@ export function LandingNavbar() {
 
   const scrollToSection = (sectionId: string) => {
     setMobileMenuOpen(false);
-    
+
     // If we're not on the landing page, navigate to it first
     if (location !== "/") {
       navigate("/");
@@ -42,7 +42,9 @@ export function LandingNavbar() {
           {/* Logo */}
           <div className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-md bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-lg">I</span>
+              <span className="text-primary-foreground font-bold text-lg">
+                I
+              </span>
             </div>
             <span className="text-xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
               IzyInbox
