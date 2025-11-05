@@ -60,7 +60,7 @@ export default function Landing() {
             </h1>
 
             <p className="mt-12 text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-              Gagnez{" "}
+              Gagnez jusqu'à{" "}
               <span className="text-foreground font-semibold">10h/semaine</span>{" "}
               grâce à une IA qui lit, répond, planifie et archive vos emails
               automatiquement.
@@ -187,7 +187,7 @@ export default function Landing() {
               description="L'IA lit et comprend chaque email, détecte automatiquement sa catégorie et génère des réponses adaptées au contexte."
               highlights={[
                 "Catégorisation automatique",
-                "Détection de sentiment et priorité",
+                "Détection de priorité",
                 "Génération de réponses contextuelles",
                 "Extraction automatique des données",
               ]}

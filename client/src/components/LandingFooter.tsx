@@ -16,22 +16,13 @@ export function LandingFooter() {
     <footer className="border-t border-border bg-background">
       <div className="container mx-auto px-6 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
-          
           {/* À propos */}
           <div>
             <h3 className="font-semibold text-lg mb-4">À propos</h3>
             <p className="text-sm text-muted-foreground mb-4">
-              IzyInbox est l'assistant administratif intelligent qui aide les PME françaises 
-              à gagner du temps grâce à l'IA.
+              IzyInbox est l'assistant administratif intelligent qui aide les
+              PME françaises à gagner du temps grâce à l'IA.
             </p>
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-md bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-sm">I</span>
-              </div>
-              <span className="font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                IzyInbox
-              </span>
-            </div>
           </div>
 
           {/* Navigation */}
@@ -96,7 +87,7 @@ export function LandingFooter() {
                   className="text-sm text-muted-foreground hover:text-foreground transition-colors"
                   data-testid="footer-subscribe"
                 >
-                  S'inscrire
+                  Souscription
                 </button>
               </li>
               <li>
@@ -121,8 +112,8 @@ export function LandingFooter() {
           <div>
             <h3 className="font-semibold text-lg mb-4">Nous suivre</h3>
             <div className="space-y-3 mb-4">
-              <a 
-                href="mailto:hello@izyinbox.fr" 
+              <a
+                href="mailto:hello@izyinbox.fr"
                 className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
                 data-testid="footer-email"
               >

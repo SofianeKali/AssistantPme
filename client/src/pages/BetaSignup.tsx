@@ -1,18 +1,31 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { 
-  Mail, 
-  Sparkles, 
-  TrendingUp, 
-  Clock, 
-  Shield, 
+import {
+  Mail,
+  Sparkles,
+  TrendingUp,
+  Clock,
+  Shield,
   Check,
   ArrowRight,
   Building2,
@@ -20,7 +33,7 @@ import {
   Zap,
   FileText,
   Calendar,
-  BarChart3
+  BarChart3,
 } from "lucide-react";
 
 const betaSignupSchema = z.object({
@@ -31,14 +44,16 @@ const betaSignupSchema = z.object({
   company: z.string().min(2, "Nom de l'entreprise requis"),
   companySize: z.string().min(1, "Veuillez sélectionner une taille"),
   role: z.string().min(1, "Veuillez sélectionner un rôle"),
-  painPoint: z.string().min(20, "Veuillez décrire votre défi (min. 20 caractères)"),
+  painPoint: z
+    .string()
+    .min(20, "Veuillez décrire votre défi (min. 20 caractères)"),
 });
 
 type BetaSignupForm = z.infer<typeof betaSignupSchema>;
 
 export default function BetaSignup() {
   const { toast } = useToast();
-  
+
   const form = useForm<BetaSignupForm>({
     resolver: zodResolver(betaSignupSchema),
     defaultValues: {
@@ -56,15 +71,16 @@ export default function BetaSignup() {
   const onSubmit = async (data: BetaSignupForm) => {
     try {
       // Simuler l'envoi (à remplacer par vraie API)
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       console.log("Lead Beta:", data);
-      
+
       toast({
         title: "Inscription réussie !",
-        description: "Nous vous contacterons dans les 48h pour démarrer votre période beta.",
+        description:
+          "Nous vous contacterons dans les 48h pour démarrer votre période beta.",
       });
-      
+
       // Reset form and show success
       form.reset();
     } catch (error) {
@@ -75,7 +91,6 @@ export default function BetaSignup() {
       });
     }
   };
-
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5">
@@ -88,13 +103,17 @@ export default function BetaSignup() {
               Programme Beta - Places Limitées
             </div>
             <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-              Gagnez 10h/semaine sur votre gestion administrative
+              Gagnez jusqu'à 10h/semaine sur votre gestion administrative
             </h1>
             <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto">
-              Rejoignez les <span className="font-semibold text-foreground">premières PME françaises</span> qui 
-              automatisent leurs emails, factures et rendez-vous grâce à l'IA GPT-5
+              Rejoignez les{" "}
+              <span className="font-semibold text-foreground">
+                premières PME françaises
+              </span>{" "}
+              qui automatisent leurs emails, factures et rendez-vous grâce à
+              l'IA GPT-5
             </p>
-            
+
             <div className="flex flex-wrap justify-center gap-8 mb-8">
               <div className="flex items-center gap-2">
                 <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -102,7 +121,9 @@ export default function BetaSignup() {
                 </div>
                 <div className="text-left">
                   <div className="font-semibold">3 mois gratuits</div>
-                  <div className="text-sm text-muted-foreground">Accès complet</div>
+                  <div className="text-sm text-muted-foreground">
+                    Accès complet
+                  </div>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -111,7 +132,9 @@ export default function BetaSignup() {
                 </div>
                 <div className="text-left">
                   <div className="font-semibold">Support prioritaire</div>
-                  <div className="text-sm text-muted-foreground">Réponse &lt;4h</div>
+                  <div className="text-sm text-muted-foreground">
+                    Réponse &lt;4h
+                  </div>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -120,7 +143,9 @@ export default function BetaSignup() {
                 </div>
                 <div className="text-left">
                   <div className="font-semibold">Influence produit</div>
-                  <div className="text-sm text-muted-foreground">Vos besoins = priorité</div>
+                  <div className="text-sm text-muted-foreground">
+                    Vos besoins = priorité
+                  </div>
                 </div>
               </div>
             </div>
@@ -131,14 +156,13 @@ export default function BetaSignup() {
       {/* Main Content: Form + Stats */}
       <div className="container mx-auto px-6 py-16">
         <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 items-start">
-          
           {/* Left: Stats & Benefits */}
           <div className="space-y-8">
             <div>
               <h2 className="text-3xl font-semibold mb-6">
                 Pourquoi rejoindre le beta ?
               </h2>
-              
+
               <div className="space-y-4">
                 <BenefitCard
                   icon={<TrendingUp className="h-6 w-6" />}
@@ -165,7 +189,9 @@ export default function BetaSignup() {
 
             {/* Features Grid */}
             <div className="bg-card border border-border rounded-md p-6">
-              <h3 className="font-semibold mb-4 text-lg">Fonctionnalités incluses</h3>
+              <h3 className="font-semibold mb-4 text-lg">
+                Fonctionnalités incluses
+              </h3>
               <div className="grid grid-cols-2 gap-3">
                 <FeatureItem icon={<Mail />} text="Email IA" />
                 <FeatureItem icon={<FileText />} text="Documents" />
@@ -180,9 +206,9 @@ export default function BetaSignup() {
             <div className="bg-accent/20 rounded-md p-6">
               <div className="flex items-center gap-3 mb-3">
                 <div className="flex -space-x-2">
-                  {[1, 2, 3].map(i => (
-                    <div 
-                      key={i} 
+                  {[1, 2, 3].map((i) => (
+                    <div
+                      key={i}
                       className="h-10 w-10 rounded-full bg-primary/20 border-2 border-background flex items-center justify-center text-sm font-semibold"
                     >
                       {String.fromCharCode(64 + i)}
@@ -191,12 +217,14 @@ export default function BetaSignup() {
                 </div>
                 <div>
                   <div className="font-semibold">15 entreprises beta</div>
-                  <div className="text-sm text-muted-foreground">déjà actives</div>
+                  <div className="text-sm text-muted-foreground">
+                    déjà actives
+                  </div>
                 </div>
               </div>
               <p className="text-sm text-muted-foreground italic">
-                "En 2 semaines, IzyInbox a traité 450 emails automatiquement. 
-                Je n'ai jamais été aussi organisé !"
+                "En 2 semaines, IzyInbox a traité 450 emails automatiquement. Je
+                n'ai jamais été aussi organisé !"
               </p>
               <p className="text-sm font-medium mt-2">
                 — Marie L., Cabinet d'expertise comptable
@@ -210,7 +238,10 @@ export default function BetaSignup() {
               Rejoignez le programme beta
             </h2>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-5"
+              >
                 <div className="grid grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
@@ -219,9 +250,9 @@ export default function BetaSignup() {
                       <FormItem>
                         <FormLabel>Prénom *</FormLabel>
                         <FormControl>
-                          <Input 
-                            placeholder="Jean" 
-                            {...field} 
+                          <Input
+                            placeholder="Jean"
+                            {...field}
                             data-testid="input-firstname"
                           />
                         </FormControl>
@@ -236,9 +267,9 @@ export default function BetaSignup() {
                       <FormItem>
                         <FormLabel>Nom *</FormLabel>
                         <FormControl>
-                          <Input 
-                            placeholder="Dupont" 
-                            {...field} 
+                          <Input
+                            placeholder="Dupont"
+                            {...field}
                             data-testid="input-lastname"
                           />
                         </FormControl>
@@ -255,10 +286,10 @@ export default function BetaSignup() {
                     <FormItem>
                       <FormLabel>Email professionnel *</FormLabel>
                       <FormControl>
-                        <Input 
+                        <Input
                           type="email"
-                          placeholder="jean.dupont@entreprise.fr" 
-                          {...field} 
+                          placeholder="jean.dupont@entreprise.fr"
+                          {...field}
                           data-testid="input-email"
                         />
                       </FormControl>
@@ -274,10 +305,10 @@ export default function BetaSignup() {
                     <FormItem>
                       <FormLabel>Téléphone *</FormLabel>
                       <FormControl>
-                        <Input 
+                        <Input
                           type="tel"
-                          placeholder="06 12 34 56 78" 
-                          {...field} 
+                          placeholder="06 12 34 56 78"
+                          {...field}
                           data-testid="input-phone"
                         />
                       </FormControl>
@@ -293,9 +324,9 @@ export default function BetaSignup() {
                     <FormItem>
                       <FormLabel>Entreprise *</FormLabel>
                       <FormControl>
-                        <Input 
-                          placeholder="Nom de votre entreprise" 
-                          {...field} 
+                        <Input
+                          placeholder="Nom de votre entreprise"
+                          {...field}
                           data-testid="input-company"
                         />
                       </FormControl>
@@ -310,7 +341,10 @@ export default function BetaSignup() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Taille de l'entreprise *</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
                         <FormControl>
                           <SelectTrigger data-testid="select-companysize">
                             <SelectValue placeholder="Sélectionnez..." />
@@ -319,7 +353,9 @@ export default function BetaSignup() {
                         <SelectContent>
                           <SelectItem value="1-10">1-10 employés</SelectItem>
                           <SelectItem value="10-50">10-50 employés</SelectItem>
-                          <SelectItem value="50-100">50-100 employés</SelectItem>
+                          <SelectItem value="50-100">
+                            50-100 employés
+                          </SelectItem>
                           <SelectItem value="100+">100+ employés</SelectItem>
                         </SelectContent>
                       </Select>
@@ -334,7 +370,10 @@ export default function BetaSignup() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Votre rôle *</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                      >
                         <FormControl>
                           <SelectTrigger data-testid="select-role">
                             <SelectValue placeholder="Sélectionnez..." />
@@ -342,8 +381,12 @@ export default function BetaSignup() {
                         </FormControl>
                         <SelectContent>
                           <SelectItem value="ceo">Dirigeant / CEO</SelectItem>
-                          <SelectItem value="cfo">Directeur Financier / CFO</SelectItem>
-                          <SelectItem value="admin">Responsable Admin / Office Manager</SelectItem>
+                          <SelectItem value="cfo">
+                            Directeur Financier / CFO
+                          </SelectItem>
+                          <SelectItem value="admin">
+                            Responsable Admin / Office Manager
+                          </SelectItem>
                           <SelectItem value="it">Responsable IT</SelectItem>
                           <SelectItem value="other">Autre</SelectItem>
                         </SelectContent>
@@ -358,7 +401,9 @@ export default function BetaSignup() {
                   name="painPoint"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Votre principal défi administratif *</FormLabel>
+                      <FormLabel>
+                        Votre principal défi administratif *
+                      </FormLabel>
                       <FormControl>
                         <Textarea
                           placeholder="Ex: Nous recevons 200+ emails/jour et perdons trop de temps à trier et répondre..."
@@ -374,13 +419,14 @@ export default function BetaSignup() {
 
                 <div className="bg-accent/20 rounded-md p-4 text-sm text-muted-foreground">
                   <Check className="h-4 w-4 inline mr-2 text-primary" />
-                  En soumettant ce formulaire, vous acceptez d'être contacté par notre équipe 
-                  pour une démo personnalisée. Aucun engagement. Données sécurisées (RGPD).
+                  En soumettant ce formulaire, vous acceptez d'être contacté par
+                  notre équipe pour une démo personnalisée. Aucun engagement.
+                  Données sécurisées (RGPD).
                 </div>
 
-                <Button 
-                  type="submit" 
-                  size="lg" 
+                <Button
+                  type="submit"
+                  size="lg"
                   className="w-full text-base"
                   disabled={form.formState.isSubmitting}
                   data-testid="button-submit-beta"
@@ -411,7 +457,10 @@ export default function BetaSignup() {
             Une question ? Contactez-nous
           </p>
           <div className="flex flex-wrap justify-center gap-6 text-sm">
-            <a href="mailto:hello@izyinbox.fr" className="text-primary hover:underline">
+            <a
+              href="mailto:hello@izyinbox.fr"
+              className="text-primary hover:underline"
+            >
               hello@izyinbox.fr
             </a>
             <span className="text-muted-foreground">•</span>
@@ -419,7 +468,12 @@ export default function BetaSignup() {
               01 23 45 67 89
             </a>
             <span className="text-muted-foreground">•</span>
-            <a href="https://linkedin.com/company/izyinbox" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+            <a
+              href="https://linkedin.com/company/izyinbox"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline"
+            >
               LinkedIn
             </a>
           </div>
@@ -429,13 +483,13 @@ export default function BetaSignup() {
   );
 }
 
-function BenefitCard({ 
-  icon, 
-  title, 
-  description 
-}: { 
-  icon: React.ReactNode; 
-  title: string; 
+function BenefitCard({
+  icon,
+  title,
+  description,
+}: {
+  icon: React.ReactNode;
+  title: string;
   description: string;
 }) {
   return (
