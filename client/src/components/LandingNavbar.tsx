@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
-import logo2 from "@/assets/logo2.svg";
+import logo from "@/assets/logo.svg";
 
 export function LandingNavbar() {
   const [location, navigate] = useLocation();
@@ -41,17 +41,17 @@ export function LandingNavbar() {
       <div className="container mx-auto px-6">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-            <div className="flex items-center gap-2">
-                <img
-                  src={logo2}
-                  alt="Logo IzyInbox"
-                  className="h-10 w-auto"
-                  data-testid="logo-landing"
-                />
-                <span className="font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                    IzyInbox
-                </span>
-            </div>
+          <div className="flex items-center gap-2">
+            <img
+              src={logo}
+              alt="Logo IzyInbox"
+              className="h-10 w-auto"
+              data-testid="logo-landing"
+            />
+            <span className="font-semibold text-lg bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent dark:from-blue-400 dark:via-purple-400 dark:to-pink-400">
+              IzyInbox
+            </span>
+          </div>
 
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center gap-6">

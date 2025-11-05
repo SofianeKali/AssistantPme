@@ -56,10 +56,10 @@ export default function Landing() {
             </Badge>
 
             <h1 className="text-4xl md:text-6xl font-semibold mb-6 leading-tight bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent dark:from-blue-400 dark:via-purple-400 dark:to-pink-400">
-              L'assistant administratif IA pour PME françaises
+              L'assistant IA qui simplifie la gestion de vos emails.
             </h1>
 
-            <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+            <p className="mt-12 text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
               Gagnez{" "}
               <span className="text-foreground font-semibold">10h/semaine</span>{" "}
               grâce à une IA qui lit, répond, planifie et archive vos emails
