@@ -42,13 +42,8 @@ export function LandingNavbar() {
           {/* Logo */}
           <div className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-md bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-lg">
-                I
-              </span>
+                <img src="/assets/logo2.svg" alt="Logo IzyInbox" className="h-6 w-6" />
             </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-              IzyInbox
-            </span>
           </div>
 
           {/* Desktop Menu */}
