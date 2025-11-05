@@ -41,14 +41,17 @@ export function LandingNavbar() {
       <div className="container mx-auto px-6">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="flex items-center gap-2">
-            <img
-              src={logo2}
-              alt="Logo IzyInbox"
-              className="h-10 w-auto"
-              data-testid="logo-landing"
-            />
-          </div>
+            <div className="flex items-center gap-2">
+                <img
+                  src={logo2}
+                  alt="Logo IzyInbox"
+                  className="h-10 w-auto"
+                  data-testid="logo-landing"
+                />
+                <span className="font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                    IzyInbox
+                </span>
+            </div>
 
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center gap-6">
