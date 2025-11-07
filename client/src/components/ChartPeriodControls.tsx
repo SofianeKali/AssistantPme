@@ -28,7 +28,7 @@ export function ChartPeriodControls({
   testIdPrefix,
 }: ChartPeriodControlsProps) {
   return (
-    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto sm:max-w-md min-w-0">
+    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto min-w-0 max-w-full">
       <Select value={periodType} onValueChange={onPeriodTypeChange}>
         <SelectTrigger
           className="w-full sm:w-32 shrink-0"
@@ -42,7 +42,7 @@ export function ChartPeriodControls({
         </SelectContent>
       </Select>
 
-      <div className="flex items-center gap-1 min-w-0 flex-1 sm:flex-initial overflow-hidden">
+      <div className="flex items-center gap-1 min-w-0 flex-1 sm:flex-initial overflow-hidden max-w-full">
         <Button
           size="icon"
           variant="ghost"
@@ -52,7 +52,7 @@ export function ChartPeriodControls({
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
-        <span className="text-sm text-muted-foreground min-w-0 text-center px-2 truncate flex-1 sm:flex-initial sm:max-w-[200px]">
+        <span className="text-sm text-muted-foreground min-w-0 text-center px-2 truncate flex-1 sm:flex-initial sm:w-auto">
           {periodLabel}
         </span>
         <Button
