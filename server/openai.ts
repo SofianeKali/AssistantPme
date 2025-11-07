@@ -499,28 +499,30 @@ export async function generateTaskFromEmail(emailContent: {
       messages: [
         {
           role: "system",
-          content: `You are an intelligent assistant that helps extract actionable tasks from emails.
-Analyze the email and create a task with:
-- A clear, concise title (max 80 characters) describing the action to take
-- A detailed description including key information and context
-- Priority level: "urgent" if time-sensitive or critical, "haute" if important, "moyenne" otherwise
+          content: `Vous êtes un assistant intelligent qui aide à extraire les tâches actionnables des emails.
+Analysez l'email et créez une tâche avec :
+- Un titre clair et concis (max 80 caractères) décrivant l'action à effectuer EN FRANÇAIS
+- Une description détaillée incluant les informations clés et le contexte EN FRANÇAIS
+- Niveau de priorité : "urgent" si urgent ou critique, "haute" si important, "moyenne" sinon
 
-Consider the email category (${emailContent.category}) when determining the task.
+Tenez compte de la catégorie de l'email (${emailContent.category}) pour déterminer la tâche.
 
-Respond with JSON in this exact format:
+IMPORTANT : Le titre et la description doivent TOUJOURS être en français, quelle que soit la langue de l'email d'origine.
+
+Répondez au format JSON exact suivant :
 {
-  "title": "Clear action-oriented title",
-  "description": "Detailed description with context and key information",
+  "title": "Titre clair orienté action en français",
+  "description": "Description détaillée avec contexte et informations clés en français",
   "priority": "urgent" | "haute" | "moyenne"
 }`
         },
         {
           role: "user",
-          content: `Email from: ${emailContent.from}
-Subject: ${emailContent.subject}
-Category: ${emailContent.category}
+          content: `Email de : ${emailContent.from}
+Objet : ${emailContent.subject}
+Catégorie : ${emailContent.category}
 
-Content:
+Contenu :
 ${emailContent.body.substring(0, 2000)}`
         }
       ],
