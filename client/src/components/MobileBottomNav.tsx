@@ -24,7 +24,7 @@ import { Separator } from "@/components/ui/separator";
 
 const mainNavItems = [
   {
-    title: "Dashboard",
+    title: "Cockpit",
     url: "/",
     icon: LayoutDashboard,
     testId: "mobile-nav-dashboard",
@@ -34,6 +34,12 @@ const mainNavItems = [
     url: "/emails",
     icon: Mail,
     testId: "mobile-nav-emails",
+  },
+  {
+    title: "Tâches",
+    url: "/tasks",
+    icon: CheckSquare,
+    testId: "mobile-nav-tasks",
   },
   {
     title: "Alertes",
@@ -57,12 +63,6 @@ const mainNavItems = [
 ];
 
 const moreMenuItems = [
-  {
-    title: "Tâches",
-    url: "/tasks",
-    icon: CheckSquare,
-    testId: "mobile-nav-tasks",
-  },
   {
     title: "Documents",
     url: "/documents",
@@ -127,7 +127,7 @@ export function MobileBottomNav() {
                   className={cn(
                     "flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg transition-colors min-w-[60px]",
                     "hover-elevate active-elevate-2",
-                    "text-muted-foreground"
+                    "text-muted-foreground",
                   )}
                   data-testid={item.testId}
                 >
@@ -145,7 +145,7 @@ export function MobileBottomNav() {
                     "hover-elevate active-elevate-2",
                     isActive
                       ? "text-primary bg-primary/10"
-                      : "text-muted-foreground"
+                      : "text-muted-foreground",
                   )}
                   data-testid={item.testId}
                 >
@@ -203,7 +203,7 @@ export function MobileBottomNav() {
                         "hover-elevate active-elevate-2",
                         isActive
                           ? "text-primary bg-primary/10"
-                          : "text-foreground"
+                          : "text-foreground",
                       )}
                       data-testid={item.testId}
                     >
