@@ -241,15 +241,26 @@ export class EmailScanner {
           if (redirectEmails.length > 0 && mail.attachments && mail.attachments.length > 0) {
             console.log(`[IMAP] Category '${emailType}' has ${redirectEmails.length} redirect email(s) configured`);
             
-            // Convert mailparser attachments to EmailAttachment format
-            const emailAttachments: EmailAttachment[] = mail.attachments.map(att => ({
-              filename: att.filename || `attachment-${Date.now()}`,
-              content: att.content,
-              contentType: att.contentType,
-            }));
+            // Filter out inline images (those with contentDisposition === 'inline' or cid)
+            // Only forward actual file attachments
+            const actualAttachments = mail.attachments.filter(att => {
+              const isInlineImage = att.contentDisposition === 'inline' || !!att.cid;
+              return !isInlineImage;
+            });
+            
+            // Only forward if there are actual attachments (not just inline images)
+            if (actualAttachments.length === 0) {
+              console.log(`[IMAP] No actual file attachments to forward (only inline images)`);
+            } else {
+              // Convert mailparser attachments to EmailAttachment format
+              const emailAttachments: EmailAttachment[] = actualAttachments.map(att => ({
+                filename: att.filename || `attachment-${Date.now()}`,
+                content: att.content,
+                contentType: att.contentType,
+              }));
 
-            try {
-              const forwardResult = await forwardAttachments(this.storage, {
+              try {
+                const forwardResult = await forwardAttachments(this.storage, {
                 fromAccount: account,
                 recipientEmails: redirectEmails,
                 originalSubject: mail.subject || 'Sans objet',
@@ -262,18 +273,30 @@ export class EmailScanner {
               } else {
                 console.log(`[IMAP] Successfully forwarded attachments to all recipients`);
               }
-            } catch (forwardError) {
-              console.error(`[IMAP] Exception during attachment forwarding:`, forwardError);
-              // Continue processing even if forwarding fails
+              } catch (forwardError) {
+                console.error(`[IMAP] Exception during attachment forwarding:`, forwardError);
+                // Continue processing even if forwarding fails
+              }
             }
           }
 
           // Process attachments (only if document extraction is enabled)
           if (mail.attachments && mail.attachments.length > 0 && documentExtractionEnabled && isDocumentStorageEnabled) {
-            console.log(`[IMAP] Processing ${mail.attachments.length} attachments for ${documentStorageProvider}...`);
+            // Filter out inline images (those with contentDisposition === 'inline' or cid)
+            // Only process actual file attachments
+            const actualAttachments = mail.attachments.filter(att => {
+              const isInlineImage = att.contentDisposition === 'inline' || !!att.cid;
+              return !isInlineImage;
+            });
+            
+            if (actualAttachments.length === 0) {
+              console.log(`[IMAP] No actual file attachments to process (only inline images)`);
+            } else {
+              console.log(`[IMAP] Processing ${actualAttachments.length} actual attachments (filtered out inline images) for ${documentStorageProvider}...`);
+            }
             
             try {
-              if (documentStorageProvider === 'google_drive') {
+              if (documentStorageProvider === 'google_drive' && actualAttachments.length > 0) {
                 // Google Drive upload with user credentials
                 const userDrive = await getUserGoogleDriveClient(account.userId);
                 
@@ -328,8 +351,8 @@ export class EmailScanner {
                 
                 console.log(`[IMAP] Using Google Drive category folder: ${emailType}`);
                 
-                // Upload each attachment
-                for (const attachment of mail.attachments) {
+                // Upload each actual attachment (inline images already filtered out)
+                for (const attachment of actualAttachments) {
                   try {
                     const filename = attachment.filename || `attachment-${Date.now()}`;
                     const mimeType = attachment.contentType || 'application/octet-stream';
@@ -388,7 +411,7 @@ export class EmailScanner {
                     console.error(`[IMAP] Error processing attachment:`, attachError);
                   }
                 }
-              } else if (documentStorageProvider === 'onedrive') {
+              } else if (documentStorageProvider === 'onedrive' && actualAttachments.length > 0) {
                 // OneDrive upload with user credentials
                 const mainFolderPath = 'PME-Assistant-Documents';
                 const categoryFolderPath = `${mainFolderPath}/${emailType}`;
@@ -399,8 +422,8 @@ export class EmailScanner {
                 
                 console.log(`[IMAP] Using OneDrive category folder: ${emailType}`);
                 
-                // Upload each attachment
-                for (const attachment of mail.attachments) {
+                // Upload each actual attachment (inline images already filtered out)
+                for (const attachment of actualAttachments) {
                   try {
                     const filename = attachment.filename || `attachment-${Date.now()}`;
                     const mimeType = attachment.contentType || 'application/octet-stream';

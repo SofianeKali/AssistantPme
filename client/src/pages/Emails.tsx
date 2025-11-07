@@ -1241,9 +1241,12 @@ export default function Emails() {
 
             {/* Email Body */}
             <div className="prose prose-sm max-w-none">
-              <div className="text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere">
-                {selectedEmail?.body}
-              </div>
+              <div 
+                className="text-sm break-words overflow-wrap-anywhere"
+                dangerouslySetInnerHTML={{ 
+                  __html: selectedEmail?.htmlBody || selectedEmail?.body?.replace(/\n/g, '<br>') || '' 
+                }}
+              />
             </div>
 
             {/* Attachments */}
