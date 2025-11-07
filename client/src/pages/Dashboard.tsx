@@ -192,7 +192,8 @@ export default function Dashboard() {
   const { toast } = useToast();
 
   // Email account filter
-  const [selectedEmailAccount, setSelectedEmailAccount] = useState<string>("all");
+  const [selectedEmailAccount, setSelectedEmailAccount] =
+    useState<string>("all");
 
   // Period controls for all charts
   const [emailDistributionPeriod, setEmailDistributionPeriod] =
@@ -320,7 +321,12 @@ export default function Dashboard() {
 
   const { data: tasksEvolution, isLoading: tasksEvolutionLoading } =
     useQuery<any>({
-      queryKey: ["/api/dashboard/tasks-evolution", tasksPeriod, tasksOffset, selectedEmailAccount],
+      queryKey: [
+        "/api/dashboard/tasks-evolution",
+        tasksPeriod,
+        tasksOffset,
+        selectedEmailAccount,
+      ],
       queryFn: async () => {
         const params = new URLSearchParams();
         params.append("periodType", tasksPeriod);
@@ -337,7 +343,12 @@ export default function Dashboard() {
 
   const { data: alertsEvolution, isLoading: alertsEvolutionLoading } =
     useQuery<any>({
-      queryKey: ["/api/dashboard/alerts-evolution", alertsPeriod, alertsOffset, selectedEmailAccount],
+      queryKey: [
+        "/api/dashboard/alerts-evolution",
+        alertsPeriod,
+        alertsOffset,
+        selectedEmailAccount,
+      ],
       queryFn: async () => {
         const params = new URLSearchParams();
         params.append("periodType", alertsPeriod);
@@ -599,24 +610,24 @@ export default function Dashboard() {
                     )}
                     <Badge
                       variant={
-                        task.status === "nouveau" 
-                          ? "secondary" 
+                        task.status === "nouveau"
+                          ? "secondary"
                           : task.status === "termine"
-                          ? "outline"
-                          : "default"
+                            ? "outline"
+                            : "default"
                       }
                       className={`text-xs mt-2 ${
-                        task.status === "termine" 
-                          ? "bg-chart-2/20 text-chart-2 border-chart-2" 
+                        task.status === "termine"
+                          ? "bg-chart-2/20 text-chart-2 border-chart-2"
                           : ""
                       }`}
                       data-testid={`badge-task-status-${task.id}`}
                     >
-                      {task.status === "nouveau" 
-                        ? "Nouveau" 
+                      {task.status === "nouveau"
+                        ? "Nouveau"
                         : task.status === "termine"
-                        ? "Terminé"
-                        : "En cours"}
+                          ? "Terminé"
+                          : "En cours"}
                     </Badge>
                   </div>
                   <div className="flex flex-col gap-1">
@@ -830,8 +841,10 @@ export default function Dashboard() {
   function renderEmailEvolutionChart() {
     return (
       <Card key="email-evolution">
-        <CardHeader className="flex flex-row items-center justify-between gap-4 pb-4 min-w-0 overflow-hidden">
-          <CardTitle className="shrink-0">Évolution des emails traités</CardTitle>
+        <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 min-w-0 overflow-hidden">
+          <CardTitle className="truncate min-w-0">
+            Évolution des emails traités
+          </CardTitle>
           <ChartPeriodControls
             periodType={emailEvolutionPeriod}
             onPeriodTypeChange={(type) => setEmailEvolutionPeriod(type)}
@@ -850,7 +863,7 @@ export default function Dashboard() {
           ) : (
             <div className="h-[200px] sm:h-[250px]">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart 
+                <LineChart
                   data={emailEvolution || []}
                   margin={{ top: 5, right: 5, left: -10, bottom: 5 }}
                 >
@@ -864,8 +877,8 @@ export default function Dashboard() {
                     fontSize={12}
                     tick={{ fontSize: 12 }}
                   />
-                  <YAxis 
-                    stroke="hsl(var(--muted-foreground))" 
+                  <YAxis
+                    stroke="hsl(var(--muted-foreground))"
                     fontSize={12}
                     tick={{ fontSize: 12 }}
                     width={40}
@@ -901,7 +914,9 @@ export default function Dashboard() {
     return (
       <Card key="email-distribution">
         <CardHeader className="flex flex-row items-center justify-between gap-4 pb-4 min-w-0 overflow-hidden">
-          <CardTitle className="shrink-0">Répartition des emails reçus</CardTitle>
+          <CardTitle className="shrink-0">
+            Répartition des emails reçus
+          </CardTitle>
           <ChartPeriodControls
             periodType={emailDistributionPeriod}
             onPeriodTypeChange={(type) => setEmailDistributionPeriod(type)}
@@ -980,7 +995,7 @@ export default function Dashboard() {
           ) : (
             <div className="h-[200px] sm:h-[250px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart 
+                <BarChart
                   data={appointmentsWeek || []}
                   margin={{ top: 5, right: 5, left: -10, bottom: 5 }}
                 >
@@ -994,8 +1009,8 @@ export default function Dashboard() {
                     fontSize={12}
                     tick={{ fontSize: 12 }}
                   />
-                  <YAxis 
-                    stroke="hsl(var(--muted-foreground))" 
+                  <YAxis
+                    stroke="hsl(var(--muted-foreground))"
                     fontSize={12}
                     tick={{ fontSize: 12 }}
                     width={40}
@@ -1028,7 +1043,9 @@ export default function Dashboard() {
     return (
       <Card key="category-processing">
         <CardHeader className="flex flex-row items-center justify-between gap-4 pb-4 min-w-0 overflow-hidden">
-          <CardTitle className="shrink-0">Taux de traitement par catégorie</CardTitle>
+          <CardTitle className="shrink-0">
+            Taux de traitement par catégorie
+          </CardTitle>
           <ChartPeriodControls
             periodType={categoryProcessingPeriod}
             onPeriodTypeChange={(type) => setCategoryProcessingPeriod(type)}
@@ -1047,7 +1064,7 @@ export default function Dashboard() {
           ) : (
             <div className="h-[200px] sm:h-[250px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart 
+                <BarChart
                   data={categoryProcessing || []}
                   margin={{ top: 5, right: 5, left: -10, bottom: 5 }}
                 >
@@ -1061,8 +1078,8 @@ export default function Dashboard() {
                     fontSize={12}
                     tick={{ fontSize: 12 }}
                   />
-                  <YAxis 
-                    stroke="hsl(var(--muted-foreground))" 
+                  <YAxis
+                    stroke="hsl(var(--muted-foreground))"
                     fontSize={12}
                     tick={{ fontSize: 12 }}
                     width={40}
@@ -1119,7 +1136,7 @@ export default function Dashboard() {
           ) : (
             <div className="h-[200px] sm:h-[250px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart 
+                <BarChart
                   data={tasksEvolution || []}
                   margin={{ top: 5, right: 5, left: -10, bottom: 5 }}
                 >
@@ -1133,8 +1150,8 @@ export default function Dashboard() {
                     fontSize={12}
                     tick={{ fontSize: 12 }}
                   />
-                  <YAxis 
-                    stroke="hsl(var(--muted-foreground))" 
+                  <YAxis
+                    stroke="hsl(var(--muted-foreground))"
                     fontSize={12}
                     tick={{ fontSize: 12 }}
                     width={40}
@@ -1148,7 +1165,7 @@ export default function Dashboard() {
                     }}
                     cursor={{ fill: "hsl(var(--muted) / 0.2)" }}
                   />
-                  <Legend 
+                  <Legend
                     wrapperStyle={{ fontSize: "13px" }}
                     iconType="circle"
                   />
@@ -1202,7 +1219,7 @@ export default function Dashboard() {
           ) : (
             <div className="h-[200px] sm:h-[250px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart 
+                <BarChart
                   data={alertsEvolution || []}
                   margin={{ top: 5, right: 5, left: -10, bottom: 5 }}
                 >
@@ -1216,8 +1233,8 @@ export default function Dashboard() {
                     fontSize={12}
                     tick={{ fontSize: 12 }}
                   />
-                  <YAxis 
-                    stroke="hsl(var(--muted-foreground))" 
+                  <YAxis
+                    stroke="hsl(var(--muted-foreground))"
                     fontSize={12}
                     tick={{ fontSize: 12 }}
                     width={40}
@@ -1231,7 +1248,7 @@ export default function Dashboard() {
                     }}
                     cursor={{ fill: "hsl(var(--muted) / 0.2)" }}
                   />
-                  <Legend 
+                  <Legend
                     wrapperStyle={{ fontSize: "13px" }}
                     iconType="circle"
                   />
@@ -1297,7 +1314,7 @@ export default function Dashboard() {
             Réinitialiser l'ordre
           </Button>
         </div>
-        
+
         {/* Email Account Filter */}
         <div className="flex items-center gap-3">
           <label className="text-sm font-medium text-foreground">
@@ -1307,10 +1324,7 @@ export default function Dashboard() {
             value={selectedEmailAccount}
             onValueChange={setSelectedEmailAccount}
           >
-            <SelectTrigger
-              className="w-72"
-              data-testid="select-email-account"
-            >
+            <SelectTrigger className="w-72" data-testid="select-email-account">
               <SelectValue placeholder="Sélectionner un compte" />
             </SelectTrigger>
             <SelectContent>
