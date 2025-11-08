@@ -26,6 +26,7 @@ import {
   Paperclip,
   FileIcon,
   Trash2,
+  Reply,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -1334,16 +1335,28 @@ export default function Emails() {
 
             {/* Actions */}
             <div className="flex flex-col gap-3 pt-4 border-t">
-              {selectedEmail?.suggestedResponse ? (
-                <Button
-                  onClick={() => setShowResponseDialog(true)}
-                  data-testid="button-view-response"
-                  className="w-full"
-                >
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Voir / Modifier la réponse
-                </Button>
-              ) : (
+              {/* Manual Reply Button - Always visible */}
+              <Button
+                onClick={() => {
+                  // Open response dialog even without AI-generated response
+                  if (!selectedEmail?.suggestedResponse) {
+                    setSelectedEmail({
+                      ...selectedEmail,
+                      suggestedResponse: "",
+                    });
+                  }
+                  setShowResponseDialog(true);
+                }}
+                variant={selectedEmail?.suggestedResponse ? "outline" : "default"}
+                data-testid="button-manual-reply"
+                className="w-full"
+              >
+                <Reply className="h-4 w-4 mr-2" />
+                {selectedEmail?.suggestedResponse ? "Modifier la réponse" : "Répondre"}
+              </Button>
+
+              {/* AI Response Actions */}
+              {!selectedEmail?.suggestedResponse && (
                 <div className="flex flex-col gap-2">
                   <div className="flex flex-col sm:flex-row gap-2">
                     <Button
@@ -1355,13 +1368,14 @@ export default function Emails() {
                       }
                       disabled={generateResponseMutation.isPending}
                       data-testid="button-generate-response"
+                      variant="outline"
                       className="flex-1"
                     >
                       <Sparkles className="h-4 w-4 mr-2" />
                       <span className="truncate">
                         {generateResponseMutation.isPending
                           ? "Génération..."
-                          : "Générer une réponse"}
+                          : "Générer avec IA"}
                       </span>
                     </Button>
                     <Button
@@ -1407,9 +1421,15 @@ export default function Emails() {
       <Dialog open={showResponseDialog} onOpenChange={setShowResponseDialog}>
         <DialogContent className="max-w-2xl w-full md:w-auto">
           <DialogHeader>
-            <DialogTitle>Réponse générée par IA</DialogTitle>
+            <DialogTitle>
+              {selectedEmail?.suggestedResponse && selectedEmail?.suggestedResponse.trim() !== ""
+                ? "Réponse générée par IA"
+                : "Rédiger une réponse"}
+            </DialogTitle>
             <DialogDescription>
-              Vous pouvez modifier la réponse avant de l'envoyer
+              {selectedEmail?.suggestedResponse && selectedEmail?.suggestedResponse.trim() !== ""
+                ? "Vous pouvez modifier la réponse avant de l'envoyer"
+                : "Rédigez votre réponse à cet email"}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
