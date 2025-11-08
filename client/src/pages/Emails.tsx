@@ -65,6 +65,7 @@ export default function Emails() {
   const [aiSearchCriteria, setAISearchCriteria] = useState<any>(null);
   const [deepSearch, setDeepSearch] = useState(false); // Deep search in attachments (off by default)
   const [attachments, setAttachments] = useState<File[]>([]);
+  const [isAiResponse, setIsAiResponse] = useState(false); // Track if response was AI-generated
   const { toast } = useToast();
 
   // Load email categories dynamically
@@ -278,6 +279,7 @@ export default function Emails() {
     onSuccess: (data, variables) => {
       // Update selected email with the generated response
       setSelectedEmail({ ...selectedEmail, suggestedResponse: data.response });
+      setIsAiResponse(true); // Mark as AI-generated response
       setShowResponseDialog(true);
       // Clear custom prompt and hide input after successful generation
       setCustomPrompt("");
@@ -875,6 +877,8 @@ export default function Emails() {
                   className="flex items-start gap-2 md:gap-4 flex-1 min-w-0 cursor-pointer"
                   onClick={() => {
                     setSelectedEmail(email);
+                    // If email has suggestedResponse from DB, it's AI-generated
+                    setIsAiResponse(!!email.suggestedResponse);
                     if (!email.isRead) {
                       markReadMutation.mutate(email.id);
                     }
@@ -1226,8 +1230,8 @@ export default function Emails() {
               </div>
             )}
 
-            {/* Suggested Response */}
-            {selectedEmail?.suggestedResponse && (
+            {/* Suggested Response - Only show if AI-generated */}
+            {selectedEmail?.suggestedResponse && isAiResponse && (
               <div className="p-4 rounded-md bg-chart-2/5 border border-chart-2/20">
                 <div className="flex items-center gap-2 mb-2">
                   <Sparkles className="h-4 w-4 text-chart-2" />
@@ -1344,6 +1348,7 @@ export default function Emails() {
                       ...selectedEmail,
                       suggestedResponse: "",
                     });
+                    setIsAiResponse(false); // Mark as manual response
                   }
                   setShowResponseDialog(true);
                 }}
