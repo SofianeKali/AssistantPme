@@ -1015,6 +1015,16 @@ export default function Emails() {
                             {formatEmailAddress(email.subject)}
                           </span>
                         </div>
+                        <div
+                          className="text-sm text-muted-foreground line-clamp-2 mt-1"
+                          dangerouslySetInnerHTML={{
+                            __html: (
+                              email.htmlBody ||
+                              email.body?.replace(/\n/g, "<br>") ||
+                              ""
+                            ).substring(0, 200),
+                          }}
+                        ></div>
                         <div className="flex items-center gap-1 md:gap-2 flex-wrap mt-1 md:hidden">
                           {email.emailType &&
                             (() => {
