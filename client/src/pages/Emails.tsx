@@ -978,16 +978,13 @@ export default function Emails() {
                               {email.subject}
                             </span>
                             <span className="text-sm text-muted-foreground flex-shrink-0">:</span>
-                            <span
-                              className="text-sm text-muted-foreground truncate flex-1 min-w-0"
-                              dangerouslySetInnerHTML={{
-                                __html: (
-                                  email.htmlBody ||
-                                  email.body?.replace(/\n/g, " ") ||
-                                  ""
-                                ).substring(0, 150),
-                              }}
-                            ></span>
+                            <span className="text-sm text-muted-foreground truncate flex-1 min-w-0 whitespace-nowrap">
+                              {(email.htmlBody || email.body || "")
+                                .replace(/<[^>]*>/g, " ") // Remove all HTML tags
+                                .replace(/\s+/g, " ") // Replace multiple spaces with single space
+                                .trim()
+                                .substring(0, 150)}
+                            </span>
                           </div>
                           <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
                             {email.respondedAt && (
