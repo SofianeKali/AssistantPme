@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { useLocation } from "wouter";
+import { RichTextEditor } from "@/components/RichTextEditor";
 
 export default function Emails() {
   const [location] = useLocation();
@@ -1412,16 +1413,16 @@ export default function Emails() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <Textarea
-              value={selectedEmail?.suggestedResponse || ""}
-              onChange={(e) =>
+            <RichTextEditor
+              content={selectedEmail?.suggestedResponse || ""}
+              onChange={(html) =>
                 setSelectedEmail({
                   ...selectedEmail,
-                  suggestedResponse: e.target.value,
+                  suggestedResponse: html,
                 })
               }
-              rows={8}
-              data-testid="textarea-response"
+              placeholder="Rédigez votre réponse ici..."
+              className="min-h-[300px]"
             />
             
             {/* Attachments Section */}

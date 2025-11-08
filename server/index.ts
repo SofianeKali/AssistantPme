@@ -88,8 +88,18 @@ export async function createDefaultCategoriesForCompany(companyId: string) {
   ];
 
   for (const category of defaultCategories) {
-    await storage.createEmailCategory(category);
-    console.log(`[Init] Created default category for company ${companyId}: ${category.key}`);
+    try {
+      await storage.createEmailCategory(category);
+      console.log(`[Init] Created default category for company ${companyId}: ${category.key}`);
+    } catch (error: any) {
+      // Ignore duplicate key errors (category already exists for this company)
+      if (error.code === '23505') {
+        console.log(`[Init] Category already exists for company ${companyId}: ${category.key}`);
+      } else {
+        // Re-throw other errors
+        throw error;
+      }
+    }
   }
 }
 
