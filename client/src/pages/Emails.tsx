@@ -80,7 +80,9 @@ export default function Emails() {
   });
 
   // Fetch sent replies for selected email
-  const { data: emailReplies = [], isLoading: isLoadingReplies } = useQuery<any[]>({
+  const { data: emailReplies = [], isLoading: isLoadingReplies } = useQuery<
+    any[]
+  >({
     queryKey: ["/api/emails", selectedEmail?.id, "replies"],
     enabled: !!selectedEmail?.id,
   });
@@ -91,7 +93,7 @@ export default function Emails() {
     const category = params.get("category");
     const status = params.get("status");
     const alert = params.get("alertId");
-    
+
     if (category) {
       setTypeFilter(category);
     }
@@ -111,27 +113,41 @@ export default function Emails() {
   }, [typeFilter, statusFilter, search, alertId]);
 
   const { data: emailsData, isLoading } = useQuery({
-    queryKey: alertId 
+    queryKey: alertId
       ? ["/api/alerts", alertId, "emails"]
       : aiSearchActive
-      ? ["/api/emails/ai-search", aiSearchCriteria, deepSearch, page, pageSize]
-      : ["/api/emails", { type: typeFilter, status: statusFilter, search, page, pageSize }],
+        ? [
+            "/api/emails/ai-search",
+            aiSearchCriteria,
+            deepSearch,
+            page,
+            pageSize,
+          ]
+        : [
+            "/api/emails",
+            { type: typeFilter, status: statusFilter, search, page, pageSize },
+          ],
     queryFn: async () => {
       // If alertId is set, fetch emails for this alert
       if (alertId) {
-        const res = await fetch(`/api/alerts/${alertId}/emails`, { 
-          credentials: "include" 
+        const res = await fetch(`/api/alerts/${alertId}/emails`, {
+          credentials: "include",
         });
-        
+
         if (!res.ok) {
           throw new Error(`${res.status}: ${res.statusText}`);
         }
-        
+
         // For alert emails, return in the same format as paginated emails
         const emails = await res.json();
-        return { emails, total: emails.length, limit: emails.length, offset: 0 };
+        return {
+          emails,
+          total: emails.length,
+          limit: emails.length,
+          offset: 0,
+        };
       }
-      
+
       // If AI search is active, use already-analyzed criteria
       if (aiSearchActive && aiSearchCriteria) {
         const res = await fetch("/api/emails/ai-search", {
@@ -143,8 +159,8 @@ export default function Emails() {
             criteria: aiSearchCriteria,
             prompt: aiSearchPrompt,
             limit: pageSize,
-            offset: (page - 1) * pageSize
-          })
+            offset: (page - 1) * pageSize,
+          }),
         });
 
         if (!res.ok) {
@@ -153,7 +169,7 @@ export default function Emails() {
 
         return res.json();
       }
-      
+
       // Otherwise, fetch emails with filters and pagination
       const params = new URLSearchParams();
       if (typeFilter && typeFilter !== "all") params.append("type", typeFilter);
@@ -217,7 +233,7 @@ export default function Emails() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ prompt: aiSearchPrompt, deepSearch })
+        body: JSON.stringify({ prompt: aiSearchPrompt, deepSearch }),
       });
 
       if (!res.ok) {
@@ -225,7 +241,7 @@ export default function Emails() {
       }
 
       const { criteria } = await res.json();
-      
+
       // Store the extracted criteria
       setAISearchCriteria(criteria);
       setAISearchActive(true);
@@ -244,7 +260,8 @@ export default function Emails() {
       console.error("Error analyzing search prompt:", error);
       toast({
         title: "Erreur",
-        description: "Impossible d'analyser votre recherche. Veuillez réessayer.",
+        description:
+          "Impossible d'analyser votre recherche. Veuillez réessayer.",
         variant: "destructive",
       });
     }
@@ -370,23 +387,25 @@ export default function Emails() {
     }) => {
       // Use FormData for multipart upload
       const formData = new FormData();
-      formData.append('responseText', responseText);
-      
+      formData.append("responseText", responseText);
+
       // Add attachments if any
       if (attachments && attachments.length > 0) {
-        attachments.forEach(file => {
-          formData.append('attachments', file);
+        attachments.forEach((file) => {
+          formData.append("attachments", file);
         });
       }
 
       const res = await fetch(`/api/emails/${emailId}/send-response`, {
-        method: 'POST',
-        credentials: 'include',
+        method: "POST",
+        credentials: "include",
         body: formData,
       });
 
       if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ message: res.statusText }));
+        const errorData = await res
+          .json()
+          .catch(() => ({ message: res.statusText }));
         throw new Error(errorData.error || errorData.message || res.statusText);
       }
 
@@ -628,7 +647,7 @@ export default function Emails() {
               size="sm"
               onClick={() => {
                 const newUrl = window.location.pathname;
-                window.history.pushState({}, '', newUrl);
+                window.history.pushState({}, "", newUrl);
                 setAlertId(null);
               }}
               data-testid="button-clear-alert-filter"
@@ -663,7 +682,11 @@ export default function Emails() {
           <Sparkles className="h-4 w-4" />
           {aiSearchActive ? "Recherche IA active" : "Recherche IA"}
         </Button>
-        <Select value={typeFilter} onValueChange={setTypeFilter} disabled={!!alertId}>
+        <Select
+          value={typeFilter}
+          onValueChange={setTypeFilter}
+          disabled={!!alertId}
+        >
           <SelectTrigger
             className="w-full sm:w-48"
             data-testid="select-email-type"
@@ -679,7 +702,11 @@ export default function Emails() {
             ))}
           </SelectContent>
         </Select>
-        <Select value={statusFilter} onValueChange={setStatusFilter} disabled={!!alertId}>
+        <Select
+          value={statusFilter}
+          onValueChange={setStatusFilter}
+          disabled={!!alertId}
+        >
           <SelectTrigger
             className="w-full sm:w-48"
             data-testid="select-email-status"
@@ -704,7 +731,9 @@ export default function Emails() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium">Recherche IA: "{aiSearchPrompt}"</span>
+                <span className="text-sm font-medium">
+                  Recherche IA: "{aiSearchPrompt}"
+                </span>
               </div>
               <Button
                 variant="ghost"
@@ -717,30 +746,45 @@ export default function Emails() {
             </div>
             <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
               {aiSearchCriteria.from && (
-                <Badge variant="secondary" data-testid="criteria-from">De: {aiSearchCriteria.from}</Badge>
-              )}
-              {aiSearchCriteria.subject && (
-                <Badge variant="secondary" data-testid="criteria-subject">Sujet: {aiSearchCriteria.subject}</Badge>
-              )}
-              {aiSearchCriteria.categories && aiSearchCriteria.categories.length > 0 && (
-                <Badge variant="secondary" data-testid="criteria-categories">
-                  Catégories: {aiSearchCriteria.categories.join(", ")}
+                <Badge variant="secondary" data-testid="criteria-from">
+                  De: {aiSearchCriteria.from}
                 </Badge>
               )}
+              {aiSearchCriteria.subject && (
+                <Badge variant="secondary" data-testid="criteria-subject">
+                  Sujet: {aiSearchCriteria.subject}
+                </Badge>
+              )}
+              {aiSearchCriteria.categories &&
+                aiSearchCriteria.categories.length > 0 && (
+                  <Badge variant="secondary" data-testid="criteria-categories">
+                    Catégories: {aiSearchCriteria.categories.join(", ")}
+                  </Badge>
+                )}
               {aiSearchCriteria.priority && (
-                <Badge variant="secondary" data-testid="criteria-priority">Priorité: {aiSearchCriteria.priority}</Badge>
+                <Badge variant="secondary" data-testid="criteria-priority">
+                  Priorité: {aiSearchCriteria.priority}
+                </Badge>
               )}
               {aiSearchCriteria.status && (
-                <Badge variant="secondary" data-testid="criteria-status">Statut: {aiSearchCriteria.status}</Badge>
+                <Badge variant="secondary" data-testid="criteria-status">
+                  Statut: {aiSearchCriteria.status}
+                </Badge>
               )}
               {aiSearchCriteria.dateFrom && (
                 <Badge variant="secondary" data-testid="criteria-date-from">
-                  Depuis: {new Date(aiSearchCriteria.dateFrom).toLocaleDateString('fr-FR')}
+                  Depuis:{" "}
+                  {new Date(aiSearchCriteria.dateFrom).toLocaleDateString(
+                    "fr-FR",
+                  )}
                 </Badge>
               )}
               {aiSearchCriteria.dateTo && (
                 <Badge variant="secondary" data-testid="criteria-date-to">
-                  Jusqu'au: {new Date(aiSearchCriteria.dateTo).toLocaleDateString('fr-FR')}
+                  Jusqu'au:{" "}
+                  {new Date(aiSearchCriteria.dateTo).toLocaleDateString(
+                    "fr-FR",
+                  )}
                 </Badge>
               )}
               {aiSearchCriteria.isRead !== undefined && (
@@ -749,7 +793,9 @@ export default function Emails() {
                 </Badge>
               )}
               {aiSearchCriteria.hasAttachments && (
-                <Badge variant="secondary" data-testid="criteria-attachments">Avec pièces jointes</Badge>
+                <Badge variant="secondary" data-testid="criteria-attachments">
+                  Avec pièces jointes
+                </Badge>
               )}
             </div>
           </div>
@@ -969,24 +1015,38 @@ export default function Emails() {
                             {formatEmailAddress(email.subject)}
                           </span>
                         </div>
+                        <div
+                          className="text-sm text-muted-foreground line-clamp-2 mt-1"
+                          dangerouslySetInnerHTML={{
+                            __html: (
+                              email.htmlBody ||
+                              email.body?.replace(/\n/g, "<br>") ||
+                              ""
+                            ).substring(0, 200),
+                          }}
+                        ></div>
                         <div className="flex items-center gap-1 md:gap-2 flex-wrap mt-1 md:hidden">
-                          {email.emailType && (() => {
-                            const category = getCategoryByKey(email.emailType);
-                            const categoryColor = category?.color || "#6366f1";
-                            return (
-                              <Badge
-                                variant="outline"
-                                className="text-xs flex-shrink-0 border"
-                                style={{
-                                  backgroundColor: `${categoryColor}15`,
-                                  color: categoryColor,
-                                  borderColor: `${categoryColor}40`
-                                }}
-                              >
-                                {category?.label || email.emailType}
-                              </Badge>
-                            );
-                          })()}
+                          {email.emailType &&
+                            (() => {
+                              const category = getCategoryByKey(
+                                email.emailType,
+                              );
+                              const categoryColor =
+                                category?.color || "#6366f1";
+                              return (
+                                <Badge
+                                  variant="outline"
+                                  className="text-xs flex-shrink-0 border"
+                                  style={{
+                                    backgroundColor: `${categoryColor}15`,
+                                    color: categoryColor,
+                                    borderColor: `${categoryColor}40`,
+                                  }}
+                                >
+                                  {category?.label || email.emailType}
+                                </Badge>
+                              );
+                            })()}
                           {email.priority && email.priority !== "normal" && (
                             <Badge
                               variant="outline"
@@ -1020,23 +1080,24 @@ export default function Emails() {
                       </div>
                     </div>
                     <div className="hidden md:flex items-center gap-2 flex-wrap mb-2">
-                      {email.emailType && (() => {
-                        const category = getCategoryByKey(email.emailType);
-                        const categoryColor = category?.color || "#6366f1";
-                        return (
-                          <Badge
-                            variant="outline"
-                            className="text-xs border"
-                            style={{
-                              backgroundColor: `${categoryColor}15`,
-                              color: categoryColor,
-                              borderColor: `${categoryColor}40`
-                            }}
-                          >
-                            {category?.label || email.emailType}
-                          </Badge>
-                        );
-                      })()}
+                      {email.emailType &&
+                        (() => {
+                          const category = getCategoryByKey(email.emailType);
+                          const categoryColor = category?.color || "#6366f1";
+                          return (
+                            <Badge
+                              variant="outline"
+                              className="text-xs border"
+                              style={{
+                                backgroundColor: `${categoryColor}15`,
+                                color: categoryColor,
+                                borderColor: `${categoryColor}40`,
+                              }}
+                            >
+                              {category?.label || email.emailType}
+                            </Badge>
+                          );
+                        })()}
                       {email.priority && email.priority !== "normal" && (
                         <Badge
                           variant="outline"
@@ -1046,12 +1107,6 @@ export default function Emails() {
                         </Badge>
                       )}
                     </div>
-                    <div 
-                      className="text-sm text-muted-foreground line-clamp-2"
-                      dangerouslySetInnerHTML={{ 
-                        __html: (email.htmlBody || email.body?.replace(/\n/g, '<br>') || '').substring(0, 200) + '...'
-                      }}
-                    />
                   </div>
                 </div>
               </div>
@@ -1070,7 +1125,11 @@ export default function Emails() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 px-2 py-4">
           <div className="text-sm text-muted-foreground">
             {emailsData.total > 0 ? (
-              <>Affichage de {((page - 1) * pageSize) + 1} à {Math.min(page * pageSize, emailsData.total)} sur {emailsData.total} emails</>
+              <>
+                Affichage de {(page - 1) * pageSize + 1} à{" "}
+                {Math.min(page * pageSize, emailsData.total)} sur{" "}
+                {emailsData.total} emails
+              </>
             ) : (
               <>Aucun email trouvé</>
             )}
@@ -1079,7 +1138,7 @@ export default function Emails() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setPage(p => Math.max(1, p - 1))}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page === 1}
               data-testid="button-prev-page"
             >
@@ -1092,7 +1151,7 @@ export default function Emails() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages}
               data-testid="button-next-page"
             >
@@ -1104,10 +1163,7 @@ export default function Emails() {
       )}
 
       {/* AI Search Dialog */}
-      <Dialog
-        open={showAISearchDialog}
-        onOpenChange={setShowAISearchDialog}
-      >
+      <Dialog open={showAISearchDialog} onOpenChange={setShowAISearchDialog}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -1115,7 +1171,9 @@ export default function Emails() {
               Recherche Intelligente par IA
             </DialogTitle>
             <DialogDescription>
-              Décrivez ce que vous recherchez en langage naturel. Par exemple: "emails non lus de Marie reçus cette semaine" ou "factures urgentes non payées"
+              Décrivez ce que vous recherchez en langage naturel. Par exemple:
+              "emails non lus de Marie reçus cette semaine" ou "factures
+              urgentes non payées"
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -1130,7 +1188,7 @@ export default function Emails() {
                 rows={3}
                 data-testid="textarea-ai-search-prompt"
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
                     handleAISearch();
                   }
                 }}
@@ -1151,7 +1209,9 @@ export default function Emails() {
                   Recherche approfondie
                 </label>
                 <p className="text-sm text-muted-foreground">
-                  Active la recherche dans le contenu des pièces jointes (documents PDF, images OCR). Peut augmenter le temps de recherche.
+                  Active la recherche dans le contenu des pièces jointes
+                  (documents PDF, images OCR). Peut augmenter le temps de
+                  recherche.
                 </p>
               </div>
             </div>
@@ -1245,66 +1305,80 @@ export default function Emails() {
                 <Skeleton className="h-4 w-40" />
                 <Skeleton className="h-20 w-full" />
               </div>
-            ) : emailReplies.length > 0 && (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-sm font-medium">
-                  <MailCheck className="h-4 w-4" />
-                  <span>Réponses envoyées ({emailReplies.length})</span>
-                </div>
+            ) : (
+              emailReplies.length > 0 && (
                 <div className="space-y-3">
-                  {emailReplies.map((reply: any) => (
-                    <div
-                      key={reply.id}
-                      className="p-4 rounded-md bg-muted/50 border"
-                      data-testid={`reply-${reply.id}`}
-                    >
-                      <div className="flex items-start gap-3 mb-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback className="text-xs">
-                            {reply.sentByUserId?.charAt(0)?.toUpperCase() || "U"}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-sm font-medium">
-                              Envoyée le {format(new Date(reply.sentAt), "dd MMM yyyy à HH:mm", { locale: fr })}
-                            </span>
-                            {reply.aiGenerated && (
-                              <Badge variant="secondary" className="text-xs">
-                                <Sparkles className="h-3 w-3 mr-1" />
-                                IA
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                      </div>
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <MailCheck className="h-4 w-4" />
+                    <span>Réponses envoyées ({emailReplies.length})</span>
+                  </div>
+                  <div className="space-y-3">
+                    {emailReplies.map((reply: any) => (
                       <div
-                        className="prose prose-sm max-w-none text-sm"
-                        dangerouslySetInnerHTML={{ __html: reply.htmlContent }}
-                      />
-                      {reply.attachments && reply.attachments.length > 0 && (
-                        <div className="mt-3 pt-3 border-t">
-                          <div className="flex flex-wrap gap-2">
-                            {reply.attachments.map((att: any, idx: number) => (
-                              <div
-                                key={idx}
-                                className="flex items-center gap-2 px-2 py-1 rounded bg-background/50 text-xs"
-                                data-testid={`reply-attachment-${idx}`}
-                              >
-                                <Paperclip className="h-3 w-3" />
-                                <span className="truncate max-w-[200px]">{att.name}</span>
-                                <span className="text-muted-foreground">
-                                  ({(att.size / 1024).toFixed(1)} KB)
-                                </span>
-                              </div>
-                            ))}
+                        key={reply.id}
+                        className="p-4 rounded-md bg-muted/50 border"
+                        data-testid={`reply-${reply.id}`}
+                      >
+                        <div className="flex items-start gap-3 mb-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback className="text-xs">
+                              {reply.sentByUserId?.charAt(0)?.toUpperCase() ||
+                                "U"}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-sm font-medium">
+                                Envoyée le{" "}
+                                {format(
+                                  new Date(reply.sentAt),
+                                  "dd MMM yyyy à HH:mm",
+                                  { locale: fr },
+                                )}
+                              </span>
+                              {reply.aiGenerated && (
+                                <Badge variant="secondary" className="text-xs">
+                                  <Sparkles className="h-3 w-3 mr-1" />
+                                  IA
+                                </Badge>
+                              )}
+                            </div>
                           </div>
                         </div>
-                      )}
-                    </div>
-                  ))}
+                        <div
+                          className="prose prose-sm max-w-none text-sm"
+                          dangerouslySetInnerHTML={{
+                            __html: reply.htmlContent,
+                          }}
+                        />
+                        {reply.attachments && reply.attachments.length > 0 && (
+                          <div className="mt-3 pt-3 border-t">
+                            <div className="flex flex-wrap gap-2">
+                              {reply.attachments.map(
+                                (att: any, idx: number) => (
+                                  <div
+                                    key={idx}
+                                    className="flex items-center gap-2 px-2 py-1 rounded bg-background/50 text-xs"
+                                    data-testid={`reply-attachment-${idx}`}
+                                  >
+                                    <Paperclip className="h-3 w-3" />
+                                    <span className="truncate max-w-[200px]">
+                                      {att.name}
+                                    </span>
+                                    <span className="text-muted-foreground">
+                                      ({(att.size / 1024).toFixed(1)} KB)
+                                    </span>
+                                  </div>
+                                ),
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )
             )}
 
             {/* Suggested Response - Only show if AI-generated */}
@@ -1316,19 +1390,24 @@ export default function Emails() {
                     Réponse suggérée par IA
                   </span>
                 </div>
-                <div 
+                <div
                   className="prose prose-sm max-w-none text-sm text-muted-foreground"
-                  dangerouslySetInnerHTML={{ __html: selectedEmail.suggestedResponse }}
+                  dangerouslySetInnerHTML={{
+                    __html: selectedEmail.suggestedResponse,
+                  }}
                 />
               </div>
             )}
 
             {/* Email Body */}
             <div className="prose prose-sm max-w-none">
-              <div 
+              <div
                 className="text-sm break-words overflow-wrap-anywhere"
-                dangerouslySetInnerHTML={{ 
-                  __html: selectedEmail?.htmlBody || selectedEmail?.body?.replace(/\n/g, '<br>') || '' 
+                dangerouslySetInnerHTML={{
+                  __html:
+                    selectedEmail?.htmlBody ||
+                    selectedEmail?.body?.replace(/\n/g, "<br>") ||
+                    "",
                 }}
               />
             </div>
@@ -1348,18 +1427,20 @@ export default function Emails() {
                         if (doc.driveUrl || doc.storagePath) {
                           // Open in cloud storage if available
                           if (doc.driveUrl) {
-                            window.open(doc.driveUrl, '_blank');
+                            window.open(doc.driveUrl, "_blank");
                           } else {
                             toast({
                               title: "Fichier non disponible",
-                              description: "Le fichier n'est pas encore stocké dans le cloud",
+                              description:
+                                "Le fichier n'est pas encore stocké dans le cloud",
                               variant: "destructive",
                             });
                           }
                         } else {
                           toast({
                             title: "Fichier non disponible",
-                            description: "Le fichier n'est pas encore stocké dans le cloud",
+                            description:
+                              "Le fichier n'est pas encore stocké dans le cloud",
                             variant: "destructive",
                           });
                         }
@@ -1369,23 +1450,29 @@ export default function Emails() {
                     >
                       <FileIcon className="h-8 w-8 text-primary shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{doc.filename}</p>
+                        <p className="text-sm font-medium truncate">
+                          {doc.filename}
+                        </p>
                         <div className="flex items-center gap-2 text-xs text-muted-foreground">
                           <span>{(doc.size / 1024).toFixed(1)} KB</span>
                           {doc.storageProvider && (
                             <>
                               <span>•</span>
                               <span>
-                                {doc.storageProvider === 'google_drive' ? 'Google Drive' : 
-                                 doc.storageProvider === 'onedrive' ? 'OneDrive' : 
-                                 'Local'}
+                                {doc.storageProvider === "google_drive"
+                                  ? "Google Drive"
+                                  : doc.storageProvider === "onedrive"
+                                    ? "OneDrive"
+                                    : "Local"}
                               </span>
                             </>
                           )}
                           {doc.driveUrl && (
                             <>
                               <span>•</span>
-                              <span className="text-primary">Cliquez pour ouvrir</span>
+                              <span className="text-primary">
+                                Cliquez pour ouvrir
+                              </span>
                             </>
                           )}
                         </div>
@@ -1430,12 +1517,16 @@ export default function Emails() {
                   }
                   setShowResponseDialog(true);
                 }}
-                variant={selectedEmail?.suggestedResponse ? "outline" : "default"}
+                variant={
+                  selectedEmail?.suggestedResponse ? "outline" : "default"
+                }
                 data-testid="button-manual-reply"
                 className="w-full"
               >
                 <Reply className="h-4 w-4 mr-2" />
-                {selectedEmail?.suggestedResponse ? "Modifier la réponse" : "Répondre"}
+                {selectedEmail?.suggestedResponse
+                  ? "Modifier la réponse"
+                  : "Répondre"}
               </Button>
 
               {/* AI Response Actions */}
@@ -1505,12 +1596,14 @@ export default function Emails() {
         <DialogContent className="max-w-2xl w-full md:w-auto">
           <DialogHeader>
             <DialogTitle>
-              {selectedEmail?.suggestedResponse && selectedEmail?.suggestedResponse.trim() !== ""
+              {selectedEmail?.suggestedResponse &&
+              selectedEmail?.suggestedResponse.trim() !== ""
                 ? "Réponse générée par IA"
                 : "Rédiger une réponse"}
             </DialogTitle>
             <DialogDescription>
-              {selectedEmail?.suggestedResponse && selectedEmail?.suggestedResponse.trim() !== ""
+              {selectedEmail?.suggestedResponse &&
+              selectedEmail?.suggestedResponse.trim() !== ""
                 ? "Vous pouvez modifier la réponse avant de l'envoyer"
                 : "Rédigez votre réponse à cet email"}
             </DialogDescription>
@@ -1527,14 +1620,14 @@ export default function Emails() {
               placeholder="Rédigez votre réponse ici..."
               className="min-h-[300px]"
             />
-            
+
             {/* Attachments Section */}
             <div className="space-y-2">
               <label className="text-sm font-medium flex items-center gap-2">
                 <Paperclip className="h-4 w-4" />
                 Pièces jointes
               </label>
-              
+
               {/* File Input */}
               <div>
                 <Input
@@ -1546,39 +1639,46 @@ export default function Emails() {
                     const maxTotalSize = 25 * 1024 * 1024; // 25 MB total
 
                     // Check individual file sizes
-                    const oversizedFile = files.find(f => f.size > maxFileSize);
+                    const oversizedFile = files.find(
+                      (f) => f.size > maxFileSize,
+                    );
                     if (oversizedFile) {
                       toast({
                         title: "Fichier trop volumineux",
                         description: `Le fichier "${oversizedFile.name}" dépasse la taille maximale de 15 MB par fichier`,
                         variant: "destructive",
                       });
-                      e.target.value = '';
+                      e.target.value = "";
                       return;
                     }
 
                     // Check total size
-                    const totalSize = [...attachments, ...files].reduce((sum, f) => sum + f.size, 0);
+                    const totalSize = [...attachments, ...files].reduce(
+                      (sum, f) => sum + f.size,
+                      0,
+                    );
                     if (totalSize > maxTotalSize) {
                       toast({
                         title: "Taille totale dépassée",
-                        description: "La taille totale des pièces jointes ne peut pas dépasser 25 MB",
+                        description:
+                          "La taille totale des pièces jointes ne peut pas dépasser 25 MB",
                         variant: "destructive",
                       });
-                      e.target.value = '';
+                      e.target.value = "";
                       return;
                     }
 
                     setAttachments([...attachments, ...files]);
                     // Reset input
-                    e.target.value = '';
+                    e.target.value = "";
                   }}
                   accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.jpg,.jpeg,.png,.gif,.webp,.zip,.rar,.7z,.json,.xml"
                   data-testid="input-attachments"
                   className="cursor-pointer"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Max 15 MB par fichier, 25 MB au total. Types acceptés : PDF, Word, Excel, PowerPoint, Images, Archives, etc.
+                  Max 15 MB par fichier, 25 MB au total. Types acceptés : PDF,
+                  Word, Excel, PowerPoint, Images, Archives, etc.
                 </p>
               </div>
 
@@ -1601,7 +1701,9 @@ export default function Emails() {
                         size="icon"
                         className="h-6 w-6 flex-shrink-0"
                         onClick={() => {
-                          setAttachments(attachments.filter((_, i) => i !== index));
+                          setAttachments(
+                            attachments.filter((_, i) => i !== index),
+                          );
                         }}
                         data-testid={`button-remove-attachment-${index}`}
                       >
@@ -1610,7 +1712,13 @@ export default function Emails() {
                     </div>
                   ))}
                   <p className="text-xs text-muted-foreground">
-                    Taille totale : {(attachments.reduce((sum, f) => sum + f.size, 0) / 1024 / 1024).toFixed(2)} MB / 25 MB
+                    Taille totale :{" "}
+                    {(
+                      attachments.reduce((sum, f) => sum + f.size, 0) /
+                      1024 /
+                      1024
+                    ).toFixed(2)}{" "}
+                    MB / 25 MB
                   </p>
                 </div>
               )}
