@@ -571,7 +571,7 @@ export default function Dashboard() {
     return (
       <Card key="tasks">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle className="text-xl truncate" title="Tâches en cours">
+          <CardTitle className="text-xl">
             Tâches en cours
           </CardTitle>
           <Button
@@ -681,7 +681,7 @@ export default function Dashboard() {
     return (
       <Card key="alerts">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle className="text-xl truncate" title="Alertes actives">
+          <CardTitle className="text-xl">
             Alertes actives
           </CardTitle>
           <div className="flex gap-2">
@@ -812,10 +812,7 @@ export default function Dashboard() {
                       data-testid={`category-block-${category.key}`}
                     >
                       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle
-                          className="text-sm font-medium truncate"
-                          title={category.label}
-                        >
+                        <CardTitle className="text-sm font-medium">
                           {category.label}
                         </CardTitle>
                         <div
@@ -848,11 +845,8 @@ export default function Dashboard() {
   function renderEmailEvolutionChart() {
     return (
       <Card key="email-evolution">
-        <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 min-w-0 overflow-hidden">
-          <CardTitle
-            className="truncate min-w-0"
-            title="Évolution des emails traités"
-          >
+        <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4">
+          <CardTitle>
             Évolution des emails traités
           </CardTitle>
           <ChartPeriodControls
@@ -923,11 +917,8 @@ export default function Dashboard() {
   function renderEmailDistributionChart() {
     return (
       <Card key="email-distribution">
-        <CardHeader className="flex flex-row items-center justify-between gap-4 pb-4 min-w-0 overflow-hidden">
-          <CardTitle
-            className="flex-1 min-w-0 truncate"
-            title="Répartition des emails reçus"
-          >
+        <CardHeader className="flex flex-row items-center justify-between gap-4 pb-4">
+          <CardTitle>
             Répartition des emails reçus
           </CardTitle>
           <ChartPeriodControls
@@ -991,8 +982,8 @@ export default function Dashboard() {
   function renderAppointmentsChart() {
     return (
       <Card key="appointments">
-        <CardHeader className="flex flex-row items-center justify-between gap-4 pb-4 min-w-0 overflow-hidden">
-          <CardTitle className="flex-1 min-w-0 truncate" title="Évolution des RDV">
+        <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4">
+          <CardTitle>
             Évolution des RDV
           </CardTitle>
           <ChartPeriodControls
@@ -1057,11 +1048,8 @@ export default function Dashboard() {
   function renderCategoryProcessingChart() {
     return (
       <Card key="category-processing">
-        <CardHeader className="flex flex-row items-center justify-between gap-4 pb-4 min-w-0 overflow-hidden">
-          <CardTitle
-            className="flex-1 min-w-0 truncate"
-            title="Taux de traitement par catégorie"
-          >
+        <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4">
+          <CardTitle>
             Taux de traitement par catégorie
           </CardTitle>
           <ChartPeriodControls
@@ -1137,8 +1125,8 @@ export default function Dashboard() {
   function renderTasksEvolutionChart() {
     return (
       <Card key="tasks-evolution">
-        <CardHeader className="flex flex-row items-center justify-between gap-4 pb-4 min-w-0 overflow-hidden">
-          <CardTitle className="flex-1 min-w-0 truncate" title="Évolution des tâches">
+        <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4">
+          <CardTitle>
             Évolution des tâches
           </CardTitle>
           <ChartPeriodControls
@@ -1222,8 +1210,8 @@ export default function Dashboard() {
   function renderAlertsEvolutionChart() {
     return (
       <Card key="alerts-evolution">
-        <CardHeader className="flex flex-row items-center justify-between gap-4 pb-4 min-w-0 overflow-hidden">
-          <CardTitle className="flex-1 min-w-0 truncate" title="Evolution des alertes">
+        <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4">
+          <CardTitle>
             Evolution des alertes
           </CardTitle>
           <ChartPeriodControls
