@@ -604,15 +604,20 @@ export default function Emails() {
     }
   };
 
-  // Format email address by removing quotes and brackets
+  // Format email address by extracting only the display name (no email, no brackets)
   const formatEmailAddress = (emailAddress: string) => {
     if (!emailAddress) return "";
-    // Remove quotes around display name: "Name" <email> -> Name email
-    // Also remove brackets < and >
-    return emailAddress
-      .replace(/^"([^"]+)"\s*</, "$1 ")
-      .replace(/<([^>]+)>/, "$1")
-      .trim();
+    // Extract name before < or return whole string if no <
+    const match = emailAddress.match(/^"?([^"<]+)"?\s*</);
+    if (match) {
+      return match[1].trim();
+    }
+    // If no < found, check if it's just an email address
+    if (emailAddress.includes("@")) {
+      // Return the part before @ as fallback
+      return emailAddress.split("@")[0].trim();
+    }
+    return emailAddress.trim();
   };
 
   // Get initials from email address (after formatting)
