@@ -604,11 +604,15 @@ export default function Emails() {
     }
   };
 
-  // Format email address by removing quotes
+  // Format email address by removing quotes and brackets
   const formatEmailAddress = (emailAddress: string) => {
     if (!emailAddress) return "";
-    // Remove quotes around display name: "Name" <email> -> Name <email>
-    return emailAddress.replace(/^"([^"]+)"\s*</, "$1 <");
+    // Remove quotes around display name: "Name" <email> -> Name email
+    // Also remove brackets < and >
+    return emailAddress
+      .replace(/^"([^"]+)"\s*</, "$1 ")
+      .replace(/<([^>]+)>/, "$1")
+      .trim();
   };
 
   // Get initials from email address (after formatting)
@@ -944,118 +948,127 @@ export default function Emails() {
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-2 mb-1">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1 md:gap-2 flex-wrap mb-1">
-                          <span
-                            className={`${
-                              email.status === "nouveau"
-                                ? "text-sm font-medium truncate max-w-[150px] md:max-w-none"
-                                : "text-xs text-muted-foreground truncate max-w-[150px] md:max-w-none"
-                            }`}
-                          >
-                            {formatEmailAddress(email.from)}
-                          </span>
-                          {email.respondedAt && (
-                            <Badge
-                              variant="outline"
-                              className="text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 flex-shrink-0"
-                              data-testid={`badge-responded-${email.id}`}
-                            >
-                              <Check className="h-3 w-3 mr-1" />
-                              <span className="hidden sm:inline">Répondu</span>
-                            </Badge>
-                          )}
-                          {email.isRead ? (
-                            <MailOpen
-                              className="h-4 w-4 text-muted-foreground flex-shrink-0"
-                              data-testid={`icon-read-${email.id}`}
-                            />
-                          ) : (
-                            <Mail
-                              className="h-4 w-4 text-primary flex-shrink-0"
-                              data-testid={`icon-unread-${email.id}`}
-                            />
-                          )}
-                          {email.attachmentCount > 0 && (
-                            <span
-                              className="flex-shrink-0"
-                              title={`${email.attachmentCount} pièce(s) jointe(s)`}
-                            >
-                              <Paperclip
-                                className="h-4 w-4 text-muted-foreground"
-                                data-testid={`icon-attachment-${email.id}`}
+                        {/* Sender - Subject : Body Preview */}
+                        <div className="flex items-start gap-2 mb-1 flex-wrap">
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm line-clamp-2">
+                              <span
+                                className={`${
+                                  email.status === "nouveau"
+                                    ? "font-medium"
+                                    : "text-muted-foreground"
+                                }`}
+                              >
+                                {formatEmailAddress(email.from)}
+                              </span>
+                              <span
+                                className={`${
+                                  email.status === "nouveau"
+                                    ? "font-semibold"
+                                    : "text-muted-foreground"
+                                }`}
+                              >
+                                {" - "}
+                                {email.subject}
+                              </span>
+                              <span className="text-muted-foreground">
+                                {" : "}
+                                <span
+                                  dangerouslySetInnerHTML={{
+                                    __html: (
+                                      email.htmlBody ||
+                                      email.body?.replace(/\n/g, " ") ||
+                                      ""
+                                    ).substring(0, 100),
+                                  }}
+                                ></span>
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
+                            {email.respondedAt && (
+                              <Badge
+                                variant="outline"
+                                className="text-xs bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 flex-shrink-0"
+                                data-testid={`badge-responded-${email.id}`}
+                              >
+                                <Check className="h-3 w-3 mr-1" />
+                                <span className="hidden sm:inline">Répondu</span>
+                              </Badge>
+                            )}
+                            {email.isRead ? (
+                              <MailOpen
+                                className="h-4 w-4 text-muted-foreground flex-shrink-0"
+                                data-testid={`icon-read-${email.id}`}
                               />
-                            </span>
-                          )}
-                          {email.status && (
-                            <Badge
-                              variant="outline"
-                              className={`text-xs flex-shrink-0 ${getStatusColor(email.status)}`}
-                              data-testid={`badge-status-${email.id}`}
-                            >
-                              {getStatusLabel(email.status)}
-                            </Badge>
-                          )}
+                            ) : (
+                              <Mail
+                                className="h-4 w-4 text-primary flex-shrink-0"
+                                data-testid={`icon-unread-${email.id}`}
+                              />
+                            )}
+                            {email.attachmentCount > 0 && (
+                              <span
+                                className="flex-shrink-0"
+                                title={`${email.attachmentCount} pièce(s) jointe(s)`}
+                              >
+                                <Paperclip
+                                  className="h-4 w-4 text-muted-foreground"
+                                  data-testid={`icon-attachment-${email.id}`}
+                                />
+                              </span>
+                            )}
+                            {email.status && (
+                              <Badge
+                                variant="outline"
+                                className={`text-xs flex-shrink-0 ${getStatusColor(email.status)}`}
+                                data-testid={`badge-status-${email.id}`}
+                              >
+                                {getStatusLabel(email.status)}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
+                        {/* Recipient + Category/Priority badges */}
                         {email.to && (
-                          <div className="text-xs text-muted-foreground mb-1">
-                            À:{" "}
-                            <span className="truncate max-w-[200px] md:max-w-none inline-block align-bottom">
-                              {formatEmailAddress(email.to)}
-                            </span>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <div className="text-xs text-muted-foreground">
+                              À:{" "}
+                              <span className="truncate max-w-[200px] md:max-w-none inline-block align-bottom">
+                                {formatEmailAddress(email.to)}
+                              </span>
+                            </div>
+                            {email.emailType &&
+                              (() => {
+                                const category = getCategoryByKey(
+                                  email.emailType,
+                                );
+                                const categoryColor =
+                                  category?.color || "#6366f1";
+                                return (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-xs flex-shrink-0 border"
+                                    style={{
+                                      backgroundColor: `${categoryColor}15`,
+                                      color: categoryColor,
+                                      borderColor: `${categoryColor}40`,
+                                    }}
+                                  >
+                                    {category?.label || email.emailType}
+                                  </Badge>
+                                );
+                              })()}
+                            {email.priority && email.priority !== "normal" && (
+                              <Badge
+                                variant="outline"
+                                className={`text-xs flex-shrink-0 ${getPriorityColor(email.priority)}`}
+                              >
+                                {email.priority}
+                              </Badge>
+                            )}
                           </div>
                         )}
-                        <div className="text-sm font-semibold line-clamp-1 md:line-clamp-none">
-                          <span
-                            className={`${
-                              email.status === "nouveau"
-                                ? ""
-                                : "text-muted-foreground"
-                            }`}
-                          >
-                            {formatEmailAddress(email.subject)}
-                          </span>
-                        </div>
-                        <div
-                          className="text-sm text-muted-foreground line-clamp-2 mt-1"
-                          dangerouslySetInnerHTML={{
-                            __html: (
-                              email.htmlBody ||
-                              email.body?.replace(/\n/g, "<br>") ||
-                              ""
-                            ).substring(0, 200),
-                          }}
-                        ></div>
-                        <div className="flex items-center gap-1 md:gap-2 flex-wrap mt-1 md:hidden">
-                          {email.emailType &&
-                            (() => {
-                              const category = getCategoryByKey(
-                                email.emailType,
-                              );
-                              const categoryColor =
-                                category?.color || "#6366f1";
-                              return (
-                                <Badge
-                                  variant="outline"
-                                  className="text-xs flex-shrink-0 border"
-                                  style={{
-                                    backgroundColor: `${categoryColor}15`,
-                                    color: categoryColor,
-                                    borderColor: `${categoryColor}40`,
-                                  }}
-                                >
-                                  {category?.label || email.emailType}
-                                </Badge>
-                              );
-                            })()}
-                          {email.priority && email.priority !== "normal" && (
-                            <Badge
-                              variant="outline"
-                              className={`text-xs flex-shrink-0 ${getPriorityColor(email.priority)}`}
-                            >
-                              {email.priority}
-                            </Badge>
-                          )}
-                        </div>
                       </div>
                       <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
                         <span className="text-xs text-muted-foreground whitespace-nowrap">
@@ -1078,34 +1091,6 @@ export default function Emails() {
                           </Button>
                         )}
                       </div>
-                    </div>
-                    <div className="hidden md:flex items-center gap-2 flex-wrap mb-2">
-                      {email.emailType &&
-                        (() => {
-                          const category = getCategoryByKey(email.emailType);
-                          const categoryColor = category?.color || "#6366f1";
-                          return (
-                            <Badge
-                              variant="outline"
-                              className="text-xs border"
-                              style={{
-                                backgroundColor: `${categoryColor}15`,
-                                color: categoryColor,
-                                borderColor: `${categoryColor}40`,
-                              }}
-                            >
-                              {category?.label || email.emailType}
-                            </Badge>
-                          );
-                        })()}
-                      {email.priority && email.priority !== "normal" && (
-                        <Badge
-                          variant="outline"
-                          className={`text-xs ${getPriorityColor(email.priority)}`}
-                        >
-                          {email.priority}
-                        </Badge>
-                      )}
                     </div>
                   </div>
                 </div>
