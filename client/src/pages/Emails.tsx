@@ -1239,9 +1239,10 @@ export default function Emails() {
                     Réponse suggérée par IA
                   </span>
                 </div>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap break-words">
-                  {selectedEmail.suggestedResponse}
-                </p>
+                <div 
+                  className="prose prose-sm max-w-none text-sm text-muted-foreground"
+                  dangerouslySetInnerHTML={{ __html: selectedEmail.suggestedResponse }}
+                />
               </div>
             )}
 
