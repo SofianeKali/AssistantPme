@@ -79,6 +79,12 @@ export default function Emails() {
     enabled: !!selectedEmail?.id,
   });
 
+  // Fetch sent replies for selected email
+  const { data: emailReplies = [], isLoading: isLoadingReplies } = useQuery<any[]>({
+    queryKey: ["/api/emails", selectedEmail?.id, "replies"],
+    enabled: !!selectedEmail?.id,
+  });
+
   // Read category, status, and alertId from URL query parameters
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -1227,6 +1233,74 @@ export default function Emails() {
                 <p className="text-sm text-muted-foreground break-words">
                   {selectedEmail.aiAnalysis.summary || "Analyse en cours..."}
                 </p>
+              </div>
+            )}
+
+            {/* Sent Replies History */}
+            {isLoadingReplies ? (
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-20 w-full" />
+              </div>
+            ) : emailReplies.length > 0 && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <MailCheck className="h-4 w-4" />
+                  <span>Réponses envoyées ({emailReplies.length})</span>
+                </div>
+                <div className="space-y-3">
+                  {emailReplies.map((reply: any) => (
+                    <div
+                      key={reply.id}
+                      className="p-4 rounded-md bg-muted/50 border"
+                      data-testid={`reply-${reply.id}`}
+                    >
+                      <div className="flex items-start gap-3 mb-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback className="text-xs">
+                            {reply.sentByUserId?.charAt(0)?.toUpperCase() || "U"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm font-medium">
+                              Envoyée le {format(new Date(reply.sentAt), "dd MMM yyyy à HH:mm", { locale: fr })}
+                            </span>
+                            {reply.aiGenerated && (
+                              <Badge variant="secondary" className="text-xs">
+                                <Sparkles className="h-3 w-3 mr-1" />
+                                IA
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div
+                        className="prose prose-sm max-w-none text-sm"
+                        dangerouslySetInnerHTML={{ __html: reply.htmlContent }}
+                      />
+                      {reply.attachments && reply.attachments.length > 0 && (
+                        <div className="mt-3 pt-3 border-t">
+                          <div className="flex flex-wrap gap-2">
+                            {reply.attachments.map((att: any, idx: number) => (
+                              <div
+                                key={idx}
+                                className="flex items-center gap-2 px-2 py-1 rounded bg-background/50 text-xs"
+                                data-testid={`reply-attachment-${idx}`}
+                              >
+                                <Paperclip className="h-3 w-3" />
+                                <span className="truncate max-w-[200px]">{att.name}</span>
+                                <span className="text-muted-foreground">
+                                  ({(att.size / 1024).toFixed(1)} KB)
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 

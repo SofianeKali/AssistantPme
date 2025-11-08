@@ -797,6 +797,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
 
+        // Store the reply in conversation history
+        const attachmentsMetadata = files?.map((file) => ({
+          id: `${Date.now()}-${file.originalname}`,
+          name: file.originalname,
+          mimeType: file.mimetype,
+          size: file.size,
+        })) || [];
+
+        await storage.createEmailReply({
+          emailId: email.id,
+          companyId: email.companyId,
+          sentByUserId: req.user.id,
+          htmlContent: responseText,
+          attachments: attachmentsMetadata,
+          aiGenerated: false, // Will be updated to true if it was AI-generated
+          source: 'manual',
+          replyMessageId: sendResult.messageId,
+        });
+
         // Update email record
         const updatedEmail = await storage.updateEmail(email.id, undefined, {
           sentResponse: responseText,
@@ -817,6 +836,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(500).json({ message: "Failed to send response" });
       }
     },
+  );
+
+  // Get email replies history
+  app.get(
+    "/api/emails/:id/replies",
+    isAuthenticated,
+    async (req: any, res) => {
+      try {
+        // Get email to verify it exists and belongs to user's company
+        const email = await storage.getEmailById(req.params.id);
+        if (!email) {
+          return res.status(404).json({ message: "Email not found" });
+        }
+
+        // Verify user belongs to the same company as the email
+        if (email.companyId !== req.user.companyId) {
+          return res.status(403).json({ message: "Access denied" });
+        }
+
+        // Get all replies for this email
+        const replies = await storage.getEmailRepliesByEmailId(
+          req.params.id,
+          req.user.companyId
+        );
+
+        res.json(replies);
+      } catch (error) {
+        console.error("Error fetching email replies:", error);
+        res.status(500).json({ message: "Failed to fetch email replies" });
+      }
+    }
   );
 
   // Bulk update status - generic route for any status change

@@ -13,6 +13,7 @@ import {
   settings,
   cloudStorageConfigs,
   emailResponses,
+  emailReplies,
   reminders,
   emailTags,
   documentTags,
@@ -44,6 +45,8 @@ import {
   type InsertCloudStorageConfig,
   type EmailResponse,
   type InsertEmailResponse,
+  type EmailReply,
+  type InsertEmailReply,
   type Reminder,
   type InsertReminder,
   type EmailCategory,
@@ -137,6 +140,10 @@ export interface IStorage {
   getEmailResponses(emailId: string): Promise<EmailResponse[]>;
   getEmailResponseById(id: string): Promise<EmailResponse | undefined>;
   updateEmailResponse(id: string, data: Partial<EmailResponse>): Promise<EmailResponse>;
+  
+  // Email replies (conversation history)
+  createEmailReply(reply: InsertEmailReply): Promise<EmailReply>;
+  getEmailRepliesByEmailId(emailId: string, companyId: string): Promise<EmailReply[]>;
   
   // Reminders (relances)
   createReminder(reminder: InsertReminder): Promise<Reminder>;
@@ -1258,6 +1265,23 @@ export class DatabaseStorage implements IStorage {
       .where(eq(emailResponses.id, id))
       .returning();
     return updated;
+  }
+
+  // Email replies (conversation history)
+  async createEmailReply(reply: InsertEmailReply): Promise<EmailReply> {
+    const [result] = await db.insert(emailReplies).values(reply).returning();
+    return result;
+  }
+
+  async getEmailRepliesByEmailId(emailId: string, companyId: string): Promise<EmailReply[]> {
+    return await db
+      .select()
+      .from(emailReplies)
+      .where(and(
+        eq(emailReplies.emailId, emailId),
+        eq(emailReplies.companyId, companyId)
+      ))
+      .orderBy(desc(emailReplies.sentAt));
   }
 
   // Reminders (relances)

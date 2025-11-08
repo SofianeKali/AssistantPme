@@ -212,6 +212,33 @@ export const insertEmailSchema = createInsertSchema(emails).omit({
 export type InsertEmail = z.infer<typeof insertEmailSchema>;
 export type Email = typeof emails.$inferSelect;
 
+// Email Replies table - Stores all sent email replies for conversation history
+export const emailReplies = pgTable("email_replies", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  emailId: varchar("email_id").notNull().references(() => emails.id, { onDelete: "cascade" }),
+  companyId: varchar("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
+  sentByUserId: varchar("sent_by_user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  sentAt: timestamp("sent_at").notNull().defaultNow(),
+  htmlContent: text("html_content").notNull(), // HTML formatted reply content
+  plainTextContent: text("plain_text_content"), // Optional plain text version
+  attachments: jsonb("attachments").default(sql`'[]'`), // [{id, name, mimeType, size, url, storageKey}]
+  aiGenerated: boolean("ai_generated").notNull().default(false), // Whether this was AI-generated
+  source: varchar("source").notNull().default("manual"), // 'manual' or 'ai'
+  replyMessageId: varchar("reply_message_id"), // SMTP Message-ID for correlation
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_email_replies_email_id_sent_at").on(table.emailId, table.sentAt),
+  index("idx_email_replies_company_user").on(table.companyId, table.sentByUserId, table.sentAt),
+]);
+
+export const insertEmailReplySchema = createInsertSchema(emailReplies).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertEmailReply = z.infer<typeof insertEmailReplySchema>;
+export type EmailReply = typeof emailReplies.$inferSelect;
+
 // Email tags junction table
 export const emailTags = pgTable("email_tags", {
   emailId: varchar("email_id").notNull().references(() => emails.id, { onDelete: "cascade" }),
