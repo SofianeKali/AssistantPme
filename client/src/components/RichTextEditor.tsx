@@ -22,7 +22,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 interface RichTextEditorProps {
   content: string;
@@ -32,6 +32,8 @@ interface RichTextEditorProps {
 }
 
 export function RichTextEditor({ content, onChange, placeholder, className }: RichTextEditorProps) {
+  const isSyncingRef = useRef(false);
+  
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -80,7 +82,10 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
       },
     },
     onUpdate: ({ editor }) => {
-      onChange(editor.getHTML());
+      // Skip onChange callback if we're programmatically syncing from props
+      if (!isSyncingRef.current) {
+        onChange(editor.getHTML());
+      }
     },
   });
 
@@ -101,7 +106,12 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
   // Synchronize editor content when prop changes (e.g., selecting a different email)
   useEffect(() => {
     if (editor && content !== editor.getHTML()) {
+      isSyncingRef.current = true;
       editor.commands.setContent(content);
+      // Reset flag after setContent completes
+      setTimeout(() => {
+        isSyncingRef.current = false;
+      }, 0);
     }
   }, [content, editor]);
 
