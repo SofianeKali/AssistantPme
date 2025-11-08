@@ -955,40 +955,39 @@ export default function Emails() {
                       <div className="flex-1 min-w-0">
                         {/* Sender - Subject : Body Preview */}
                         <div className="flex items-start gap-2 mb-1 flex-wrap">
-                          <div className="flex-1 min-w-0">
-                            <div className="text-sm line-clamp-2">
-                              <span
-                                className={`${
-                                  email.status === "nouveau"
-                                    ? "font-medium"
-                                    : "text-muted-foreground"
-                                }`}
-                              >
-                                {formatEmailAddress(email.from)}
-                              </span>
-                              <span
-                                className={`${
-                                  email.status === "nouveau"
-                                    ? "font-semibold"
-                                    : "text-muted-foreground"
-                                }`}
-                              >
-                                {" - "}
-                                {email.subject}
-                              </span>
-                              <span className="text-muted-foreground">
-                                {" : "}
-                                <span
-                                  dangerouslySetInnerHTML={{
-                                    __html: (
-                                      email.htmlBody ||
-                                      email.body?.replace(/\n/g, " ") ||
-                                      ""
-                                    ).substring(0, 100),
-                                  }}
-                                ></span>
-                              </span>
-                            </div>
+                          <div className="flex-1 min-w-0 flex items-baseline gap-1 overflow-hidden">
+                            <span
+                              className={`${
+                                email.status === "nouveau"
+                                  ? "font-medium"
+                                  : "text-muted-foreground"
+                              } text-sm truncate max-w-[150px] flex-shrink-0`}
+                              title={formatEmailAddress(email.from)}
+                            >
+                              {formatEmailAddress(email.from)}
+                            </span>
+                            <span className="text-sm flex-shrink-0">-</span>
+                            <span
+                              className={`${
+                                email.status === "nouveau"
+                                  ? "font-semibold"
+                                  : "text-muted-foreground"
+                              } text-sm truncate max-w-[200px] md:max-w-[300px] flex-shrink-0`}
+                              title={email.subject}
+                            >
+                              {email.subject}
+                            </span>
+                            <span className="text-sm text-muted-foreground flex-shrink-0">:</span>
+                            <span
+                              className="text-sm text-muted-foreground truncate flex-1 min-w-0"
+                              dangerouslySetInnerHTML={{
+                                __html: (
+                                  email.htmlBody ||
+                                  email.body?.replace(/\n/g, " ") ||
+                                  ""
+                                ).substring(0, 150),
+                              }}
+                            ></span>
                           </div>
                           <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
                             {email.respondedAt && (
