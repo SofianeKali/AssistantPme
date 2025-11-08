@@ -140,7 +140,9 @@ Rules:
 - Follow the user's instructions carefully
 - Use formal French ("vous" form) unless instructed otherwise
 - Be professional and polite
-- End with appropriate salutations`
+- End with appropriate salutations
+- **CRITICAL: Generate the response in HTML format using <p> tags for paragraphs, <br> for line breaks, <strong> for bold, <em> for italic**
+- Start with <p>Objet : Re: [subject]</p> then continue with the response body in HTML paragraphs`
       : `You are a professional email assistant for a French SME. Generate polite, professional responses in French.
           
 Rules:
@@ -148,7 +150,9 @@ Rules:
 - Use formal French ("vous" form)
 - Match the tone of the original email
 - Include relevant context if provided
-- End with appropriate salutations`;
+- End with appropriate salutations
+- **CRITICAL: Generate the response in HTML format using <p> tags for paragraphs, <br> for line breaks, <strong> for bold, <em> for italic**
+- Start with <p>Objet : Re: [subject]</p> then continue with the response body in HTML paragraphs`;
 
     const userContent = emailContent.customPrompt
       ? `Email to respond to:
@@ -158,7 +162,9 @@ From: ${emailContent.from}
 
 ${emailContent.body}
 
-${emailContent.context ? `Context: ${emailContent.context}\n\n` : ""}User instructions: ${emailContent.customPrompt}`
+${emailContent.context ? `Context: ${emailContent.context}\n\n` : ""}User instructions: ${emailContent.customPrompt}
+
+CRITICAL: Your response MUST be in HTML format with proper <p> tags for paragraphs. Do not use plain text.`
       : `Generate a professional response to this email:
 
 Subject: ${emailContent.subject}
@@ -166,7 +172,9 @@ From: ${emailContent.from}
 
 ${emailContent.body}
 
-${emailContent.context ? `Context: ${emailContent.context}` : ""}`;
+${emailContent.context ? `Context: ${emailContent.context}` : ""}
+
+CRITICAL: Your response MUST be in HTML format with proper <p> tags for paragraphs. Do not use plain text.`;
 
     const response = await openai.chat.completions.create({
       model: "gpt-5",
@@ -185,7 +193,7 @@ ${emailContent.context ? `Context: ${emailContent.context}` : ""}`;
     return response.choices[0].message.content || "";
   } catch (error) {
     console.error("Error generating response:", error);
-    return "Une erreur est survenue lors de la génération de la réponse.";
+    return "<p>Une erreur est survenue lors de la génération de la réponse.</p>";
   }
 }
 
