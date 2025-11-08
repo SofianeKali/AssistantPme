@@ -46,6 +46,29 @@ import { Textarea } from "@/components/ui/textarea";
 import { useLocation } from "wouter";
 import { RichTextEditor } from "@/components/RichTextEditor";
 
+// Helper function to convert HTML to safe single-line text (XSS protection)
+function normalizeHtmlForPreview(html: string, maxLength: number = 150): string {
+  if (!html) return "";
+  
+  // SECURITY: Strip ALL HTML tags to prevent XSS attacks
+  // We use a temporary DOM element to safely extract text content
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = html;
+  
+  // Get plain text content (automatically handles all HTML entities and strips tags)
+  let normalized = tempDiv.textContent || tempDiv.innerText || "";
+  
+  // Collapse multiple spaces and trim
+  normalized = normalized.replace(/\s+/g, " ").trim();
+  
+  // Truncate to maxLength
+  if (normalized.length > maxLength) {
+    normalized = normalized.substring(0, maxLength) + "...";
+  }
+  
+  return normalized;
+}
+
 export default function Emails() {
   const [location] = useLocation();
   const [search, setSearch] = useState("");
@@ -954,37 +977,61 @@ export default function Emails() {
                     <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-2 mb-1">
                       <div className="flex-1 min-w-0">
                         {/* Sender - Subject : Body Preview */}
-                        <div className="flex items-start gap-2 mb-1 flex-wrap">
-                          <div className="flex-1 min-w-0 flex items-baseline gap-1 overflow-hidden">
-                            <span
-                              className={`${
-                                email.status === "nouveau"
-                                  ? "font-medium"
-                                  : "text-muted-foreground"
-                              } text-sm truncate max-w-[150px] flex-shrink-0`}
-                              title={formatEmailAddress(email.from)}
+                        <div className="flex items-start gap-2 mb-1">
+                          <div className="flex items-baseline gap-2 overflow-hidden flex-1 min-w-0">
+                            {/* Sender - Fixed width */}
+                            <div
+                              className="flex-shrink-0 overflow-hidden"
+                              style={{ flexBasis: "12rem" }}
                             >
-                              {formatEmailAddress(email.from)}
-                            </span>
-                            <span className="text-sm flex-shrink-0">-</span>
-                            <span
-                              className={`${
-                                email.status === "nouveau"
-                                  ? "font-semibold"
-                                  : "text-muted-foreground"
-                              } text-sm truncate max-w-[200px] md:max-w-[300px] flex-shrink-0`}
-                              title={email.subject}
+                              <span
+                                className={`${
+                                  email.status === "nouveau"
+                                    ? "font-medium"
+                                    : "text-muted-foreground"
+                                } text-sm truncate block`}
+                                title={formatEmailAddress(email.from)}
+                              >
+                                {formatEmailAddress(email.from)}
+                              </span>
+                            </div>
+                            
+                            <span className="text-sm flex-shrink-0 text-muted-foreground">-</span>
+                            
+                            {/* Subject - Fixed width */}
+                            <div
+                              className="flex-shrink-0 overflow-hidden"
+                              style={{ flexBasis: "20rem" }}
                             >
-                              {email.subject}
-                            </span>
+                              <span
+                                className={`${
+                                  email.status === "nouveau"
+                                    ? "font-semibold"
+                                    : "text-muted-foreground"
+                                } text-sm truncate block`}
+                                title={email.subject}
+                              >
+                                {email.subject}
+                              </span>
+                            </div>
+                            
                             <span className="text-sm text-muted-foreground flex-shrink-0">:</span>
-                            <span className="text-sm text-muted-foreground truncate flex-1 min-w-0 whitespace-nowrap">
-                              {(email.htmlBody || email.body || "")
-                                .replace(/<[^>]*>/g, " ") // Remove all HTML tags
-                                .replace(/\s+/g, " ") // Replace multiple spaces with single space
-                                .trim()
-                                .substring(0, 150)}
-                            </span>
+                            
+                            {/* Preview - Takes remaining space (plain text for security) */}
+                            <div className="flex-1 min-w-0 overflow-hidden">
+                              <span
+                                className="text-sm text-muted-foreground truncate whitespace-nowrap block"
+                                title={normalizeHtmlForPreview(
+                                  email.htmlBody || email.body || "",
+                                  500
+                                )}
+                              >
+                                {normalizeHtmlForPreview(
+                                  email.htmlBody || email.body || "",
+                                  150
+                                )}
+                              </span>
+                            </div>
                           </div>
                           <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
                             {email.respondedAt && (
