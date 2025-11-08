@@ -1046,9 +1046,12 @@ export default function Emails() {
                         </Badge>
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      {email.body?.substring(0, 150)}...
-                    </p>
+                    <div 
+                      className="text-sm text-muted-foreground line-clamp-2"
+                      dangerouslySetInnerHTML={{ 
+                        __html: (email.htmlBody || email.body?.replace(/\n/g, '<br>') || '').substring(0, 200) + '...'
+                      }}
+                    />
                   </div>
                 </div>
               </div>
