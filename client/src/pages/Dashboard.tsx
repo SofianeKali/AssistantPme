@@ -571,7 +571,9 @@ export default function Dashboard() {
     return (
       <Card key="tasks">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle className="text-xl">Tâches en cours</CardTitle>
+          <CardTitle className="text-xl truncate" title="Tâches en cours">
+            Tâches en cours
+          </CardTitle>
           <Button
             size="sm"
             variant="outline"
@@ -679,7 +681,9 @@ export default function Dashboard() {
     return (
       <Card key="alerts">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle className="text-xl">Alertes actives</CardTitle>
+          <CardTitle className="text-xl truncate" title="Alertes actives">
+            Alertes actives
+          </CardTitle>
           <div className="flex gap-2">
             <Button
               size="sm"
@@ -808,7 +812,10 @@ export default function Dashboard() {
                       data-testid={`category-block-${category.key}`}
                     >
                       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
+                        <CardTitle
+                          className="text-sm font-medium truncate"
+                          title={category.label}
+                        >
                           {category.label}
                         </CardTitle>
                         <div
@@ -842,7 +849,10 @@ export default function Dashboard() {
     return (
       <Card key="email-evolution">
         <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 min-w-0 overflow-hidden">
-          <CardTitle className="truncate min-w-0">
+          <CardTitle
+            className="truncate min-w-0"
+            title="Évolution des emails traités"
+          >
             Évolution des emails traités
           </CardTitle>
           <ChartPeriodControls
@@ -914,7 +924,10 @@ export default function Dashboard() {
     return (
       <Card key="email-distribution">
         <CardHeader className="flex flex-row items-center justify-between gap-4 pb-4 min-w-0 overflow-hidden">
-          <CardTitle className="shrink-0">
+          <CardTitle
+            className="flex-1 min-w-0 truncate"
+            title="Répartition des emails reçus"
+          >
             Répartition des emails reçus
           </CardTitle>
           <ChartPeriodControls
@@ -979,7 +992,9 @@ export default function Dashboard() {
     return (
       <Card key="appointments">
         <CardHeader className="flex flex-row items-center justify-between gap-4 pb-4 min-w-0 overflow-hidden">
-          <CardTitle className="shrink-0">Évolution des RDV</CardTitle>
+          <CardTitle className="flex-1 min-w-0 truncate" title="Évolution des RDV">
+            Évolution des RDV
+          </CardTitle>
           <ChartPeriodControls
             periodType={appointmentsPeriod}
             onPeriodTypeChange={(type) => setAppointmentsPeriod(type)}
@@ -1043,7 +1058,10 @@ export default function Dashboard() {
     return (
       <Card key="category-processing">
         <CardHeader className="flex flex-row items-center justify-between gap-4 pb-4 min-w-0 overflow-hidden">
-          <CardTitle className="shrink-0">
+          <CardTitle
+            className="flex-1 min-w-0 truncate"
+            title="Taux de traitement par catégorie"
+          >
             Taux de traitement par catégorie
           </CardTitle>
           <ChartPeriodControls
@@ -1120,7 +1138,9 @@ export default function Dashboard() {
     return (
       <Card key="tasks-evolution">
         <CardHeader className="flex flex-row items-center justify-between gap-4 pb-4 min-w-0 overflow-hidden">
-          <CardTitle className="shrink-0">Évolution des tâches</CardTitle>
+          <CardTitle className="flex-1 min-w-0 truncate" title="Évolution des tâches">
+            Évolution des tâches
+          </CardTitle>
           <ChartPeriodControls
             periodType={tasksPeriod}
             onPeriodTypeChange={(type) => setTasksPeriod(type)}
@@ -1203,7 +1223,9 @@ export default function Dashboard() {
     return (
       <Card key="alerts-evolution">
         <CardHeader className="flex flex-row items-center justify-between gap-4 pb-4 min-w-0 overflow-hidden">
-          <CardTitle className="shrink-0">Evolution des alertes</CardTitle>
+          <CardTitle className="flex-1 min-w-0 truncate" title="Evolution des alertes">
+            Evolution des alertes
+          </CardTitle>
           <ChartPeriodControls
             periodType={alertsPeriod}
             onPeriodTypeChange={(type) => setAlertsPeriod(type)}
