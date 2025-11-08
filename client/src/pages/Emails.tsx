@@ -27,6 +27,7 @@ import {
   FileIcon,
   Trash2,
   Reply,
+  CheckCircle,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -47,25 +48,28 @@ import { useLocation } from "wouter";
 import { RichTextEditor } from "@/components/RichTextEditor";
 
 // Helper function to convert HTML to safe single-line text (XSS protection)
-function normalizeHtmlForPreview(html: string, maxLength: number = 150): string {
+function normalizeHtmlForPreview(
+  html: string,
+  maxLength: number = 150,
+): string {
   if (!html) return "";
-  
+
   // SECURITY: Strip ALL HTML tags to prevent XSS attacks
   // We use a temporary DOM element to safely extract text content
-  const tempDiv = document.createElement('div');
+  const tempDiv = document.createElement("div");
   tempDiv.innerHTML = html;
-  
+
   // Get plain text content (automatically handles all HTML entities and strips tags)
   let normalized = tempDiv.textContent || tempDiv.innerText || "";
-  
+
   // Collapse multiple spaces and trim
   normalized = normalized.replace(/\s+/g, " ").trim();
-  
+
   // Truncate to maxLength
   if (normalized.length > maxLength) {
     normalized = normalized.substring(0, maxLength) + "...";
   }
-  
+
   return normalized;
 }
 
@@ -995,14 +999,9 @@ export default function Emails() {
                                 {formatEmailAddress(email.from)}
                               </span>
                             </div>
-                            
-                            <span className="text-sm flex-shrink-0 text-muted-foreground">-</span>
-                            
+
                             {/* Subject - Fixed width */}
-                            <div
-                              className="flex-shrink-0 overflow-hidden"
-                              style={{ flexBasis: "20rem" }}
-                            >
+                            <div className="flex-shrink-0 overflow-hidden">
                               <span
                                 className={`${
                                   email.status === "nouveau"
@@ -1014,21 +1013,23 @@ export default function Emails() {
                                 {email.subject}
                               </span>
                             </div>
-                            
-                            <span className="text-sm text-muted-foreground flex-shrink-0">:</span>
-                            
+
+                            <span className="text-sm text-muted-foreground flex-shrink-0">
+                              -
+                            </span>
+
                             {/* Preview - Takes remaining space (plain text for security) */}
                             <div className="flex-1 min-w-0 overflow-hidden">
                               <span
                                 className="text-sm text-muted-foreground truncate whitespace-nowrap block"
                                 title={normalizeHtmlForPreview(
                                   email.htmlBody || email.body || "",
-                                  500
+                                  500,
                                 )}
                               >
                                 {normalizeHtmlForPreview(
                                   email.htmlBody || email.body || "",
-                                  150
+                                  150,
                                 )}
                               </span>
                             </div>
@@ -1041,7 +1042,9 @@ export default function Emails() {
                                 data-testid={`badge-responded-${email.id}`}
                               >
                                 <Check className="h-3 w-3 mr-1" />
-                                <span className="hidden sm:inline">Répondu</span>
+                                <span className="hidden sm:inline">
+                                  Répondu
+                                </span>
                               </Badge>
                             )}
                             {email.isRead ? (
@@ -1135,7 +1138,7 @@ export default function Emails() {
                             data-testid={`button-mark-processed-${email.id}`}
                             title="Marquer comme traité"
                           >
-                            <MailCheck className="h-4 w-4" />
+                            <CheckCircle className="h-4 w-4 mr-2" />
                           </Button>
                         )}
                       </div>
