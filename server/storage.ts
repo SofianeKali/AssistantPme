@@ -425,6 +425,10 @@ export class DatabaseStorage implements IStorage {
     const updateData = { ...data };
     if (data.password) {
       updateData.password = encryptPassword(data.password);
+      // Reset connection status when credentials are updated
+      // This clears error banner immediately without waiting for next scan
+      updateData.lastSyncStatus = null;
+      updateData.lastErrorMessage = null;
     }
     
     const [result] = await db

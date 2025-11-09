@@ -67,6 +67,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -788,6 +789,11 @@ export default function Settings() {
   const [alertPrompt, setAlertPrompt] = useState("");
   const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
   const [editingRuleData, setEditingRuleData] = useState<any | null>(null);
+  const [updatingPasswordAccount, setUpdatingPasswordAccount] = useState<any | null>(null);
+  const [updatePasswordForm, setUpdatePasswordForm] = useState({
+    username: "",
+    password: "",
+  });
 
   const { data: alertRules, isLoading: alertRulesLoading } = useQuery({
     queryKey: ["/api/alert-rules"],
@@ -896,6 +902,28 @@ export default function Settings() {
       toast({
         title: "Erreur",
         description: "Impossible de mettre à jour les paramètres",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updatePasswordMutation = useMutation({
+    mutationFn: async (data: { id: string; username: string; password: string }) => {
+      return await apiRequest("PATCH", `/api/email-accounts/${data.id}`, {
+        username: data.username,
+        password: data.password,
+      });
+    },
+    onSuccess: () => {
+      toast({ title: "Mot de passe mis à jour avec succès" });
+      queryClient.invalidateQueries({ queryKey: ["/api/email-accounts"] });
+      setUpdatingPasswordAccount(null);
+      setUpdatePasswordForm({ username: "", password: "" });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erreur de mise à jour",
+        description: error?.message || "Vérifiez vos identifiants et réessayez",
         variant: "destructive",
       });
     },
@@ -1186,6 +1214,18 @@ export default function Settings() {
 
         {/* Email Accounts Tab */}
         <TabsContent value="email" className="space-y-6">
+          {/* Global warning banner for errored accounts */}
+          {emailAccounts && emailAccounts.some((acc: any) => acc.lastSyncStatus === 'error') && (
+            <Alert variant="destructive" data-testid="alert-accounts-error">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Problème de connexion détecté</AlertTitle>
+              <AlertDescription>
+                Un ou plusieurs comptes email rencontrent des erreurs d'authentification. 
+                Vérifiez les comptes marqués ci-dessous et mettez à jour leurs identifiants si nécessaire.
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Add New Account */}
           <Card>
             <CardHeader>
@@ -1482,22 +1522,57 @@ export default function Settings() {
                 </div>
               ) : emailAccounts && emailAccounts.length > 0 ? (
                 <div className="space-y-3">
-                  {emailAccounts.map((account: any) => (
+                  {emailAccounts.map((account: any) => {
+                    const hasError = account.lastSyncStatus === 'error';
+                    return (
                     <div
                       key={account.id}
-                      className="flex flex-col sm:flex-row sm:items-center p-4 border border-border rounded-md gap-3"
+                      className={`flex flex-col sm:flex-row sm:items-center p-4 border rounded-md gap-3 ${
+                        hasError ? 'border-red-500 bg-red-50 dark:bg-red-950/20' : 'border-border'
+                      }`}
                       data-testid={`account-${account.id}`}
                     >
                       <div className="flex-1">
-                        <div className="font-medium break-all">
-                          {account.email}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-medium break-all">{account.email}</span>
+                          {hasError && (
+                            <Badge variant="destructive" className="flex items-center gap-1">
+                              <AlertCircle className="h-3 w-3" />
+                              ERREUR
+                            </Badge>
+                          )}
                         </div>
                         <div className="text-sm text-muted-foreground">
                           {account.provider} • Scan: {account.scanFrequency}min
                         </div>
+                        {hasError && account.lastErrorMessage && (
+                          <div className="text-sm text-red-600 dark:text-red-400 mt-1 flex items-start gap-1">
+                            <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                            <span className="break-words">{account.lastErrorMessage}</span>
+                          </div>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-2 sm:ml-auto flex-wrap">
+                        {hasError && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="border-red-500 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
+                            onClick={() => {
+                              setUpdatingPasswordAccount(account);
+                              setUpdatePasswordForm({
+                                username: account.username || account.email,
+                                password: "",
+                              });
+                            }}
+                            data-testid={`button-update-password-${account.id}`}
+                          >
+                            <Pencil className="h-4 w-4 sm:mr-2" />
+                            <span className="hidden sm:inline">Mettre à jour mot de passe</span>
+                            <span className="sm:hidden">MAJ MdP</span>
+                          </Button>
+                        )}
                         <Button
                           variant="outline"
                           size="sm"
@@ -1567,7 +1642,8 @@ export default function Settings() {
                         </Button>
                       </div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="text-center py-8 text-sm text-muted-foreground">
@@ -1758,6 +1834,132 @@ export default function Settings() {
                   data-testid="button-save-account-settings"
                 >
                   {updateAccountSettingsMutation.isPending ? "Enregistrement..." : "Enregistrer"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Dialog for updating password/credentials */}
+          <Dialog
+            open={updatingPasswordAccount !== null}
+            onOpenChange={(open) => {
+              if (!open) {
+                setUpdatingPasswordAccount(null);
+                setUpdatePasswordForm({ username: "", password: "" });
+              }
+            }}
+          >
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Mettre à jour les identifiants</DialogTitle>
+                <DialogDescription>
+                  Mettez à jour le nom d'utilisateur et le mot de passe pour {updatingPasswordAccount?.email}
+                </DialogDescription>
+              </DialogHeader>
+
+              {updatingPasswordAccount && (updatingPasswordAccount.provider === "yahoo" || updatingPasswordAccount.provider === "gmail") && (
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertTitle>{updatingPasswordAccount.provider === "yahoo" ? "Yahoo" : "Gmail"} nécessite un App Password</AlertTitle>
+                  <AlertDescription className="space-y-2">
+                    <p className="text-sm">
+                      Pour {updatingPasswordAccount.provider === "yahoo" ? "Yahoo" : "Gmail"}, vous devez générer un{" "}
+                      <strong>mot de passe d'application</strong> au lieu d'utiliser votre mot de passe habituel.
+                    </p>
+                    <ol className="text-sm list-decimal list-inside space-y-1 ml-2">
+                      {updatingPasswordAccount.provider === "yahoo" ? (
+                        <>
+                          <li>
+                            Allez sur{" "}
+                            <a
+                              href="https://login.yahoo.com/account/security"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary underline hover:no-underline"
+                            >
+                              login.yahoo.com/account/security
+                            </a>
+                          </li>
+                          <li>Cliquez sur "Générer un mot de passe d'application"</li>
+                          <li>Sélectionnez "Autre application" et nommez-le (ex: "IzyInbox")</li>
+                          <li>Utilisez le mot de passe généré ci-dessous</li>
+                        </>
+                      ) : (
+                        <>
+                          <li>Activez la validation en deux étapes sur votre compte Google</li>
+                          <li>
+                            Allez sur{" "}
+                            <a
+                              href="https://myaccount.google.com/apppasswords"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary underline hover:no-underline"
+                            >
+                              myaccount.google.com/apppasswords
+                            </a>
+                          </li>
+                          <li>Créez un mot de passe pour "Mail"</li>
+                          <li>Copiez le mot de passe de 16 caractères et utilisez-le ci-dessous</li>
+                        </>
+                      )}
+                    </ol>
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="update-username">Nom d'utilisateur / Email</Label>
+                  <Input
+                    id="update-username"
+                    type="text"
+                    value={updatePasswordForm.username}
+                    onChange={(e) =>
+                      setUpdatePasswordForm({ ...updatePasswordForm, username: e.target.value })
+                    }
+                    data-testid="input-update-username"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="update-password">Mot de passe{updatingPasswordAccount && (updatingPasswordAccount.provider === "yahoo" || updatingPasswordAccount.provider === "gmail") ? " d'application" : ""}</Label>
+                  <Input
+                    id="update-password"
+                    type="password"
+                    value={updatePasswordForm.password}
+                    onChange={(e) =>
+                      setUpdatePasswordForm({ ...updatePasswordForm, password: e.target.value })
+                    }
+                    placeholder="Nouveau mot de passe"
+                    data-testid="input-update-password"
+                  />
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setUpdatingPasswordAccount(null);
+                    setUpdatePasswordForm({ username: "", password: "" });
+                  }}
+                >
+                  Annuler
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (updatingPasswordAccount && updatePasswordForm.password) {
+                      updatePasswordMutation.mutate({
+                        id: updatingPasswordAccount.id,
+                        username: updatePasswordForm.username,
+                        password: updatePasswordForm.password,
+                      });
+                    }
+                  }}
+                  disabled={updatePasswordMutation.isPending || !updatePasswordForm.password}
+                  data-testid="button-save-password"
+                >
+                  {updatePasswordMutation.isPending ? "Mise à jour..." : "Enregistrer"}
                 </Button>
               </DialogFooter>
             </DialogContent>
