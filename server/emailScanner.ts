@@ -522,12 +522,49 @@ export class EmailScanner {
         }
       }
 
+      // Update connection status on success BEFORE closing connection
+      try {
+        await this.storage.updateEmailAccount(account.id, {
+          lastSyncStatus: 'success',
+          lastSuccessAt: new Date(),
+          lastErrorMessage: null,
+        });
+        console.log(`[IMAP] Connection status updated: success`);
+      } catch (updateError) {
+        console.error(`[IMAP] Failed to update connection status:`, updateError);
+      }
+
       connection.end();
       console.log(`[IMAP] Scan complete for ${account.email}: ${result.created} new emails created`);
 
     } catch (error) {
       result.errors++;
       console.error(`[IMAP] Error scanning account ${account.email}:`, error);
+      
+      // Update connection status on error with detailed message
+      try {
+        let errorMessage = 'Unknown error';
+        if (error instanceof Error) {
+          errorMessage = error.message;
+          // Capture IMAP-specific error details
+          if ('textCode' in error) {
+            errorMessage += ` (Code: ${(error as any).textCode})`;
+          }
+          if ('source' in error) {
+            errorMessage += ` [${(error as any).source}]`;
+          }
+        } else if (error && typeof error === 'object') {
+          errorMessage = JSON.stringify(error);
+        }
+        
+        await this.storage.updateEmailAccount(account.id, {
+          lastSyncStatus: 'error',
+          lastErrorMessage: errorMessage,
+        });
+        console.log(`[IMAP] Connection status updated: error - ${errorMessage}`);
+      } catch (updateError) {
+        console.error(`[IMAP] Failed to update connection status:`, updateError);
+      }
     }
 
     return result;

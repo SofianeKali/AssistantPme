@@ -94,6 +94,10 @@ export const emailAccounts = pgTable("email_accounts", {
   isActive: boolean("is_active").notNull().default(true),
   scanFrequency: integer("scan_frequency").notNull().default(15), // minutes
   retentionDays: integer("retention_days").notNull().default(90), // Email retention period in days (default 3 months)
+  // Connection status tracking for detecting authentication issues
+  lastSyncStatus: varchar("last_sync_status").default('never'), // 'success' | 'error' | 'pending' | 'never'
+  lastSuccessAt: timestamp("last_success_at"),
+  lastErrorMessage: text("last_error_message"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
