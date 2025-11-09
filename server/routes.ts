@@ -356,9 +356,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req, res) => {
       try {
         const userId = (req.user as any).id;
+        const companyId = (req.user as any).companyId;
         const validatedData = insertEmailAccountSchema.parse({
           ...req.body,
           userId,
+          companyId,
         });
         const account = await storage.createEmailAccount(validatedData);
         res.json(account);
