@@ -1263,6 +1263,44 @@ export default function Settings() {
                   </AlertDescription>
                 </Alert>
               )}
+              {newAccount.provider === "outlook" && (
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertTitle>Outlook/Microsoft 365 - Configuration requise</AlertTitle>
+                  <AlertDescription className="space-y-2">
+                    <p className="text-sm">
+                      Pour Outlook ou Microsoft 365, vous devez générer un{" "}
+                      <strong>mot de passe d'application</strong> si la validation en deux étapes est activée.
+                    </p>
+                    <ol className="text-sm list-decimal list-inside space-y-1 ml-2">
+                      <li>
+                        Allez sur{" "}
+                        <a
+                          href="https://account.microsoft.com/security"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary underline hover:no-underline"
+                        >
+                          account.microsoft.com/security
+                        </a>
+                      </li>
+                      <li>
+                        Activez la "Vérification en deux étapes" si ce n'est pas déjà fait
+                      </li>
+                      <li>
+                        Dans "Options de sécurité avancées", cliquez sur "Créer un mot de passe d'application"
+                      </li>
+                      <li>
+                        Nommez-le (ex: "IzyInbox") et copiez le mot de passe généré
+                      </li>
+                      <li>Utilisez ce mot de passe ci-dessous</li>
+                    </ol>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      <strong>Note :</strong> Si la 2FA n'est pas activée, vous pouvez utiliser votre mot de passe habituel.
+                    </p>
+                  </AlertDescription>
+                </Alert>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="provider">Fournisseur</Label>
