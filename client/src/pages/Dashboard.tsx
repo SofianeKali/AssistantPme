@@ -236,11 +236,29 @@ export default function Dashboard() {
   });
 
   const { data: alerts, isLoading: alertsLoading } = useQuery<any>({
-    queryKey: ["/api/alerts", { limit: 5, resolved: false }],
+    queryKey: ["/api/alerts", { limit: 5, resolved: false, selectedEmailAccount }],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      params.append("limit", "5");
+      params.append("resolved", "false");
+      if (selectedEmailAccount && selectedEmailAccount !== "all") {
+        params.append("emailAccountId", selectedEmailAccount);
+      }
+      const response = await fetch(`/api/alerts?${params.toString()}`);
+      return response.json();
+    },
   });
 
   const { data: tasks, isLoading: tasksLoading } = useQuery<any>({
-    queryKey: ["/api/tasks"],
+    queryKey: ["/api/tasks", selectedEmailAccount],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (selectedEmailAccount && selectedEmailAccount !== "all") {
+        params.append("emailAccountId", selectedEmailAccount);
+      }
+      const response = await fetch(`/api/tasks?${params.toString()}`);
+      return response.json();
+    },
     select: (data) => {
       // Filter only "nouveau" and "en_cours" tasks
       return (
