@@ -1608,12 +1608,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const user = req.user as any;
       const isAdmin = user.role === "admin";
-      const { resolved, limit } = req.query;
+      const { resolved, limit, emailAccountId } = req.query;
 
       let filters: any = {
         resolved: resolved === "true",
         limit: limit ? parseInt(limit as string) : undefined,
         companyId: user.companyId,
+        emailAccountId: emailAccountId as string | undefined,
       };
 
       if (isAdmin) {
@@ -1858,13 +1859,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Tasks (Tâches à réaliser)
   app.get("/api/tasks", isAuthenticated, async (req: any, res) => {
     try {
-      const { status, emailId } = req.query;
+      const { status, emailId, emailAccountId } = req.query;
       const user = req.user as any;
       const isAdmin = user.role === "admin";
 
       let filters: any = {
         status: status as string | undefined,
         emailId: emailId as string | undefined,
+        emailAccountId: emailAccountId as string | undefined,
         companyId: user.companyId,
       };
 
