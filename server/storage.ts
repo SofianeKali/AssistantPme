@@ -1095,6 +1095,27 @@ export class DatabaseStorage implements IStorage {
       query = query.where(and(...conditions)) as any;
     }
     
+    // De-duplicate alerts when filtering by emailAccountId
+    // (alerts can be linked to multiple emails from the same account)
+    if (filters?.emailAccountId) {
+      query = query.groupBy(
+        alerts.id,
+        alerts.companyId,
+        alerts.type,
+        alerts.severity,
+        alerts.title,
+        alerts.message,
+        alerts.relatedEntityType,
+        alerts.relatedEntityId,
+        alerts.ruleId,
+        alerts.emailCount,
+        alerts.isResolved,
+        alerts.resolvedAt,
+        alerts.resolvedById,
+        alerts.createdAt
+      ) as any;
+    }
+    
     query = query.orderBy(desc(alerts.createdAt)) as any;
     
     if (filters?.limit) {
