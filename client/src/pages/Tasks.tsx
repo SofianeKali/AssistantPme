@@ -37,10 +37,30 @@ import {
   User as UserIcon,
 } from "lucide-react";
 import type { Task, User } from "@shared/schema";
+import {
+  DndContext,
+  DragOverlay,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragStartEvent,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import { useDraggable, useDroppable } from "@dnd-kit/core";
 
 export default function Tasks() {
   const { toast } = useToast();
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [activeTask, setActiveTask] = useState<Task | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
 
   const { data: tasks = [], isLoading } = useQuery<Task[]>({
     queryKey: ["/api/tasks"],
@@ -86,6 +106,26 @@ export default function Tasks() {
       setSelectedTask(null);
     },
   });
+
+  const handleDragStart = (event: DragStartEvent) => {
+    const task = tasks.find((t) => t.id === event.active.id);
+    setActiveTask(task || null);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveTask(null);
+
+    if (!over) return;
+
+    const taskId = active.id as string;
+    const newStatus = over.id as string;
+    const task = tasks.find((t) => t.id === taskId);
+
+    if (task && task.status !== newStatus) {
+      updateStatusMutation.mutate({ id: taskId, status: newStatus });
+    }
+  };
 
   const tasksByStatus = {
     nouveau: tasks.filter((t) => t.status === "nouveau"),
@@ -133,12 +173,12 @@ export default function Tasks() {
     return (user.email || "U")[0].toUpperCase();
   };
 
-  const TaskCard = ({ task }: { task: Task }) => {
+  const TaskCard = ({ task, isDragging }: { task: Task; isDragging?: boolean }) => {
     const assignedUser = getAssignedUser(task.assignedToId);
 
     return (
       <Card
-        className="hover-elevate cursor-pointer"
+        className={`hover-elevate cursor-pointer ${isDragging ? "opacity-50" : ""}`}
         onClick={() => setSelectedTask(task)}
         data-testid={`task-card-${task.id}`}
       >
@@ -266,6 +306,24 @@ export default function Tasks() {
     );
   };
 
+  const DraggableTaskCard = ({ task }: { task: Task }) => {
+    const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+      id: task.id,
+    });
+
+    const style = transform
+      ? {
+          transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+        }
+      : undefined;
+
+    return (
+      <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
+        <TaskCard task={task} isDragging={isDragging} />
+      </div>
+    );
+  };
+
   const StatusColumn = ({
     title,
     icon: Icon,
@@ -276,80 +334,96 @@ export default function Tasks() {
     icon: any;
     tasks: Task[];
     status: string;
-  }) => (
-    <div className="flex-1 min-w-0">
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Icon className="h-5 w-5" />
-            {title}
-            <Badge
-              variant={
-                status === "nouveau" 
-                  ? "secondary" 
-                  : status === "termine"
-                  ? "outline"
-                  : "default"
-              }
-              className={`ml-auto ${
-                status === "termine" 
-                  ? "bg-chart-2/20 text-chart-2 border-chart-2" 
-                  : ""
-              }`}
-              data-testid={`count-${status}`}
-            >
-              {tasks.length}
-            </Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {isLoading ? (
-            [...Array(3)].map((_, i) => <Skeleton key={i} className="h-24" />)
-          ) : tasks.length > 0 ? (
-            tasks.map((task) => <TaskCard key={task.id} task={task} />)
-          ) : (
-            <p className="text-sm text-muted-foreground text-center py-8">
-              Aucune tâche
-            </p>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  );
+  }) => {
+    const { setNodeRef, isOver } = useDroppable({
+      id: status,
+    });
+
+    return (
+      <div className="flex-1 min-w-0">
+        <Card className={isOver ? "ring-2 ring-primary" : ""}>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Icon className="h-5 w-5" />
+              {title}
+              <Badge
+                variant={
+                  status === "nouveau" 
+                    ? "secondary" 
+                    : status === "termine"
+                    ? "outline"
+                    : "default"
+                }
+                className={`ml-auto ${
+                  status === "termine" 
+                    ? "bg-chart-2/20 text-chart-2 border-chart-2" 
+                    : ""
+                }`}
+                data-testid={`count-${status}`}
+              >
+                {tasks.length}
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent 
+            ref={setNodeRef} 
+            className="space-y-3 min-h-[200px]"
+            data-testid={`dropzone-${status}`}
+          >
+            {isLoading ? (
+              [...Array(3)].map((_, i) => <Skeleton key={i} className="h-24" />)
+            ) : tasks.length > 0 ? (
+              tasks.map((task) => <DraggableTaskCard key={task.id} task={task} />)
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                Aucune tâche
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold" data-testid="heading-tasks">
-            Tâches
-          </h1>
-          <p className="text-muted-foreground">
-            Gérez vos tâches automatiquement générées depuis vos emails
-          </p>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="container mx-auto p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold" data-testid="heading-tasks">
+              Tâches
+            </h1>
+            <p className="text-muted-foreground">
+              Gérez vos tâches automatiquement générées depuis vos emails
+            </p>
+          </div>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <StatusColumn
-          title="Nouveau"
-          icon={Circle}
-          tasks={tasksByStatus.nouveau}
-          status="nouveau"
-        />
-        <StatusColumn
-          title="En cours"
-          icon={Clock}
-          tasks={tasksByStatus.en_cours}
-          status="en_cours"
-        />
-        <StatusColumn
-          title="Terminé"
-          icon={CheckCircle2}
-          tasks={tasksByStatus.termine}
-          status="termine"
-        />
-      </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <StatusColumn
+            title="Nouveau"
+            icon={Circle}
+            tasks={tasksByStatus.nouveau}
+            status="nouveau"
+          />
+          <StatusColumn
+            title="En cours"
+            icon={Clock}
+            tasks={tasksByStatus.en_cours}
+            status="en_cours"
+          />
+          <StatusColumn
+            title="Terminé"
+            icon={CheckCircle2}
+            tasks={tasksByStatus.termine}
+            status="termine"
+          />
+        </div>
 
       {/* Task Detail Dialog */}
       <Dialog open={!!selectedTask} onOpenChange={() => setSelectedTask(null)}>
@@ -447,6 +521,11 @@ export default function Tasks() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+
+      <DragOverlay>
+        {activeTask ? <TaskCard task={activeTask} /> : null}
+      </DragOverlay>
+    </DndContext>
   );
 }
