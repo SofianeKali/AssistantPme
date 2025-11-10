@@ -1019,7 +1019,7 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
-  async getAlerts(filters?: { userId?: string; adminUserIds?: string[]; resolved?: boolean; type?: string; relatedEntityType?: string; relatedEntityId?: string; ruleId?: string; limit?: number; companyId?: string }): Promise<Alert[]> {
+  async getAlerts(filters?: { userId?: string; adminUserIds?: string[]; resolved?: boolean; type?: string; relatedEntityType?: string; relatedEntityId?: string; ruleId?: string; limit?: number; companyId?: string; emailAccountId?: string }): Promise<Alert[]> {
     let query = db.select({
       id: alerts.id,
       companyId: alerts.companyId,
@@ -1039,11 +1039,24 @@ export class DatabaseStorage implements IStorage {
     .from(alerts)
     .leftJoin(alertRules, eq(alerts.ruleId, alertRules.id));
     
+    // If filtering by emailAccountId, join with alert_emails and emails tables
+    if (filters?.emailAccountId) {
+      const { alertEmails } = await import("@shared/schema");
+      query = query
+        .innerJoin(alertEmails, eq(alerts.id, alertEmails.alertId))
+        .innerJoin(emails, eq(alertEmails.emailId, emails.id)) as any;
+    }
+    
     const conditions = [];
     
     // Filter by company first (critical for multi-tenancy)
     if (filters?.companyId) {
       conditions.push(eq(alerts.companyId, filters.companyId));
+    }
+    
+    // Filter by emailAccountId (via alert_emails and emails tables)
+    if (filters?.emailAccountId) {
+      conditions.push(eq(emails.emailAccountId, filters.emailAccountId));
     }
     
     // Filter by user access:
