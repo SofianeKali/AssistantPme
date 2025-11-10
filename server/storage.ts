@@ -2628,14 +2628,37 @@ export class DatabaseStorage implements IStorage {
     return newTask;
   }
   
-  async getTasks(filters?: { status?: string; emailId?: string; userId?: string; adminUserIds?: string[]; companyId?: string }): Promise<Task[]> {
-    let query = db.select().from(tasks);
+  async getTasks(filters?: { status?: string; emailId?: string; userId?: string; adminUserIds?: string[]; companyId?: string; emailAccountId?: string }): Promise<Task[]> {
+    let query = db.select({
+      id: tasks.id,
+      companyId: tasks.companyId,
+      emailId: tasks.emailId,
+      categoryId: tasks.categoryId,
+      title: tasks.title,
+      description: tasks.description,
+      status: tasks.status,
+      priority: tasks.priority,
+      assignedToId: tasks.assignedToId,
+      createdById: tasks.createdById,
+      createdAt: tasks.createdAt,
+      updatedAt: tasks.updatedAt,
+    }).from(tasks);
+    
+    // If filtering by emailAccountId, join with emails table
+    if (filters?.emailAccountId) {
+      query = query.leftJoin(emails, eq(tasks.emailId, emails.id)) as any;
+    }
     
     const conditions = [];
     
     // Filter by company first (critical for multi-tenancy)
     if (filters?.companyId) {
       conditions.push(eq(tasks.companyId, filters.companyId));
+    }
+    
+    // Filter by emailAccountId (via emails table)
+    if (filters?.emailAccountId) {
+      conditions.push(eq(emails.emailAccountId, filters.emailAccountId));
     }
     
     // Filter by user access:
