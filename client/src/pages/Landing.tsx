@@ -335,7 +335,7 @@ export default function Landing() {
           />
           <PricingCard
             name="Professional"
-            price="49"
+            price="39"
             description="Pour les PME en croissance"
             features={[
               "5-20 utilisateurs",

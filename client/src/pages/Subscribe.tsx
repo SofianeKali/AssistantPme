@@ -65,7 +65,7 @@ const PLAN_DETAILS = {
   },
   professional: {
     name: "Professional",
-    price: 49,
+    price: 39,
     users: "5-20",
     emails: "2 000/mois",
   },
