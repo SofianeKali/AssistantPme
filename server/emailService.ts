@@ -218,16 +218,29 @@ export async function sendCancellationEmail(
     console.log(
       `[EmailService] Preparing to send cancellation email to ${params.to}`,
     );
+    console.log(`[EmailService] accessEndDate type: ${typeof params.accessEndDate}, value: ${params.accessEndDate}`);
+    console.log(`[EmailService] dataDeleteDate type: ${typeof params.dataDeleteDate}, value: ${params.dataDeleteDate}`);
 
-    const formatDate = (date: Date) => {
+    const formatDate = (dateInput: Date | string | undefined): string => {
+      if (!dateInput) return "fin de période";
+      
+      let date: Date;
+      if (typeof dateInput === 'string') {
+        date = new Date(dateInput);
+      } else {
+        date = dateInput;
+      }
+      
+      console.log(`[EmailService] Formatting date: ${date}, getDate: ${date.getDate()}, getMonth: ${date.getMonth()}, getFullYear: ${date.getFullYear()}`);
+      
       const day = String(date.getDate()).padStart(2, '0');
       const month = String(date.getMonth() + 1).padStart(2, '0');
       const year = date.getFullYear();
       return `${day}/${month}/${year}`;
     };
 
-    const accessEndDateStr = params.accessEndDate ? formatDate(params.accessEndDate) : "fin de période";
-    const dataDeleteDateStr = params.dataDeleteDate ? formatDate(params.dataDeleteDate) : "suite";
+    const accessEndDateStr = formatDate(params.accessEndDate);
+    const dataDeleteDateStr = formatDate(params.dataDeleteDate);
 
     const textContent = `
 Résiliation de votre abonnement IzyInbox
