@@ -3066,29 +3066,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `[Stripe] Subscription ${user.stripeSubscriptionId} cancelled at period end for user ${userId}`,
       );
 
-      // Update user subscription status and store current period end date
-      const periodEndDate = new Date(subscription.current_period_end * 1000);
-      
-      // Store the period end date for display in Settings
-      console.log(`[API] Storing currentPeriodEnd: ${periodEndDate}`);
-      
-      // Update both status and current_period_end atomically
-      try {
-        const { db } = await import("./db");
-        const { users } = await import("@shared/schema");
-        const { eq } = await import("drizzle-orm");
-        await db
-          .update(users)
-          .set({ 
-            subscriptionStatus: "cancelled",
-            currentPeriodEnd: periodEndDate 
-          })
-          .where(eq(users.id, userId));
-      } catch (dbError) {
-        console.error("[API] Failed to update subscription status and currentPeriodEnd:", dbError);
-        // Fall back to just updating status
-        await storage.updateUserSubscriptionStatus(userId, "cancelled");
-      }
+      // Update user subscription status
+      await storage.updateUserSubscriptionStatus(userId, "cancelled");
 
       // Send cancellation email
       try {
