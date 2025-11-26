@@ -316,22 +316,22 @@ Cet email a été envoyé automatiquement, merci de ne pas y répondre.
               <h3>📅 Calendrier de résiliation :</h3>
               <ul>
                 <li>Date de résiliation : aujourd'hui</li>
-                <li>Accès maintenu jusqu'au : <strong>${params.accessEndDate ? formatDate(params.accessEndDate) : "fin de période"}</strong></li>
-                <li>Suppression des données : <strong>${params.dataDeleteDate ? formatDate(params.dataDeleteDate) : "suite"}</strong></li>
+                <li>Accès maintenu jusqu'au : <strong>${accessEndDateStr}</strong></li>
+                <li>Suppression des données : <strong>${dataDeleteDateStr}</strong></li>
               </ul>
             </div>
             <div class="info-box" style="background: #e0f2fe; border-left-color: #0284c7;">
               <h3>💳 Facturation :</h3>
               <ul>
                 <li><strong>✓ Aucun paiement supplémentaire</strong> ne sera facturé après la résiliation</li>
-                <li><strong>✓ Votre accès</strong> à IzyInbox reste actif jusqu'au <strong>${params.accessEndDate ? formatDate(params.accessEndDate) : "fin de période"}</strong></li>
+                <li><strong>✓ Votre accès</strong> à IzyInbox reste actif jusqu'au <strong>${accessEndDateStr}</strong></li>
               </ul>
             </div>
             <div class="info-box" style="background: #fce7f3; border-left-color: #ec4899;">
               <h3>📊 Vos données :</h3>
               <ul>
                 <li><strong>✓ Vos données</strong> restent accessibles pendant toute la durée de votre accès</li>
-                <li><strong>✓ Suppression</strong> le ${params.dataDeleteDate ? formatDate(params.dataDeleteDate) : "suite"}</li>
+                <li><strong>✓ Suppression</strong> le ${dataDeleteDateStr}</li>
                 <li style="color: #9d174d;">⚠️ Nous vous recommandons d'exporter vos données importantes avant cette date</li>
               </ul>
             </div>
