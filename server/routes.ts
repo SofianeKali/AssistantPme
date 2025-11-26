@@ -3074,14 +3074,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Update both status and current_period_end atomically
       try {
-        const { db } = await import("./storage");
+        const { db } = await import("./db");
+        const { users } = await import("@shared/schema");
+        const { eq } = await import("drizzle-orm");
         await db
-          .update(db.usersTable)
+          .update(users)
           .set({ 
             subscriptionStatus: "cancelled",
             currentPeriodEnd: periodEndDate 
           })
-          .where(db.eq(db.usersTable.id, userId));
+          .where(eq(users.id, userId));
       } catch (dbError) {
         console.error("[API] Failed to update subscription status and currentPeriodEnd:", dbError);
         // Fall back to just updating status
