@@ -3092,12 +3092,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
             trial: "Trial",
           };
 
+          // Calculate access end date and data deletion date
+          const accessEndDate = new Date(subscription.current_period_end * 1000);
+          const dataDeleteDate = new Date(accessEndDate);
+          dataDeleteDate.setDate(dataDeleteDate.getDate() + 1);
+
           await sendCancellationEmail({
             to: user.email,
             firstName: user.firstName || "Utilisateur",
             lastName: user.lastName || "",
             planName: planNames[user.subscriptionPlan] || user.subscriptionPlan,
             adminEmailAccount: defaultAccount,
+            accessEndDate,
+            dataDeleteDate,
           });
 
           console.log(

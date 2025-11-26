@@ -202,6 +202,8 @@ interface SendCancellationEmailParams {
   lastName: string;
   planName: string;
   adminEmailAccount: EmailAccount;
+  accessEndDate?: Date;
+  dataDeleteDate?: Date;
 }
 
 /**
@@ -217,6 +219,16 @@ export async function sendCancellationEmail(
       `[EmailService] Preparing to send cancellation email to ${params.to}`,
     );
 
+    const formatDate = (date: Date) => {
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      return `${day}/${month}/${year}`;
+    };
+
+    const accessEndDateStr = params.accessEndDate ? formatDate(params.accessEndDate) : "fin de période";
+    const dataDeleteDateStr = params.dataDeleteDate ? formatDate(params.dataDeleteDate) : "suite";
+
     const textContent = `
 Résiliation de votre abonnement IzyInbox
 ========================================
@@ -226,9 +238,20 @@ Bonjour ${params.firstName} ${params.lastName},
 Nous vous confirmons la résiliation de votre abonnement au plan ${params.planName}.
 
 Informations importantes :
-- Aucun paiement supplémentaire ne sera facturé
-- Votre accès à IzyInbox a été désactivé
-- Vos données restent accessibles pendant 30 jours
+
+📅 CALENDRIER DE RÉSILIATION :
+- Date de résiliation : aujourd'hui
+- Accès maintenu jusqu'au : ${accessEndDateStr} (fin de votre période d'échéance)
+- Suppression des données : ${dataDeleteDateStr} (le jour suivant la fin d'accès)
+
+💳 FACTURATION :
+- Aucun paiement supplémentaire ne sera facturé après la résiliation
+- Vous aurez accès à IzyInbox jusqu'à la fin de votre période d'échéance
+
+📊 VOS DONNÉES :
+- Vos données restent accessibles pendant toute la durée de votre accès
+- Elles seront supprimées définitivement le ${dataDeleteDateStr}
+- Nous vous recommandons d'exporter vos données importantes avant cette date
 
 Si vous changez d'avis, vous pouvez vous réabonner à tout moment via notre plateforme.
 
@@ -290,11 +313,26 @@ Cet email a été envoyé automatiquement, merci de ne pas y répondre.
             <p>Bonjour <strong>${params.firstName} ${params.lastName}</strong>,</p>
             <p>Nous vous confirmons la résiliation de votre abonnement au plan <strong>${params.planName}</strong>.</p>
             <div class="info-box">
-              <h3>Informations importantes :</h3>
+              <h3>📅 Calendrier de résiliation :</h3>
               <ul>
-                <li><strong>✓ Aucun paiement supplémentaire</strong> ne sera facturé</li>
-                <li><strong>✓ Votre accès</strong> à IzyInbox a été désactivé</li>
-                <li><strong>✓ Vos données</strong> restent accessibles pendant 30 jours</li>
+                <li>Date de résiliation : aujourd'hui</li>
+                <li>Accès maintenu jusqu'au : <strong>${params.accessEndDate ? formatDate(params.accessEndDate) : "fin de période"}</strong></li>
+                <li>Suppression des données : <strong>${params.dataDeleteDate ? formatDate(params.dataDeleteDate) : "suite"}</strong></li>
+              </ul>
+            </div>
+            <div class="info-box" style="background: #e0f2fe; border-left-color: #0284c7;">
+              <h3>💳 Facturation :</h3>
+              <ul>
+                <li><strong>✓ Aucun paiement supplémentaire</strong> ne sera facturé après la résiliation</li>
+                <li><strong>✓ Votre accès</strong> à IzyInbox reste actif jusqu'au <strong>${params.accessEndDate ? formatDate(params.accessEndDate) : "fin de période"}</strong></li>
+              </ul>
+            </div>
+            <div class="info-box" style="background: #fce7f3; border-left-color: #ec4899;">
+              <h3>📊 Vos données :</h3>
+              <ul>
+                <li><strong>✓ Vos données</strong> restent accessibles pendant toute la durée de votre accès</li>
+                <li><strong>✓ Suppression</strong> le ${params.dataDeleteDate ? formatDate(params.dataDeleteDate) : "suite"}</li>
+                <li style="color: #9d174d;">⚠️ Nous vous recommandons d'exporter vos données importantes avant cette date</li>
               </ul>
             </div>
             <p>Si vous changez d'avis, vous pouvez vous réabonner à tout moment via notre plateforme.</p>
