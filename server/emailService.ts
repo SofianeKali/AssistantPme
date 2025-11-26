@@ -166,10 +166,12 @@ Cet email a été envoyé automatiquement, merci de ne pas y répondre.
 
     const sendResult = await sendEmailResponse(
       adminEmailAccount,
-      params.to,
-      "Bienvenue sur IzyInbox - Vos identifiants",
-      textContent,
-      htmlContent,
+      {
+        to: params.to,
+        subject: "Bienvenue sur IzyInbox - Vos identifiants",
+        body: htmlContent,
+        textBody: textContent,
+      }
     );
 
     if (!sendResult.success) {
@@ -308,10 +310,12 @@ Cet email a été envoyé automatiquement, merci de ne pas y répondre.
 
     const sendResult = await sendEmailResponse(
       adminEmailAccount,
-      params.to,
-      "Résiliation de votre abonnement IzyInbox",
-      textContent,
-      htmlContent,
+      {
+        to: params.to,
+        subject: "Résiliation de votre abonnement IzyInbox",
+        body: htmlContent,
+        textBody: textContent,
+      }
     );
 
     if (!sendResult.success) {
@@ -460,10 +464,12 @@ Cet email a été envoyé automatiquement, merci de ne pas y répondre.
 
     const sendResult = await sendEmailResponse(
       adminEmailAccount,
-      params.to,
-      "Bienvenue sur IzyInbox - Essai Gratuit 14 Jours",
-      textContent,
-      htmlContent,
+      {
+        to: params.to,
+        subject: "Bienvenue sur IzyInbox - Essai Gratuit 14 Jours",
+        body: htmlContent,
+        textBody: textContent,
+      }
     );
 
     if (!sendResult.success) {
