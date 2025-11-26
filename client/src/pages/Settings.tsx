@@ -1148,6 +1148,27 @@ export default function Settings() {
     },
   });
 
+  // Mutation for cancelling subscription
+  const cancelSubscriptionMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest("POST", "/api/subscriptions/cancel", {});
+    },
+    onSuccess: () => {
+      toast({
+        title: "Abonnement résilié",
+        description: "Votre abonnement a été résilié. Aucun paiement supplémentaire ne sera effectué.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erreur lors de la résiliation",
+        description: error.message || "Impossible de résilier l'abonnement",
+        variant: "destructive",
+      });
+    },
+  });
+
   return (
     <div className="p-4 md:p-6 space-y-4 md:space-y-6">
       {/* Header */}
@@ -1203,6 +1224,13 @@ export default function Settings() {
               Alertes
             </TabsTrigger>
           )}
+          <TabsTrigger
+            value="subscription"
+            data-testid="tab-subscription"
+            className="text-xs sm:text-sm"
+          >
+            Abonnement
+          </TabsTrigger>
           <TabsTrigger
             value="general"
             data-testid="tab-general"
@@ -3067,6 +3095,73 @@ export default function Settings() {
               </div>
             </DialogContent>
           </Dialog>
+        </TabsContent>
+
+        {/* Subscription Tab */}
+        <TabsContent value="subscription" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-xl">Gestion d'abonnement</CardTitle>
+              <CardDescription>
+                Gérez votre abonnement et votre facturation
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {user && (
+                <>
+                  <div className="space-y-2">
+                    <Label>Plan actuel</Label>
+                    <p className="text-sm font-medium">
+                      {user.subscriptionPlan ? (
+                        <>
+                          {user.subscriptionPlan.charAt(0).toUpperCase() + user.subscriptionPlan.slice(1)}
+                          {user.subscriptionStatus === 'trialing' && (
+                            <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                              Essai gratuit
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        "Aucun abonnement"
+                      )}
+                    </p>
+                  </div>
+
+                  {user.subscriptionStatus && (
+                    <div className="space-y-2">
+                      <Label>Statut</Label>
+                      <p className="text-sm">
+                        {user.subscriptionStatus === 'active' && "✓ Actif"}
+                        {user.subscriptionStatus === 'trialing' && "En cours d'essai"}
+                        {user.subscriptionStatus === 'cancelled' && "Résilié"}
+                        {user.subscriptionStatus === 'past_due' && "Paiement en attente"}
+                      </p>
+                    </div>
+                  )}
+
+                  {user.subscriptionPlan && user.subscriptionStatus !== 'cancelled' && (
+                    <div className="pt-4 border-t">
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Vous pouvez résilier votre abonnement à tout moment. Aucun paiement supplémentaire ne sera effectué après la résiliation.
+                      </p>
+                      <Button
+                        variant="destructive"
+                        onClick={() => {
+                          if (confirm("Êtes-vous sûr de vouloir résilier votre abonnement ? Aucun paiement supplémentaire ne sera facturé.")) {
+                            cancelSubscriptionMutation.mutate();
+                          }
+                        }}
+                        disabled={cancelSubscriptionMutation.isPending}
+                        data-testid="button-cancel-subscription"
+                      >
+                        {cancelSubscriptionMutation.isPending ? "Résiliation en cours..." : "Résilier l'abonnement"}
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* General Tab */}
