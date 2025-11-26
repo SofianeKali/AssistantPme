@@ -1219,9 +1219,10 @@ export default function Emails() {
               </label>
               <Textarea
                 value={aiSearchPrompt}
-                onChange={(e) => setAISearchPrompt(e.target.value)}
+                onChange={(e) => setAISearchPrompt(e.target.value.slice(0, 50))}
                 placeholder="Ex: emails avec pièces jointes de Jean reçus hier"
                 rows={3}
+                maxLength={50}
                 data-testid="textarea-ai-search-prompt"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
