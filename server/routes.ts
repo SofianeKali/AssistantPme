@@ -2525,6 +2525,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         currency: "eur",
         customer: customer.id,
         setup_future_usage: "off_session",
+        automatic_payment_methods: {
+          enabled: true,
+        },
         metadata: {
           email,
           firstName,
