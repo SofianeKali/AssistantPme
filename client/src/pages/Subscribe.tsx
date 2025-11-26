@@ -59,19 +59,19 @@ type SubscriptionFormData = z.infer<typeof subscriptionSchema>;
 const PLAN_DETAILS = {
   starter: {
     name: "Starter",
-    price: 1,
+    price: 19,
     users: "1-5",
     emails: "500/mois",
   },
   professional: {
     name: "Professional",
-    price: 149,
+    price: 49,
     users: "5-20",
     emails: "2 000/mois",
   },
   enterprise: {
     name: "Enterprise",
-    price: 399,
+    price: 79,
     users: "20-100",
     emails: "Illimité",
   },

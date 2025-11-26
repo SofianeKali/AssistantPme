@@ -320,7 +320,7 @@ export default function Landing() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
           <PricingCard
             name="Starter"
-            price="59"
+            price="19"
             description="Pour les micro-entreprises"
             features={[
               "1-5 utilisateurs",
@@ -335,7 +335,7 @@ export default function Landing() {
           />
           <PricingCard
             name="Professional"
-            price="149"
+            price="49"
             description="Pour les PME en croissance"
             features={[
               "5-20 utilisateurs",
@@ -352,7 +352,7 @@ export default function Landing() {
           />
           <PricingCard
             name="Enterprise"
-            price="399"
+            price="79"
             description="Pour les grandes équipes"
             features={[
               "20-100 utilisateurs",
