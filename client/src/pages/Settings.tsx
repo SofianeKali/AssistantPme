@@ -63,6 +63,10 @@ import {
   Gift,
   Truck,
   Receipt,
+  CheckCircle2,
+  Lock,
+  Infinity,
+  TrendingDown,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -3099,69 +3103,165 @@ export default function Settings() {
 
         {/* Subscription Tab */}
         <TabsContent value="subscription" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-xl">Gestion d'abonnement</CardTitle>
-              <CardDescription>
-                Gérez votre abonnement et votre facturation
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {user && (
-                <>
-                  <div className="space-y-2">
-                    <Label>Plan actuel</Label>
-                    <p className="text-sm font-medium">
-                      {user.subscriptionPlan ? (
-                        <>
-                          {user.subscriptionPlan.charAt(0).toUpperCase() + user.subscriptionPlan.slice(1)}
-                          {user.subscriptionStatus === 'trialing' && (
-                            <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                              Essai gratuit
-                            </span>
-                          )}
-                        </>
-                      ) : (
-                        "Aucun abonnement"
-                      )}
-                    </p>
+          {user && (
+            <>
+              {/* Plan Overview Card */}
+              <Card className="border-primary/20">
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <CardTitle className="text-2xl flex items-center gap-2">
+                        <ShoppingBag className="h-6 w-6 text-primary" />
+                        Votre Plan
+                      </CardTitle>
+                      <CardDescription className="mt-1">
+                        Détails de votre abonnement actif
+                      </CardDescription>
+                    </div>
+                    {user.subscriptionStatus === 'trialing' && (
+                      <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100">
+                        <Gift className="h-3 w-3 mr-1" />
+                        Essai gratuit
+                      </Badge>
+                    )}
+                    {user.subscriptionStatus === 'active' && (
+                      <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
+                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                        Actif
+                      </Badge>
+                    )}
+                    {user.subscriptionStatus === 'cancelled' && (
+                      <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100">
+                        <Lock className="h-3 w-3 mr-1" />
+                        Résilié
+                      </Badge>
+                    )}
                   </div>
-
-                  {user.subscriptionStatus && (
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Plan Name & Price */}
                     <div className="space-y-2">
-                      <Label>Statut</Label>
-                      <p className="text-sm">
-                        {user.subscriptionStatus === 'active' && "✓ Actif"}
-                        {user.subscriptionStatus === 'trialing' && "En cours d'essai"}
-                        {user.subscriptionStatus === 'cancelled' && "Résilié"}
-                        {user.subscriptionStatus === 'past_due' && "Paiement en attente"}
+                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Plan</p>
+                      <p className="text-3xl font-bold">
+                        {user.subscriptionPlan ? user.subscriptionPlan.charAt(0).toUpperCase() + user.subscriptionPlan.slice(1) : "—"}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {user.subscriptionPlan === 'starter' && "€19/mois"}
+                        {user.subscriptionPlan === 'professional' && "€39/mois"}
+                        {user.subscriptionPlan === 'enterprise' && "€79/mois"}
                       </p>
                     </div>
-                  )}
 
-                  {user.subscriptionPlan && user.subscriptionStatus !== 'cancelled' && (
-                    <div className="pt-4 border-t">
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Vous pouvez résilier votre abonnement à tout moment. Aucun paiement supplémentaire ne sera effectué après la résiliation.
+                    {/* Users Limit */}
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Utilisateurs</p>
+                      <div className="flex items-baseline gap-2">
+                        <Users className="h-5 w-5 text-primary" />
+                        <p className="text-3xl font-bold">
+                          {user.subscriptionPlan === 'starter' && "5"}
+                          {user.subscriptionPlan === 'professional' && "20"}
+                          {user.subscriptionPlan === 'enterprise' && "100"}
+                        </p>
+                      </div>
+                      <p className="text-sm text-muted-foreground">Maximum autorisé</p>
+                    </div>
+
+                    {/* Emails Per Month */}
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Emails/mois</p>
+                      <div className="flex items-baseline gap-2">
+                        <Mail className="h-5 w-5 text-primary" />
+                        <p className="text-3xl font-bold">
+                          {user.subscriptionPlan === 'starter' && "500"}
+                          {user.subscriptionPlan === 'professional' && "2k"}
+                          {user.subscriptionPlan === 'enterprise' && <Infinity className="h-8 w-8" />}
+                        </p>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {user.subscriptionPlan === 'enterprise' ? "Illimité" : "Par mois"}
                       </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Status & Features */}
+              {user.subscriptionStatus === 'trialing' && (
+                <Alert className="border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950">
+                  <Clock className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  <AlertTitle>Période d'essai en cours</AlertTitle>
+                  <AlertDescription className="text-blue-800 dark:text-blue-300">
+                    Vous bénéficiez d'une période d'essai gratuite de 14 jours. Le premier paiement sera effectué le 15e jour.
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {/* Cancellation Section */}
+              {user.subscriptionPlan && user.subscriptionStatus !== 'cancelled' && (
+                <Card className="border-destructive/20">
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <AlertCircle className="h-5 w-5 text-destructive" />
+                      Gérer votre abonnement
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <Alert variant="destructive" className="bg-red-50 dark:bg-red-950 border-red-200 dark:border-red-900">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertTitle>Zone de danger</AlertTitle>
+                      <AlertDescription className="text-red-800 dark:text-red-300">
+                        La résiliation de votre abonnement est définitive. Vous continuerez à avoir accès jusqu'à la fin de votre période de facturation.
+                      </AlertDescription>
+                    </Alert>
+                    
+                    <div className="pt-2">
                       <Button
                         variant="destructive"
                         onClick={() => {
-                          if (confirm("Êtes-vous sûr de vouloir résilier votre abonnement ? Aucun paiement supplémentaire ne sera facturé.")) {
+                          if (confirm("Êtes-vous sûr de vouloir résilier votre abonnement ?\n\nVous pourrez continuer à utiliser le service jusqu'à la fin de votre période de facturation. Aucun paiement supplémentaire ne sera facturé.")) {
                             cancelSubscriptionMutation.mutate();
                           }
                         }}
                         disabled={cancelSubscriptionMutation.isPending}
                         data-testid="button-cancel-subscription"
+                        className="w-full sm:w-auto"
                       >
-                        {cancelSubscriptionMutation.isPending ? "Résiliation en cours..." : "Résilier l'abonnement"}
+                        {cancelSubscriptionMutation.isPending ? (
+                          <>
+                            <Clock className="h-4 w-4 mr-2 animate-spin" />
+                            Résiliation en cours...
+                          </>
+                        ) : (
+                          <>
+                            <TrendingDown className="h-4 w-4 mr-2" />
+                            Résilier l'abonnement
+                          </>
+                        )}
                       </Button>
                     </div>
-                  )}
-                </>
+                  </CardContent>
+                </Card>
               )}
-            </CardContent>
-          </Card>
+
+              {/* Cancelled State */}
+              {user.subscriptionStatus === 'cancelled' && (
+                <Card className="border-amber-200 dark:border-amber-900">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-amber-900 dark:text-amber-100">
+                      <Lock className="h-5 w-5" />
+                      Abonnement résilié
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-amber-800 dark:text-amber-200">
+                      Votre abonnement a été résilié. Si vous changez d'avis, vous pouvez vous réabonner à tout moment en visitant la page de tarification.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </>
+          )}
         </TabsContent>
 
         {/* General Tab */}
