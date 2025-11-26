@@ -62,7 +62,7 @@ export const users = pgTable("users", {
   subscriptionPlan: varchar("subscription_plan"), // starter, professional, enterprise, custom, trial
   subscriptionStatus: varchar("subscription_status"), // active, cancelled, past_due, trialing
   trialEndsAt: timestamp("trial_ends_at"), // Date de fin de l'essai gratuit (NULL si pas en essai)
-  currentPeriodEnd: timestamp("current_period_end"), // Date de fin de la période de facturation actuelle
+  currentPeriodEnd: timestamp("current_period_end").notNull().default(sql`CURRENT_TIMESTAMP + interval '1 year'`), // Date de fin de la période de facturation actuelle
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
