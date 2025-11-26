@@ -128,69 +128,49 @@ Cet email a été envoyé automatiquement, merci de ne pas y répondre.
         </head>
         <body>
           <div class="header">
-            <h1>🎉 Bienvenue sur IzyInbox !</h1>
-            <p>Votre compte a été créé avec succès</p>
+            <h1>Bienvenue sur IzyInbox !</h1>
           </div>
-          
           <div class="content">
-            <p>Bonjour ${params.firstName} ${params.lastName},</p>
-            
-            <p>Votre compte utilisateur pour <strong>IzyInbox</strong> a été créé par votre administrateur.</p>
-            
-            <p>Voici vos identifiants de connexion :</p>
-            
-            <div style="margin: 20px 0; padding: 15px; background: #f0f9ff; border-radius: 8px;">
-              <p style="margin: 0 0 10px 0; color: #1a2744; font-size: 15px;"><strong>📧 Email :</strong></p>
-              <p style="margin: 0; color: #1a2744; font-weight: 600;">${params.to}</p>
-            </div>
-            
+            <p>Bonjour <strong>${params.firstName} ${params.lastName}</strong>,</p>
+            <p>Votre compte utilisateur pour IzyInbox a été créé par votre administrateur.</p>
+            <h3>Vos identifiants de connexion :</h3>
             <div class="password-box">
-              <p style="margin: 0; color: #6b7280; font-size: 14px;">🔑 Mot de passe temporaire</p>
-              <div class="password">${params.temporaryPassword}</div>
+              <p><strong>Email :</strong><br>${params.to}</p>
+              <p><strong>Mot de passe temporaire :</strong><br><span class="password">${params.temporaryPassword}</span></p>
             </div>
-            
             <div class="warning">
-              <strong>⚠️ Important :</strong> Conservez ce mot de passe en lieu sûr. Vous pouvez le changer plus tard depuis votre profil.
+              <strong>⚠️ IMPORTANT :</strong> Conservez ce mot de passe en lieu sûr. Vous pouvez le changer plus tard depuis votre profil.
             </div>
-            
-            <p style="text-align: center;">
-              <a href="${process.env.REPLIT_DEV_DOMAIN || "http://localhost:5000"}" class="button">
-                🚀 Se connecter maintenant
-              </a>
-            </p>
-            
-            <h3>📋 Pour vous connecter :</h3>
+            <h3>Pour vous connecter :</h3>
             <ol>
-              <li>Cliquez sur le bouton "Se connecter" ci-dessus</li>
+              <li>Rendez-vous sur <a href="${process.env.REPLIT_DEV_DOMAIN || "http://localhost:5000"}">${process.env.REPLIT_DEV_DOMAIN || "http://localhost:5000"}</a></li>
               <li>Entrez votre adresse email : <strong>${params.to}</strong></li>
               <li>Entrez le mot de passe temporaire ci-dessus</li>
               <li>Vous serez redirigé vers votre cockpit</li>
             </ol>
-            
             <h3>🎯 Prochaines étapes :</h3>
             <ul>
               <li>Configurez votre compte email (Gmail, Outlook ou Yahoo)</li>
               <li>Explorez le cockpit et les fonctionnalités d'IA</li>
               <li>Commencez à automatiser votre gestion administrative !</li>
             </ul>
-            
             <p>Si vous avez des questions, n'hésitez pas à contacter votre administrateur.</p>
-            
             <div class="footer">
-              <p><strong>IzyInbox</strong></p>
-              <p style="font-size: 12px; color: #9ca3af;">Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+              <p>IzyInbox</p>
+              <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
             </div>
           </div>
         </body>
       </html>
     `;
 
-    const sendResult = await sendEmailResponse(adminEmailAccount, {
-      to: params.to,
-      subject: "🎉 Bienvenue sur IzyInbox - Vos identifiants de connexion",
-      body: htmlContent,
-      textBody: textContent, // Include plain text version to avoid HTML encoding issues
-    });
+    const sendResult = await sendEmailResponse(
+      adminEmailAccount,
+      params.to,
+      "Bienvenue sur IzyInbox - Vos identifiants",
+      textContent,
+      htmlContent,
+    );
 
     if (!sendResult.success) {
       console.error(
@@ -214,58 +194,47 @@ Cet email a été envoyé automatiquement, merci de ne pas y répondre.
   }
 }
 
+interface SendCancellationEmailParams {
+  to: string;
+  firstName: string;
+  lastName: string;
+  planName: string;
+  adminEmailAccount: EmailAccount;
+}
+
 /**
- * Send a trial welcome email to a newly registered trial user
+ * Send a cancellation email when a subscription is cancelled
  */
-export async function sendTrialWelcomeEmail(
-  params: {
-    to: string;
-    firstName: string;
-    lastName: string;
-    temporaryPassword: string;
-    trialEndsAt: Date;
-    adminEmailAccount: EmailAccount;
-  },
+export async function sendCancellationEmail(
+  params: SendCancellationEmailParams,
 ): Promise<void> {
   try {
     const { adminEmailAccount } = params;
 
     console.log(
-      `[EmailService] Preparing to send trial welcome email to ${params.to} from ${adminEmailAccount.email} (SMTP)`,
+      `[EmailService] Preparing to send cancellation email to ${params.to}`,
     );
 
     const textContent = `
-Bienvenue sur IzyInbox - Essai gratuit 14 jours !
-==================================================
+Résiliation de votre abonnement IzyInbox
+========================================
 
 Bonjour ${params.firstName} ${params.lastName},
 
-Votre essai gratuit de 14 jours a démarré avec succès !
+Nous vous confirmons la résiliation de votre abonnement au plan ${params.planName}.
 
-Vos identifiants de connexion :
+Informations importantes :
+- Aucun paiement supplémentaire ne sera facturé
+- Votre accès à IzyInbox a été désactivé
+- Vos données restent accessibles pendant 30 jours
 
-📧 Email : ${params.to}
-🔑 Mot de passe temporaire : ${params.temporaryPassword}
+Si vous changez d'avis, vous pouvez vous réabonner à tout moment via notre plateforme.
 
-⚠️ IMPORTANT : Nous vous recommandons de changer ce mot de passe lors de votre première connexion.
+Pour toute question concernant cette résiliation, veuillez nous contacter.
 
-⏰ Votre essai se termine le : ${params.trialEndsAt.toLocaleDateString('fr-FR')}
-   Vous pourrez ensuite souscrire au plan de votre choix pour continuer à utiliser IzyInbox.
-
-📋 Pour vous connecter :
-1. Rendez-vous sur ${process.env.REPLIT_DEV_DOMAIN || "http://localhost:5000"}/login
-2. Entrez votre adresse email : ${params.to}
-3. Entrez le mot de passe temporaire ci-dessus
-4. Profitez de toutes les fonctionnalités d'IzyInbox !
-
-🎯 Pendant votre essai :
-- Configurez votre compte email (Gmail, Outlook ou Yahoo)
-- Explorez l'analyse automatique des emails par IA
-- Testez la gestion des devis, factures et rendez-vous
-- Découvrez les alertes personnalisées
-
-À bientôt,
-L'équipe IzyInbox
+---
+IzyInbox
+Cet email a été envoyé automatiquement, merci de ne pas y répondre.
     `.trim();
 
     const htmlContent = `
@@ -294,52 +263,12 @@ L'équipe IzyInbox
               padding: 30px;
               border-radius: 0 0 8px 8px;
             }
-            .trial-badge {
-              background: #22c55e;
-              color: white;
-              display: inline-block;
-              padding: 8px 16px;
-              border-radius: 20px;
-              font-weight: bold;
-              margin: 10px 0;
-            }
-            .password-box {
-              background: white;
-              border: 2px solid #00d9ff;
-              border-radius: 8px;
-              padding: 20px;
-              margin: 20px 0;
-              text-align: center;
-            }
-            .password {
-              font-size: 24px;
-              font-weight: bold;
-              color: #1a2744;
-              letter-spacing: 2px;
-              font-family: 'Courier New', monospace;
-            }
-            .warning {
+            .info-box {
               background: #fef3c7;
               border-left: 4px solid #f59e0b;
               padding: 15px;
               margin: 20px 0;
               border-radius: 4px;
-            }
-            .trial-info {
-              background: #ecfdf5;
-              border-left: 4px solid #22c55e;
-              padding: 15px;
-              margin: 20px 0;
-              border-radius: 4px;
-            }
-            .button {
-              display: inline-block;
-              background: #1a2744;
-              color: white;
-              padding: 12px 30px;
-              text-decoration: none;
-              border-radius: 6px;
-              margin: 20px 0;
             }
             .footer {
               text-align: center;
@@ -353,74 +282,189 @@ L'équipe IzyInbox
         </head>
         <body>
           <div class="header">
-            <h1>🎉 Bienvenue sur IzyInbox !</h1>
-            <span class="trial-badge">✨ Essai gratuit 14 jours</span>
-            <p>Profitez de toutes les fonctionnalités sans engagement</p>
+            <h1>Résiliation de votre abonnement</h1>
           </div>
-          
           <div class="content">
-            <p>Bonjour ${params.firstName} ${params.lastName},</p>
-            
-            <p>Votre essai gratuit de <strong>14 jours</strong> a démarré avec succès !</p>
-            
-            <div class="trial-info">
-              <strong>⏰ Fin de l'essai :</strong> ${params.trialEndsAt.toLocaleDateString('fr-FR', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}
-              <br>
-              <small>Vous pourrez ensuite souscrire au plan de votre choix pour continuer à utiliser IzyInbox.</small>
+            <p>Bonjour <strong>${params.firstName} ${params.lastName}</strong>,</p>
+            <p>Nous vous confirmons la résiliation de votre abonnement au plan <strong>${params.planName}</strong>.</p>
+            <div class="info-box">
+              <h3>Informations importantes :</h3>
+              <ul>
+                <li><strong>✓ Aucun paiement supplémentaire</strong> ne sera facturé</li>
+                <li><strong>✓ Votre accès</strong> à IzyInbox a été désactivé</li>
+                <li><strong>✓ Vos données</strong> restent accessibles pendant 30 jours</li>
+              </ul>
             </div>
-            
-            <p>Voici vos identifiants de connexion :</p>
-            
-            <div style="margin: 20px 0; padding: 15px; background: #f0f9ff; border-radius: 8px;">
-              <p style="margin: 0 0 10px 0; color: #1a2744; font-size: 15px;"><strong>📧 Email :</strong></p>
-              <p style="margin: 0; color: #1a2744; font-weight: 600;">${params.to}</p>
-            </div>
-            
-            <div class="password-box">
-              <p style="margin: 0; color: #6b7280; font-size: 14px;">🔑 Mot de passe temporaire</p>
-              <div class="password">${params.temporaryPassword}</div>
-            </div>
-            
-            <div class="warning">
-              <strong>⚠️ Important :</strong> Nous vous recommandons de changer ce mot de passe lors de votre première connexion.
-            </div>
-            
-            <p style="text-align: center;">
-              <a href="${process.env.REPLIT_DEV_DOMAIN || "http://localhost:5000"}/login" class="button">
-                🚀 Se connecter maintenant
-              </a>
-            </p>
-            
-            <h3>🎯 Pendant votre essai :</h3>
-            <ul>
-              <li>Configurez votre compte email (Gmail, Outlook ou Yahoo)</li>
-              <li>Explorez l'analyse automatique des emails par IA</li>
-              <li>Testez la gestion des devis, factures et rendez-vous</li>
-              <li>Découvrez les alertes personnalisées</li>
-            </ul>
-            
-            <p>Profitez pleinement de votre essai !</p>
-            
+            <p>Si vous changez d'avis, vous pouvez vous réabonner à tout moment via notre plateforme.</p>
+            <p>Pour toute question concernant cette résiliation, veuillez nous contacter.</p>
             <div class="footer">
-              <p><strong>IzyInbox</strong></p>
-              <p style="font-size: 12px; color: #9ca3af;">Cet email a été envoyé automatiquement.</p>
+              <p>IzyInbox</p>
+              <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
             </div>
           </div>
         </body>
       </html>
     `;
 
-    const sendResult = await sendEmailResponse(adminEmailAccount, {
-      to: params.to,
-      subject: "🎉 Bienvenue sur IzyInbox - Essai gratuit 14 jours",
-      body: htmlContent,
-      textBody: textContent,
-    });
+    const sendResult = await sendEmailResponse(
+      adminEmailAccount,
+      params.to,
+      "Résiliation de votre abonnement IzyInbox",
+      textContent,
+      htmlContent,
+    );
+
+    if (!sendResult.success) {
+      console.error(
+        "[EmailService] SMTP error sending cancellation email:",
+        sendResult.error,
+      );
+      throw new Error(`SMTP error: ${sendResult.error}`);
+    }
+
+    console.log(
+      `[EmailService] Cancellation email sent successfully to ${params.to}`,
+    );
+  } catch (error) {
+    console.error("[EmailService] Error sending cancellation email:", error);
+    throw error;
+  }
+}
+
+interface SendTrialWelcomeEmailParams {
+  to: string;
+  firstName: string;
+  lastName: string;
+  adminEmailAccount: EmailAccount;
+}
+
+/**
+ * Send a welcome email for trial users
+ */
+export async function sendTrialWelcomeEmail(
+  params: SendTrialWelcomeEmailParams,
+): Promise<void> {
+  try {
+    const { adminEmailAccount } = params;
+
+    console.log(
+      `[EmailService] Preparing to send trial welcome email to ${params.to}`,
+    );
+
+    const textContent = `
+Bienvenue sur IzyInbox - Essai Gratuit 14 Jours !
+=================================================
+
+Bonjour ${params.firstName} ${params.lastName},
+
+Merci de vous être inscrit à IzyInbox ! Vous disposez d'un accès gratuit pendant 14 jours.
+
+Essai gratuit :
+- Accès complet à toutes les fonctionnalités
+- Aucune carte bancaire requise pour l'essai
+- Premier paiement prévu le jour 15
+
+Commencez votre exploration :
+1. Connectez-vous à ${process.env.REPLIT_DEV_DOMAIN || "http://localhost:5000"}
+2. Utilisez votre email : ${params.to}
+3. Explorez les fonctionnalités d'automatisation
+
+Pour toute question, n'hésitez pas à nous contacter.
+
+---
+IzyInbox
+Cet email a été envoyé automatiquement, merci de ne pas y répondre.
+    `.trim();
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              line-height: 1.6;
+              color: #333;
+              max-width: 600px;
+              margin: 0 auto;
+              padding: 20px;
+            }
+            .header {
+              background: linear-gradient(135deg, #1a2744 0%, #00d9ff 100%);
+              color: white;
+              padding: 30px;
+              border-radius: 8px 8px 0 0;
+              text-align: center;
+            }
+            .content {
+              background: #f9fafb;
+              padding: 30px;
+              border-radius: 0 0 8px 8px;
+            }
+            .trial-box {
+              background: #dbeafe;
+              border: 2px solid #0084ff;
+              border-radius: 8px;
+              padding: 20px;
+              margin: 20px 0;
+              text-align: center;
+            }
+            .trial-days {
+              font-size: 36px;
+              font-weight: bold;
+              color: #0084ff;
+            }
+            .footer {
+              text-align: center;
+              color: #6b7280;
+              font-size: 14px;
+              margin-top: 30px;
+              padding-top: 20px;
+              border-top: 1px solid #e5e7eb;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Bienvenue sur IzyInbox !</h1>
+          </div>
+          <div class="content">
+            <p>Bonjour <strong>${params.firstName} ${params.lastName}</strong>,</p>
+            <p>Merci de vous être inscrit à IzyInbox ! Vous disposez d'un accès gratuit pendant 14 jours.</p>
+            <div class="trial-box">
+              <p><span class="trial-days">14</span> jours gratuits</p>
+              <p>Accès complet à toutes les fonctionnalités</p>
+            </div>
+            <h3>Essai gratuit :</h3>
+            <ul>
+              <li>✓ Accès complet à toutes les fonctionnalités</li>
+              <li>✓ Aucune carte bancaire requise pour l'essai</li>
+              <li>✓ Premier paiement prévu le jour 15</li>
+            </ul>
+            <h3>Commencez votre exploration :</h3>
+            <ol>
+              <li>Connectez-vous à <a href="${process.env.REPLIT_DEV_DOMAIN || "http://localhost:5000"}">${process.env.REPLIT_DEV_DOMAIN || "http://localhost:5000"}</a></li>
+              <li>Utilisez votre email : <strong>${params.to}</strong></li>
+              <li>Explorez les fonctionnalités d'automatisation</li>
+            </ol>
+            <p>Pour toute question, n'hésitez pas à nous contacter.</p>
+            <div class="footer">
+              <p>IzyInbox</p>
+              <p>Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const sendResult = await sendEmailResponse(
+      adminEmailAccount,
+      params.to,
+      "Bienvenue sur IzyInbox - Essai Gratuit 14 Jours",
+      textContent,
+      htmlContent,
+    );
 
     if (!sendResult.success) {
       console.error(

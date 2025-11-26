@@ -3041,6 +3041,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Cancel subscription endpoint
+  app.post("/api/subscriptions/cancel", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const userId = user.id;
+
+      // Check if user has a subscription
+      if (!user.stripeSubscriptionId) {
+        return res.status(400).json({
+          message: "L'utilisateur n'a pas d'abonnement actif",
+        });
+      }
+
+      // Cancel the subscription at Stripe (cancel_at_period_end = true means it will stay active until the end of current period)
+      const subscription = await stripe.subscriptions.update(
+        user.stripeSubscriptionId,
+        {
+          cancel_at_period_end: true,
+        },
+      );
+
+      console.log(
+        `[Stripe] Subscription ${user.stripeSubscriptionId} cancelled at period end for user ${userId}`,
+      );
+
+      // Update user subscription status in database
+      await storage.updateUserSubscriptionStatus(userId, "cancelled");
+
+      // Send cancellation email
+      try {
+        const { sendCancellationEmail } = await import("./emailService");
+
+        // Get the default email account for sending
+        const allEmailAccounts = await storage.getEmailAccounts();
+        const defaultAccount = allEmailAccounts.find(
+          (acc) => acc.email === "kalizahir@yahoo.fr" && acc.isActive,
+        );
+
+        if (!defaultAccount) {
+          console.warn(
+            "[API] Default email account not found - skipping cancellation email",
+          );
+        } else {
+          const planNames: Record<string, string> = {
+            starter: "Starter",
+            professional: "Professional",
+            enterprise: "Enterprise",
+            custom: "Custom",
+            trial: "Trial",
+          };
+
+          await sendCancellationEmail({
+            to: user.email,
+            firstName: user.firstName || "Utilisateur",
+            lastName: user.lastName || "",
+            planName: planNames[user.subscriptionPlan] || user.subscriptionPlan,
+            adminEmailAccount: defaultAccount,
+          });
+
+          console.log(
+            `[API] Cancellation email sent to ${user.email}`,
+          );
+        }
+      } catch (emailError) {
+        console.error("[API] Failed to send cancellation email:", emailError);
+        // Don't fail the cancellation if email sending fails
+      }
+
+      // Return success with updated subscription info
+      res.json({
+        message: "Abonnement résilié avec succès",
+        subscription: {
+          id: subscription.id,
+          status: subscription.status,
+          cancel_at_period_end: subscription.cancel_at_period_end,
+          current_period_end: new Date(subscription.current_period_end * 1000),
+        },
+      });
+    } catch (error) {
+      console.error("[API] Error cancelling subscription:", error);
+      res.status(500).json({
+        message: "Erreur lors de la résiliation de l'abonnement",
+        error: String(error),
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
