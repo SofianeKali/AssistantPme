@@ -25,6 +25,15 @@ import multer from "multer";
 import Stripe from "stripe";
 import crypto from "crypto";
 
+// Subscription plan user limits
+const SUBSCRIPTION_LIMITS = {
+  starter: 5,
+  professional: 20,
+  enterprise: 100,
+  trial: 5,
+  custom: 999, // No practical limit for custom plans
+} as Record<string, number>;
+
 // Configure multer for file uploads (in-memory storage)
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -2285,6 +2294,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Normalize email: trim and lowercase
       const normalizedEmail = validatedData.email?.trim().toLowerCase();
+
+      // Check subscription plan user limit
+      const admin = req.user as any;
+      const adminCompanyId = admin.companyId;
+      const adminPlan = (admin.subscriptionPlan || "trial") as keyof typeof SUBSCRIPTION_LIMITS;
+      
+      // Get current user count for the company
+      const currentUsers = await storage.getAllUsers(adminCompanyId);
+      const userLimit = SUBSCRIPTION_LIMITS[adminPlan] || 5;
+
+      if (currentUsers.length >= userLimit) {
+        return res.status(400).json({
+          message: `Limite d'utilisateurs atteinte pour le plan ${adminPlan}`,
+          details: `Votre plan ${adminPlan} permet un maximum de ${userLimit} utilisateurs. Vous en avez actuellement ${currentUsers.length}.`,
+          limit: userLimit,
+          current: currentUsers.length,
+          plan: adminPlan,
+        });
+      }
 
       // Generate a temporary password for the new user
       const temporaryPassword = generateTemporaryPassword();
