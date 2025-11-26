@@ -108,10 +108,11 @@ function CheckoutForm({ plan, onBack }: { plan: string; onBack: () => void }) {
           variant: "destructive",
         });
       }
-    } catch (err) {
+    } catch (err: any) {
+      console.error("[Stripe] Payment error:", err);
       toast({
         title: "Erreur",
-        description: "Une erreur est survenue lors du traitement du paiement",
+        description: err?.message || "Une erreur est survenue lors du traitement du paiement",
         variant: "destructive",
       });
     } finally {
