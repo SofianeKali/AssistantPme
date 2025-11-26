@@ -3253,10 +3253,50 @@ export default function Settings() {
                       Abonnement résilié
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="space-y-4">
                     <p className="text-sm text-amber-800 dark:text-amber-200">
-                      Votre abonnement a été résilié. Si vous changez d'avis, vous pouvez vous réabonner à tout moment en visitant la page de tarification.
+                      Votre abonnement a été résilié. Vous pouvez continuer à utiliser IzyInbox jusqu'à la fin de votre période de facturation.
                     </p>
+                    
+                    {user.currentPeriodEnd && (
+                      <div className="pt-2 border-t border-amber-200 dark:border-amber-900 space-y-3">
+                        <div className="flex items-start gap-3">
+                          <Calendar className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                          <div className="space-y-1">
+                            <p className="text-xs font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-300">Accès maintenu jusqu'au</p>
+                            <p className="text-lg font-semibold text-amber-900 dark:text-amber-100">
+                              {new Date(user.currentPeriodEnd).toLocaleDateString('fr-FR', { 
+                                weekday: 'long', 
+                                year: 'numeric', 
+                                month: 'long', 
+                                day: 'numeric' 
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-start gap-3">
+                          <Trash2 className="h-5 w-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
+                          <div className="space-y-1">
+                            <p className="text-xs font-semibold uppercase tracking-wider text-red-700 dark:text-red-300">Suppression des données</p>
+                            <p className="text-lg font-semibold text-red-900 dark:text-red-100">
+                              {new Date(new Date(user.currentPeriodEnd).getTime() + 86400000).toLocaleDateString('fr-FR', { 
+                                weekday: 'long', 
+                                year: 'numeric', 
+                                month: 'long', 
+                                day: 'numeric' 
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className="pt-2 border-t border-amber-200 dark:border-amber-900">
+                      <p className="text-xs text-amber-700 dark:text-amber-300">
+                        Si vous changez d'avis, vous pouvez vous réabonner à tout moment en visitant la page de tarification.
+                      </p>
+                    </div>
                   </CardContent>
                 </Card>
               )}

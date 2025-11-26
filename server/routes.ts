@@ -3066,8 +3066,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         `[Stripe] Subscription ${user.stripeSubscriptionId} cancelled at period end for user ${userId}`,
       );
 
-      // Update user subscription status in database
+      // Update user subscription status and store current period end date
+      const periodEndDate = new Date(subscription.current_period_end * 1000);
       await storage.updateUserSubscriptionStatus(userId, "cancelled");
+      
+      // Store the period end date for display in Settings
+      console.log(`[API] Storing currentPeriodEnd: ${periodEndDate}`);
+      try {
+        await storage.db.update(storage.usersTable).set({ currentPeriodEnd: periodEndDate }).where(storage.eq(storage.usersTable.id, userId));
+      } catch (dbError) {
+        console.error("[API] Failed to store currentPeriodEnd:", dbError);
+      }
 
       // Send cancellation email
       try {
