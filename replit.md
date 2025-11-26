@@ -34,6 +34,14 @@ The application uses a modern web stack:
     - **Beta Lead Capture**: Professional landing page at `/beta` route with comprehensive lead capture form. Features react-hook-form + Zod validation, social proof elements, benefit cards, and ROI messaging targeting French SMBs. Captures prospect details (contact info, company size, role, pain points) for beta program recruitment.
     - **Subscription System**: Stripe-powered subscription management with 4 pricing tiers (Starter €59/month, Professional €149/month, Enterprise €399/month, Custom on-demand). Features include automated user onboarding, email welcome with temporary credentials via Resend, and **14-day free trial** option without requiring payment upfront. Trial users receive immediate access with admin privileges, trial expiration tracking via `trialEndsAt` field, and seamless conversion to paid plans. **Payment Flow (2025-10-31 - FULLY FIXED)**: ✅ Dual-path account provisioning system ensures reliable account creation after successful Stripe payments. Primary path uses `/api/stripe-webhook` for asynchronous processing; fallback path uses `/api/verify-payment` endpoint called automatically by PaymentSuccess page to handle dev environments where webhooks are unavailable. Idempotent design with `getUserByEmail` guard prevents duplicate account creation from simultaneous webhook + fallback invocations. Payment verification includes loading/error/success states with manual retry capability.
 
+## Recent Changes (2025-11-26)
+- ✅ **Cancellation Dates Display (FIXED)**: Added `currentPeriodEnd` field to users table to store Stripe billing period end date
+- ✅ **Settings UI Enhanced**: "Abonnement résilié" section now displays:
+  - Access end date (formatted in French with calendar icon)
+  - Data deletion date (1 day after access end, with trash icon)
+- ✅ **Database Migration Applied**: Successfully added `current_period_end` column to PostgreSQL database
+- ✅ **Cancellation Email Fixed**: Dates now display correctly instead of "NaN/NaN/NaN"
+
 ## External Dependencies
 - **OpenAI**: GPT-5 model access for AI capabilities.
 - **Google Drive**: Cloud storage for documents and email attachments (per-user OAuth configuration).
