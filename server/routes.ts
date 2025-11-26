@@ -2770,10 +2770,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
       });
 
+      // Calculate trial end (14 days from now) and billing cycle anchor (15 days from now)
+      const now = new Date();
+      const trialEndDate = new Date(now);
+      trialEndDate.setDate(trialEndDate.getDate() + 14);
+      const trialEndTimestamp = Math.floor(trialEndDate.getTime() / 1000);
+      
+      const billingAnchorDate = new Date(now);
+      billingAnchorDate.setDate(billingAnchorDate.getDate() + 15);
+      const billingAnchorTimestamp = Math.floor(billingAnchorDate.getTime() / 1000);
+
       // Create subscription for future recurring payments
+      // trial_end: 14-day free trial
+      // billing_cycle_anchor: First payment on day 15, then monthly on the same day
       const subscription = await stripe.subscriptions.create({
         customer: customerId,
         items: [{ price: price.id }],
+        trial_end: trialEndTimestamp,
+        billing_cycle_anchor: billingAnchorTimestamp,
         payment_settings: {
           payment_method_types: ["card"],
           save_default_payment_method: "on_subscription",
@@ -2936,10 +2950,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
             },
           });
 
+          // Calculate trial end (14 days from now) and billing cycle anchor (15 days from now)
+          const now = new Date();
+          const trialEndDate = new Date(now);
+          trialEndDate.setDate(trialEndDate.getDate() + 14);
+          const trialEndTimestamp = Math.floor(trialEndDate.getTime() / 1000);
+          
+          const billingAnchorDate = new Date(now);
+          billingAnchorDate.setDate(billingAnchorDate.getDate() + 15);
+          const billingAnchorTimestamp = Math.floor(billingAnchorDate.getTime() / 1000);
+
           // Create subscription for future recurring payments
+          // trial_end: 14-day free trial
+          // billing_cycle_anchor: First payment on day 15, then monthly on the same day
           const subscription = await stripe.subscriptions.create({
             customer: customerId,
             items: [{ price: price.id }],
+            trial_end: trialEndTimestamp,
+            billing_cycle_anchor: billingAnchorTimestamp,
             payment_settings: {
               payment_method_types: ["card"],
               save_default_payment_method: "on_subscription",
