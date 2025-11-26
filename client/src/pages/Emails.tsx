@@ -1230,6 +1230,9 @@ export default function Emails() {
                   }
                 }}
               />
+              <div className="text-xs text-muted-foreground text-right mt-1">
+                {aiSearchPrompt.length} / 75 caractères
+              </div>
             </div>
             <div className="flex items-start space-x-2 p-3 rounded-md bg-muted/50 border">
               <Checkbox
