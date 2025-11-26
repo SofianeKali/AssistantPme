@@ -2805,9 +2805,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .toString("base64")
         .slice(0, 16);
 
-      // Calculate current period end date from subscription
-      const periodEndDate = new Date(subscription.current_period_end * 1000);
-      
       // Create admin user with password, linked to company
       const user = await storage.createUserWithPassword(
         email,
@@ -2819,22 +2816,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         customerId,
         subscription.id,
       );
-      
-      // Store the period end date for display in Settings (if user has currentPeriodEnd support)
-      try {
-        if (periodEndDate && !isNaN(periodEndDate.getTime())) {
-          const { db } = await import("./db");
-          const { users } = await import("@shared/schema");
-          const { eq } = await import("drizzle-orm");
-          await db
-            .update(users)
-            .set({ currentPeriodEnd: periodEndDate })
-            .where(eq(users.id, user.id));
-        }
-      } catch (err) {
-        console.warn("[Stripe] Could not store currentPeriodEnd:", err);
-        // Continue - this is not critical
-      }
 
       console.log(
         `[Stripe] Created new admin user: ${email} for plan ${plan}, company ${company.id}`,
