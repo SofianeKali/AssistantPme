@@ -2329,9 +2329,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`[API] Password hashed successfully`);
 
-      // Inherit companyId from admin creating the user (multi-tenancy)
-      const adminCompanyId = (req.user as any).companyId;
-
       // Create the user with hashed password and inherited companyId
       const user = await storage.upsertUser({
         ...validatedData,
@@ -2344,7 +2341,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         // Get admin's active email account
         const adminId = (req.user as any).id;
-        const adminCompanyId = (req.user as any).companyId;
         const adminEmailAccounts = await storage.getEmailAccounts(
           adminId,
           adminCompanyId,
