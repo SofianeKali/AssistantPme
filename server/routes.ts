@@ -3093,9 +3093,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           };
 
           // Calculate access end date and data deletion date
+          console.log(`[API] subscription.current_period_end: ${subscription.current_period_end} (type: ${typeof subscription.current_period_end})`);
+          
           const accessEndDate = new Date(subscription.current_period_end * 1000);
+          console.log(`[API] accessEndDate: ${accessEndDate}, valid: ${!isNaN(accessEndDate.getTime())}`);
+          
           const dataDeleteDate = new Date(accessEndDate);
           dataDeleteDate.setDate(dataDeleteDate.getDate() + 1);
+          console.log(`[API] dataDeleteDate: ${dataDeleteDate}`);
 
           await sendCancellationEmail({
             to: user.email,
@@ -3103,8 +3108,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             lastName: user.lastName || "",
             planName: planNames[user.subscriptionPlan] || user.subscriptionPlan,
             adminEmailAccount: defaultAccount,
-            accessEndDate,
-            dataDeleteDate,
+            accessEndDate: !isNaN(accessEndDate.getTime()) ? accessEndDate : undefined,
+            dataDeleteDate: !isNaN(dataDeleteDate.getTime()) ? dataDeleteDate : undefined,
           });
 
           console.log(
