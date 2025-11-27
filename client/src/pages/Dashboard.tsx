@@ -630,7 +630,7 @@ export default function Dashboard() {
         </div>
 
         {/* Tasks List Card */}
-        <Card>
+        <Card className="bg-gradient-to-br from-blue-50/50 to-blue-50/20 dark:from-blue-950/20 dark:to-slate-900/10">
           <CardContent className="pt-6">
             {tasksLoading ? (
               <div className="space-y-3">
@@ -830,7 +830,7 @@ export default function Dashboard() {
         </div>
 
         {/* Alerts List Card */}
-        <Card>
+        <Card className="bg-gradient-to-br from-red-50/50 to-red-50/20 dark:from-red-950/20 dark:to-slate-900/10">
           <CardContent className="pt-6">
             {alertsLoading ? (
               <div className="space-y-3">
