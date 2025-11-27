@@ -1225,13 +1225,18 @@ export default function Settings() {
   return (
     <div className="p-4 md:p-6 space-y-4 md:space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl md:text-3xl font-semibold text-foreground mb-2">
-          Configuration
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Gérez vos comptes email et paramètres de l'application
-        </p>
+      <div className="space-y-4">
+        <div>
+          <div className="flex items-center gap-3 mb-2">
+            <SettingsIcon className="h-8 w-8 text-slate-600" />
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-slate-600 to-gray-600 bg-clip-text text-transparent">
+              Configuration
+            </h1>
+          </div>
+          <p className="text-muted-foreground text-lg mt-1">
+            Gérez vos comptes email et paramètres de l'application
+          </p>
+        </div>
       </div>
 
       <Tabs
