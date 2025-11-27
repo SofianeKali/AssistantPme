@@ -2038,7 +2038,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req, res) => {
       try {
         const { insertEmailCategorySchema } = await import("@shared/schema");
-        const validatedData = insertEmailCategorySchema.parse(req.body);
+        const companyId = (req.user as any).companyId;
+        const validatedData = insertEmailCategorySchema.parse({ ...req.body, companyId });
         const category = await storage.createEmailCategory(validatedData);
         res.json(category);
       } catch (error) {
