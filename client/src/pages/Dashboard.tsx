@@ -1225,21 +1225,21 @@ export default function Dashboard() {
   function renderTasksEvolutionChart() {
     return (
       <div key="tasks-evolution" className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold">
-            Évolution des tâches
-          </h3>
-          <ChartPeriodControls
-            periodType={tasksPeriod}
-            onPeriodTypeChange={(type) => setTasksPeriod(type)}
-            offset={tasksOffset}
-            onOffsetChange={setTasksOffset}
-            periodLabel={getPeriodLabel(tasksPeriod, tasksOffset)}
-            testIdPrefix="tasks"
-          />
-        </div>
+        <h3 className="text-lg font-semibold">
+          Évolution des tâches
+        </h3>
         <Card>
-          <CardContent className="pt-6">
+          <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4">
+            <ChartPeriodControls
+              periodType={tasksPeriod}
+              onPeriodTypeChange={(type) => setTasksPeriod(type)}
+              offset={tasksOffset}
+              onOffsetChange={setTasksOffset}
+              periodLabel={getPeriodLabel(tasksPeriod, tasksOffset)}
+              testIdPrefix="tasks"
+            />
+          </CardHeader>
+          <CardContent>
           {tasksEvolutionLoading ? (
             <Skeleton className="h-[200px] sm:h-[250px]" />
           ) : (
@@ -1312,21 +1312,21 @@ export default function Dashboard() {
   function renderAlertsEvolutionChart() {
     return (
       <div key="alerts-evolution" className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold">
-            Évolution des alertes
-          </h3>
-          <ChartPeriodControls
-            periodType={alertsPeriod}
-            onPeriodTypeChange={(type) => setAlertsPeriod(type)}
-            offset={alertsOffset}
-            onOffsetChange={setAlertsOffset}
-            periodLabel={getPeriodLabel(alertsPeriod, alertsOffset)}
-            testIdPrefix="alerts"
-          />
-        </div>
+        <h3 className="text-lg font-semibold">
+          Évolution des alertes
+        </h3>
         <Card>
-          <CardContent className="pt-6">
+          <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4">
+            <ChartPeriodControls
+              periodType={alertsPeriod}
+              onPeriodTypeChange={(type) => setAlertsPeriod(type)}
+              offset={alertsOffset}
+              onOffsetChange={setAlertsOffset}
+              periodLabel={getPeriodLabel(alertsPeriod, alertsOffset)}
+              testIdPrefix="alerts"
+            />
+          </CardHeader>
+          <CardContent>
           {alertsEvolutionLoading ? (
             <Skeleton className="h-[200px] sm:h-[250px]" />
           ) : (
