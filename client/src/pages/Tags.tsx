@@ -90,14 +90,20 @@ export default function Tags() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold text-foreground mb-2">Étiquettes</h1>
-          <p className="text-sm text-muted-foreground">
-            Gérez les étiquettes pour organiser vos emails et documents
-          </p>
-        </div>
-        <Dialog open={open} onOpenChange={setOpen}>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <TagIcon className="h-8 w-8 text-purple-600" />
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                Étiquettes
+              </h1>
+            </div>
+            <p className="text-muted-foreground text-lg mt-1">
+              Gérez les étiquettes pour organiser vos emails et documents
+            </p>
+          </div>
+          <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button data-testid="button-add-tag">
               <Plus className="h-4 w-4 mr-2" />
