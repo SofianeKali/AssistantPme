@@ -585,7 +585,6 @@ export default function Dashboard() {
   const renderSection = (sectionId: string) => {
     const sections: Record<string, JSX.Element> = {
       tasks: renderTasksSection(),
-      alerts: renderAlertsSection(),
       categories: renderCategoriesSection(),
       "tasks-evolution": renderTasksEvolutionChart(),
       "email-evolution": renderEmailEvolutionChart(),
