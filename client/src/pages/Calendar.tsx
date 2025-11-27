@@ -294,62 +294,67 @@ export default function Calendar() {
           {/* Week View - Timeline Style */}
           {viewMode === "week" && (
             <Card>
-              <CardContent className="p-4 overflow-x-auto">
-                <div className="inline-block min-w-full">
-                  {/* Header with days */}
-                  <div className="grid gap-1" style={{ gridTemplateColumns: "60px repeat(7, 1fr)" }}>
-                    <div className="font-semibold text-xs text-center p-2">Heure</div>
-                    {getWeekDays().map((day) => (
-                      <div
-                        key={day.toISOString()}
-                        className={`font-semibold text-xs text-center p-2 rounded ${
-                          isSameDay(day, selectedDate) ? "bg-primary text-primary-foreground" : "bg-muted"
-                        }`}
-                      >
-                        <div>{format(day, "EEE", { locale: fr })}</div>
-                        <div className="text-sm">{format(day, "d")}</div>
-                      </div>
-                    ))}
+              <CardContent className="p-4">
+                {/* Sticky Header with Days */}
+                <div className="grid gap-1 sticky top-0 z-50 bg-background mb-2" style={{ gridTemplateColumns: "60px repeat(7, 1fr)" }}>
+                  <div className="font-semibold text-xs text-center p-2">Heure</div>
+                  {getWeekDays().map((day) => (
+                    <div
+                      key={day.toISOString()}
+                      className={`font-semibold text-xs text-center p-2 rounded ${
+                        isSameDay(day, selectedDate) ? "bg-primary text-primary-foreground" : "bg-muted"
+                      }`}
+                    >
+                      <div>{format(day, "EEE", { locale: fr })}</div>
+                      <div className="text-sm">{format(day, "d")}</div>
+                    </div>
+                  ))}
+                </div>
 
-                    {/* Hours and appointments */}
-                    {getHours().map((hour) => (
-                      <div key={`row-${hour}`} className="contents">
-                        <div className="text-xs text-muted-foreground text-center p-2 border-t">
-                          {String(hour).padStart(2, "0")}:00
-                        </div>
-                        {getWeekDays().map((day) => {
-                          const dayAppointments = getAppointmentsForDate(day).filter((apt) => {
-                            const aptHour = new Date(apt.startTime).getHours();
-                            return aptHour === hour;
-                          });
+                {/* Scrollable Content */}
+                <div className="overflow-x-auto">
+                  <div className="inline-block min-w-full">
+                    <div className="grid gap-1" style={{ gridTemplateColumns: "60px repeat(7, 1fr)" }}>
+                      {/* Hours and appointments */}
+                      {getHours().map((hour) => (
+                        <div key={`row-${hour}`} className="contents">
+                          <div className="text-xs text-muted-foreground text-center p-2 border-t">
+                            {String(hour).padStart(2, "0")}:00
+                          </div>
+                          {getWeekDays().map((day) => {
+                            const dayAppointments = getAppointmentsForDate(day).filter((apt) => {
+                              const aptHour = new Date(apt.startTime).getHours();
+                              return aptHour === hour;
+                            });
 
-                          return (
-                            <div
-                              key={`${day.toISOString()}-${hour}`}
-                              className="border-t p-1 min-h-16 relative"
-                            >
-                              {dayAppointments.map((apt) => (
-                                <div
-                                  key={apt.id}
-                                  className={`text-xs p-1 rounded border mb-1 cursor-pointer hover-elevate truncate ${getStatusColor(apt.status)}`}
-                                  title={apt.title}
-                                  data-testid={`appointment-${apt.id}`}
-                                  onClick={() => {
-                                    setSelectedAppointment(apt);
-                                    setShowAppointmentModal(true);
-                                  }}
-                                >
-                                  <div className="font-medium truncate">{apt.title}</div>
-                                  <div className="text-xs">
-                                    {format(new Date(apt.startTime), "HH:mm", { locale: fr })}
+                            return (
+                              <div
+                                key={`${day.toISOString()}-${hour}`}
+                                className="border-t p-1 min-h-16 relative"
+                              >
+                                {dayAppointments.map((apt) => (
+                                  <div
+                                    key={apt.id}
+                                    className={`text-xs p-1 rounded border mb-1 cursor-pointer hover-elevate truncate ${getStatusColor(apt.status)}`}
+                                    title={apt.title}
+                                    data-testid={`appointment-${apt.id}`}
+                                    onClick={() => {
+                                      setSelectedAppointment(apt);
+                                      setShowAppointmentModal(true);
+                                    }}
+                                  >
+                                    <div className="font-medium truncate">{apt.title}</div>
+                                    <div className="text-xs">
+                                      {format(new Date(apt.startTime), "HH:mm", { locale: fr })}
+                                    </div>
                                   </div>
-                                </div>
-                              ))}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ))}
+                                ))}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </CardContent>
