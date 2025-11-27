@@ -146,12 +146,12 @@ export default function Alerts() {
     return (
       <div className="space-y-4">
         {/* Bulk actions bar */}
-        {showResolveButton && filteredAlerts && filteredAlerts.length > 0 && (
+        {showResolveButton && toDisplay && toDisplay.length > 0 && (
           <div className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg border transition-all">
             <div className="flex items-center gap-3">
               <Checkbox
                 checked={allSelected ? true : someSelected ? 'indeterminate' : false}
-                onCheckedChange={(checked) => handleSelectAll(filteredAlerts, checked as boolean)}
+                onCheckedChange={(checked) => handleSelectAll(toDisplay, checked as boolean)}
                 data-testid="checkbox-select-all"
               />
               <span className="text-sm font-medium text-muted-foreground">
@@ -177,8 +177,8 @@ export default function Alerts() {
 
         {isLoading ? (
           [...Array(5)].map((_, i) => <Skeleton key={i} className="h-24" />)
-        ) : filteredAlerts && filteredAlerts.length > 0 ? (
-          filteredAlerts.map((alert: any) => {
+        ) : toDisplay && toDisplay.length > 0 ? (
+          toDisplay.map((alert: any) => {
             const SeverityIcon = getSeverityIcon(alert.severity);
             return (
               <Card
