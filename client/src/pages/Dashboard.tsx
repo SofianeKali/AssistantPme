@@ -944,24 +944,25 @@ export default function Dashboard() {
 
   function renderEmailEvolutionChart() {
     return (
-      <Card key="email-evolution">
-        <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4">
-          <CardTitle>
-            Évolution des emails traités
-          </CardTitle>
-          <ChartPeriodControls
-            periodType={emailEvolutionPeriod}
-            onPeriodTypeChange={(type) => setEmailEvolutionPeriod(type)}
-            offset={emailEvolutionOffset}
-            onOffsetChange={setEmailEvolutionOffset}
-            periodLabel={getPeriodLabel(
-              emailEvolutionPeriod,
-              emailEvolutionOffset,
-            )}
-            testIdPrefix="email-evolution"
-          />
-        </CardHeader>
-        <CardContent>
+      <div key="email-evolution" className="space-y-4">
+        <h3 className="text-lg font-semibold">
+          Évolution des emails traités
+        </h3>
+        <Card>
+          <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4">
+            <ChartPeriodControls
+              periodType={emailEvolutionPeriod}
+              onPeriodTypeChange={(type) => setEmailEvolutionPeriod(type)}
+              offset={emailEvolutionOffset}
+              onOffsetChange={setEmailEvolutionOffset}
+              periodLabel={getPeriodLabel(
+                emailEvolutionPeriod,
+                emailEvolutionOffset,
+              )}
+              testIdPrefix="email-evolution"
+            />
+          </CardHeader>
+          <CardContent>
           {emailEvolutionLoading ? (
             <Skeleton className="h-[200px] sm:h-[250px]" />
           ) : (
@@ -1009,31 +1010,33 @@ export default function Dashboard() {
               </ResponsiveContainer>
             </div>
           )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   function renderEmailDistributionChart() {
     return (
-      <Card key="email-distribution">
-        <CardHeader className="flex flex-row items-center justify-between gap-4 pb-4">
-          <CardTitle>
-            Répartition des emails reçus
-          </CardTitle>
-          <ChartPeriodControls
-            periodType={emailDistributionPeriod}
-            onPeriodTypeChange={(type) => setEmailDistributionPeriod(type)}
-            offset={emailDistributionOffset}
-            onOffsetChange={setEmailDistributionOffset}
-            periodLabel={getPeriodLabel(
-              emailDistributionPeriod,
-              emailDistributionOffset,
-            )}
-            testIdPrefix="email-distribution"
-          />
-        </CardHeader>
-        <CardContent>
+      <div key="email-distribution" className="space-y-4">
+        <h3 className="text-lg font-semibold">
+          Répartition des emails reçus
+        </h3>
+        <Card>
+          <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4">
+            <ChartPeriodControls
+              periodType={emailDistributionPeriod}
+              onPeriodTypeChange={(type) => setEmailDistributionPeriod(type)}
+              offset={emailDistributionOffset}
+              onOffsetChange={setEmailDistributionOffset}
+              periodLabel={getPeriodLabel(
+                emailDistributionPeriod,
+                emailDistributionOffset,
+              )}
+              testIdPrefix="email-distribution"
+            />
+          </CardHeader>
+          <CardContent>
           {emailDistributionLoading ? (
             <Skeleton className="h-[200px] sm:h-[250px]" />
           ) : (
@@ -1074,28 +1077,30 @@ export default function Dashboard() {
               </ResponsiveContainer>
             </div>
           )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   function renderAppointmentsChart() {
     return (
-      <Card key="appointments">
-        <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4">
-          <CardTitle>
-            Évolution des RDV
-          </CardTitle>
-          <ChartPeriodControls
-            periodType={appointmentsPeriod}
-            onPeriodTypeChange={(type) => setAppointmentsPeriod(type)}
-            offset={appointmentsOffset}
-            onOffsetChange={setAppointmentsOffset}
-            periodLabel={getPeriodLabel(appointmentsPeriod, appointmentsOffset)}
-            testIdPrefix="appointments"
-          />
-        </CardHeader>
-        <CardContent>
+      <div key="appointments" className="space-y-4">
+        <h3 className="text-lg font-semibold">
+          Évolution des RDV
+        </h3>
+        <Card>
+          <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4">
+            <ChartPeriodControls
+              periodType={appointmentsPeriod}
+              onPeriodTypeChange={(type) => setAppointmentsPeriod(type)}
+              offset={appointmentsOffset}
+              onOffsetChange={setAppointmentsOffset}
+              periodLabel={getPeriodLabel(appointmentsPeriod, appointmentsOffset)}
+              testIdPrefix="appointments"
+            />
+          </CardHeader>
+          <CardContent>
           {appointmentsWeekLoading ? (
             <Skeleton className="h-[200px] sm:h-[250px]" />
           ) : (
@@ -1140,31 +1145,33 @@ export default function Dashboard() {
               </ResponsiveContainer>
             </div>
           )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   function renderCategoryProcessingChart() {
     return (
-      <Card key="category-processing">
-        <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4">
-          <CardTitle>
-            Taux de traitement par catégorie
-          </CardTitle>
-          <ChartPeriodControls
-            periodType={categoryProcessingPeriod}
-            onPeriodTypeChange={(type) => setCategoryProcessingPeriod(type)}
-            offset={categoryProcessingOffset}
-            onOffsetChange={setCategoryProcessingOffset}
-            periodLabel={getPeriodLabel(
-              categoryProcessingPeriod,
-              categoryProcessingOffset,
-            )}
-            testIdPrefix="category-processing"
-          />
-        </CardHeader>
-        <CardContent>
+      <div key="category-processing" className="space-y-4">
+        <h3 className="text-lg font-semibold">
+          Taux de traitement par catégorie
+        </h3>
+        <Card>
+          <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4">
+            <ChartPeriodControls
+              periodType={categoryProcessingPeriod}
+              onPeriodTypeChange={(type) => setCategoryProcessingPeriod(type)}
+              offset={categoryProcessingOffset}
+              onOffsetChange={setCategoryProcessingOffset}
+              periodLabel={getPeriodLabel(
+                categoryProcessingPeriod,
+                categoryProcessingOffset,
+              )}
+              testIdPrefix="category-processing"
+            />
+          </CardHeader>
+          <CardContent>
           {categoryProcessingLoading ? (
             <Skeleton className="h-[200px] sm:h-[250px]" />
           ) : (
@@ -1217,8 +1224,9 @@ export default function Dashboard() {
               </ResponsiveContainer>
             </div>
           )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
