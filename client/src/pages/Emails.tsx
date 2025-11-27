@@ -670,18 +670,18 @@ export default function Emails() {
 
   return (
     <div className="p-4 md:p-6 space-y-4 md:space-y-6 overflow-x-hidden">
-      {/* Gradient Header */}
-      <div className="bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-blue-600/10 dark:from-blue-500/20 dark:via-purple-500/20 dark:to-blue-500/20 rounded-lg border border-blue-200/30 dark:border-blue-800/30 p-6 mb-2">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
+      {/* Header */}
+      <div className="space-y-4">
+        <div>
+          <div className="flex items-center gap-3 mb-2">
+            <Mail className="h-8 w-8 text-blue-600" />
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               Gestion des Emails
             </h1>
-            <p className="text-sm text-muted-foreground">
-              Gestion centralisée, analyse intelligente et traitement automatisé de vos emails
-            </p>
           </div>
-          <Mail className="h-12 w-12 text-primary/40 flex-shrink-0" />
+          <p className="text-muted-foreground text-lg mt-1">
+            Gestion centralisée, analyse intelligente et traitement automatisé de vos emails
+          </p>
         </div>
       </div>
 
