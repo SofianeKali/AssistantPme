@@ -823,39 +823,65 @@ export default function Dashboard() {
               </div>
             ) : alerts && alerts.length > 0 ? (
               <div className="space-y-3">
-                {alerts.slice(0, 5).map((alert: any) => {
-                  const SeverityIcon = getSeverityIcon(alert.severity);
-                  return (
-                    <Card
-                      key={alert.id}
-                      className={`hover-elevate cursor-pointer transition-all border-l-4 ${getSeverityBgColor(alert.severity)}`}
-                      onClick={() => {
-                        if (alert.emailCount > 0) {
-                          setLocation(`/emails?alertId=${alert.id}`);
-                        }
-                      }}
-                      data-testid={`alert-${alert.id}`}
-                    >
-                      <div className="p-4">
-                        <div className="flex items-start gap-3">
-                          <div className="p-2 rounded-lg bg-background/80 mt-0.5">
-                            <SeverityIcon className={`h-5 w-5 ${getSeverityColor(alert.severity)}`} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2 mb-2">
-                              <h3 className="text-sm font-bold">{alert.title}</h3>
-                              {getSeverityBadge(alert.severity)}
+                {(() => {
+                  // Group alerts by title and calculate totals
+                  const groupedAlerts = alerts.reduce((acc: any, alert: any) => {
+                    const existingGroup = acc.find((g: any) => g.title === alert.title);
+                    if (existingGroup) {
+                      existingGroup.totalEmails += alert.emailCount || 0;
+                      existingGroup.alerts.push(alert);
+                    } else {
+                      acc.push({
+                        title: alert.title,
+                        message: alert.message,
+                        severity: alert.severity,
+                        totalEmails: alert.emailCount || 0,
+                        alerts: [alert],
+                        firstAlert: alert,
+                      });
+                    }
+                    return acc;
+                  }, []);
+
+                  // Show first 3 grouped alerts
+                  return groupedAlerts.slice(0, 3).map((group: any) => {
+                    const SeverityIcon = getSeverityIcon(group.severity);
+                    const firstAlert = group.firstAlert;
+                    return (
+                      <Card
+                        key={group.title}
+                        className={`hover-elevate cursor-pointer transition-all border-l-4 ${getSeverityBgColor(group.severity)}`}
+                        onClick={() => {
+                          if (group.totalEmails > 0) {
+                            setLocation(`/emails?alertId=${firstAlert.id}`);
+                          }
+                        }}
+                        data-testid={`alert-group-${group.title}`}
+                      >
+                        <div className="p-4">
+                          <div className="flex items-start gap-3">
+                            <div className="p-2 rounded-lg bg-background/80 mt-0.5">
+                              <SeverityIcon className={`h-5 w-5 ${getSeverityColor(group.severity)}`} />
                             </div>
-                            <p className="text-sm text-muted-foreground">{alert.message}</p>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2 mb-2">
+                                <h3 className="text-sm font-bold">{group.title}</h3>
+                                {getSeverityBadge(group.severity)}
+                              </div>
+                              <p className="text-sm text-muted-foreground mb-2">{group.message}</p>
+                              <Badge variant="secondary" className="text-xs">
+                                {group.totalEmails} email{group.totalEmails > 1 ? 's' : ''}
+                              </Badge>
+                            </div>
+                            {group.totalEmails > 0 && (
+                              <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                            )}
                           </div>
-                          {alert.emailCount > 0 && (
-                            <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                          )}
                         </div>
-                      </div>
-                    </Card>
-                  );
-                })}
+                      </Card>
+                    );
+                  });
+                })()}
               </div>
             ) : (
               <div className="text-center py-12">
