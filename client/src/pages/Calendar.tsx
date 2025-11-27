@@ -536,9 +536,10 @@ export default function Calendar() {
           <DialogHeader>
             <DialogTitle className="text-xl">Créer un rendez-vous</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-5">
+            {/* Title Field */}
             <div>
-              <label className="text-sm font-medium">Titre *</label>
+              <label className="text-sm font-medium block mb-2">Titre *</label>
               <Input
                 value={createFormData.title || ""}
                 onChange={(e) => setCreateFormData({ ...createFormData, title: e.target.value })}
@@ -546,26 +547,41 @@ export default function Calendar() {
                 data-testid="input-create-title"
               />
             </div>
-            <div>
-              <label className="text-sm font-medium">Date et heure de début *</label>
-              <Input
-                type="datetime-local"
-                value={createFormData.startTime || ""}
-                onChange={(e) => setCreateFormData({ ...createFormData, startTime: e.target.value })}
-                data-testid="input-create-start-time"
-              />
+
+            {/* Date/Time Section */}
+            <div className="space-y-3 pt-2 border-t">
+              <div className="flex items-center gap-2 mb-3">
+                <Clock className="h-4 w-4 text-primary" />
+                <p className="text-sm font-medium">Date et heure</p>
+              </div>
+              
+              <div>
+                <label className="text-xs font-medium text-muted-foreground block mb-1">Début *</label>
+                <Input
+                  type="datetime-local"
+                  value={createFormData.startTime || ""}
+                  onChange={(e) => setCreateFormData({ ...createFormData, startTime: e.target.value })}
+                  data-testid="input-create-start-time"
+                />
+              </div>
+              
+              <div>
+                <label className="text-xs font-medium text-muted-foreground block mb-1">Fin *</label>
+                <Input
+                  type="datetime-local"
+                  value={createFormData.endTime || ""}
+                  onChange={(e) => setCreateFormData({ ...createFormData, endTime: e.target.value })}
+                  data-testid="input-create-end-time"
+                />
+              </div>
             </div>
-            <div>
-              <label className="text-sm font-medium">Date et heure de fin *</label>
-              <Input
-                type="datetime-local"
-                value={createFormData.endTime || ""}
-                onChange={(e) => setCreateFormData({ ...createFormData, endTime: e.target.value })}
-                data-testid="input-create-end-time"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium">Lieu</label>
+
+            {/* Location Field */}
+            <div className="pt-2 border-t">
+              <div className="flex items-center gap-2 mb-3">
+                <MapPin className="h-4 w-4 text-primary" />
+                <label className="text-sm font-medium">Lieu</label>
+              </div>
               <Input
                 value={createFormData.location || ""}
                 onChange={(e) => setCreateFormData({ ...createFormData, location: e.target.value })}
@@ -573,8 +589,10 @@ export default function Calendar() {
                 data-testid="input-create-location"
               />
             </div>
-            <div>
-              <label className="text-sm font-medium">Description</label>
+
+            {/* Description Field */}
+            <div className="pt-2 border-t">
+              <label className="text-sm font-medium block mb-2">Description</label>
               <Textarea
                 value={createFormData.description || ""}
                 onChange={(e) => setCreateFormData({ ...createFormData, description: e.target.value })}
@@ -582,6 +600,8 @@ export default function Calendar() {
                 data-testid="input-create-description"
               />
             </div>
+
+            {/* Action Buttons */}
             <div className="flex gap-2 pt-4">
               <Button
                 className="flex-1"
