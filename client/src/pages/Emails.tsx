@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -99,6 +99,8 @@ export default function Emails() {
   const [deepSearch, setDeepSearch] = useState(false); // Deep search in attachments (off by default)
   const [attachments, setAttachments] = useState<File[]>([]);
   const [isAiResponse, setIsAiResponse] = useState(false); // Track if response was AI-generated
+  const customPromptRef = useRef<HTMLDivElement>(null);
+  const scrollableAreaRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   // Load email categories dynamically
@@ -1092,7 +1094,7 @@ export default function Emails() {
           </div>
 
           {/* Scrollable Email Content Area */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto" ref={scrollableAreaRef}>
             {/* Email Detail Card */}
             <Card className="p-6 md:p-8">
               <div className="space-y-6">
@@ -1326,7 +1328,7 @@ export default function Emails() {
 
               {/* Custom Prompt Input */}
               {!selectedEmail?.suggestedResponse && showPromptInput && (
-                <div className="space-y-2 p-4 rounded-md bg-muted/50 border">
+                <div ref={customPromptRef} className="space-y-2 p-4 rounded-md bg-muted/50 border">
                   <label className="text-sm font-medium">
                     Instructions personnalisées pour l'IA
                   </label>
@@ -1404,9 +1406,20 @@ export default function Emails() {
                 <Button
                   size="icon"
                   onClick={() => {
-                    setShowPromptInput(!showPromptInput);
-                    if (showPromptInput) {
+                    const isCurrentlyOpen = showPromptInput;
+                    setShowPromptInput(!isCurrentlyOpen);
+                    if (isCurrentlyOpen) {
                       setCustomPrompt("");
+                    } else {
+                      // Scroll to custom prompt when opening
+                      setTimeout(() => {
+                        if (customPromptRef.current) {
+                          customPromptRef.current.scrollIntoView({
+                            behavior: "smooth",
+                            block: "center",
+                          });
+                        }
+                      }, 100);
                     }
                   }}
                   data-testid="button-toggle-custom-prompt-bottom"
