@@ -577,6 +577,18 @@ export default function Calendar() {
                               : "hover:bg-muted/50"
                         }`}
                         onClick={() => setSelectedDate(day)}
+                        onDoubleClick={() => {
+                          setSelectedDate(day);
+                          setCreateFormData({
+                            title: "",
+                            description: "",
+                            location: "",
+                            status: "planifie",
+                            startTime: format(day, "yyyy-MM-dd'T'08:00"),
+                            endTime: format(day, "yyyy-MM-dd'T'09:00"),
+                          });
+                          setShowCreateModal(true);
+                        }}
                         data-testid={`calendar-day-${format(day, "yyyy-MM-dd")}`}
                       >
                         <div className={`text-xs md:text-sm font-semibold mb-0.5 md:mb-1 ${!isCurrentMonth ? "opacity-50" : ""}`}>
