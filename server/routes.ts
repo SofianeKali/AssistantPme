@@ -1533,8 +1533,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Generate AI suggestions
-      if (aptData.title) {
+      // Generate AI suggestions only for auto-created appointments (with emailId) or if explicitly requested
+      if (aptData.title && (aptData.emailId || aptData.generateAISuggestions)) {
         const suggestions = await generateAppointmentSuggestions({
           title: aptData.title,
           description: aptData.description,
