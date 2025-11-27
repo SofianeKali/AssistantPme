@@ -419,17 +419,7 @@ export default function Calendar() {
       <Dialog open={showAppointmentModal} onOpenChange={setShowAppointmentModal}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <div className="flex items-center justify-between">
-              <DialogTitle className="text-xl">{selectedAppointment?.title}</DialogTitle>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowAppointmentModal(false)}
-                data-testid="button-close-appointment-modal"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
+            <DialogTitle className="text-xl">{selectedAppointment?.title}</DialogTitle>
             {selectedAppointment && (
               <span
                 className={`text-xs px-3 py-1 rounded-full font-medium w-fit ${getStatusColor(selectedAppointment.status)}`}
