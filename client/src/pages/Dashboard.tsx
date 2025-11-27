@@ -731,98 +731,144 @@ export default function Dashboard() {
   }
 
   function renderAlertsSection() {
+    const getSeverityColor = (severity: string) => {
+      switch (severity) {
+        case "critical":
+          return "text-red-600 dark:text-red-400";
+        case "warning":
+          return "text-orange-600 dark:text-orange-400";
+        default:
+          return "text-blue-600 dark:text-blue-400";
+      }
+    };
+
+    const getSeverityBgColor = (severity: string) => {
+      switch (severity) {
+        case "critical":
+          return "border-l-red-500";
+        case "warning":
+          return "border-l-orange-500";
+        default:
+          return "border-l-blue-500";
+      }
+    };
+
+    const getSeverityBadge = (severity: string) => {
+      switch (severity) {
+        case "critical":
+          return <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100">Critique</Badge>;
+        case "warning":
+          return <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-100">Attention</Badge>;
+        default:
+          return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100">Info</Badge>;
+      }
+    };
+
+    const getSeverityIcon = (severity: string) => {
+      switch (severity) {
+        case "critical":
+          return AlertCircle;
+        case "warning":
+          return Zap;
+        default:
+          return Info;
+      }
+    };
+
     return (
-      <Card key="alerts">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle className="text-xl">
-            Alertes actives
-          </CardTitle>
-          <div className="flex gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => generateAlertsMutation.mutate()}
-              disabled={generateAlertsMutation.isPending}
-              data-testid="button-generate-alerts"
-            >
-              <RefreshCw
-                className={`h-4 w-4 ${generateAlertsMutation.isPending ? "animate-spin" : ""}`}
-              />
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setLocation("/alerts")}
-              data-testid="button-view-all-alerts"
-            >
-              Voir tout
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {alertsLoading ? (
-            <div className="space-y-3">
-              {[...Array(3)].map((_, i) => (
-                <Skeleton key={i} className="h-16" />
-              ))}
+      <div key="alerts" className="col-span-full space-y-4">
+        {/* Header avec gradient et description */}
+        <div>
+          <h2 className="text-3xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
+            Alertes
+          </h2>
+          <p className="text-muted-foreground text-sm mt-1">
+            Aperçu de vos alertes avec vue complète disponible ci-dessous
+          </p>
+        </div>
+
+        {/* Alerts List Card */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+            <CardTitle className="text-base">
+              Alertes actives
+            </CardTitle>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => generateAlertsMutation.mutate()}
+                disabled={generateAlertsMutation.isPending}
+                data-testid="button-generate-alerts"
+              >
+                <RefreshCw
+                  className={`h-4 w-4 ${generateAlertsMutation.isPending ? "animate-spin" : ""}`}
+                />
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setLocation("/alerts")}
+                data-testid="button-view-all-alerts"
+              >
+                Voir tout
+              </Button>
             </div>
-          ) : alerts && alerts.length > 0 ? (
-            <div className="space-y-3">
-              {alerts.map((alert: any) => (
-                <div
-                  key={alert.id}
-                  className={`flex items-center gap-3 p-3 rounded-md border border-border hover-elevate ${alert.emailCount > 0 ? "cursor-pointer" : ""}`}
-                  onClick={() => {
-                    if (alert.emailCount > 0) {
-                      setLocation(`/emails?alertId=${alert.id}`);
-                    }
-                  }}
-                  data-testid={`alert-${alert.id}`}
-                >
-                  <AlertTriangle
-                    className={
-                      alert.severity === "critical"
-                        ? "h-5 w-5 text-destructive"
-                        : alert.severity === "warning"
-                          ? "h-5 w-5 text-chart-3"
-                          : "h-5 w-5 text-muted-foreground"
-                    }
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium">{alert.title}</div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {alert.message}
-                    </div>
-                  </div>
-                  <Badge
-                    variant={
-                      alert.severity === "critical"
-                        ? "destructive"
-                        : alert.severity === "warning"
-                          ? "default"
-                          : "secondary"
-                    }
-                    className="text-xs"
-                  >
-                    {alert.severity === "critical"
-                      ? "Critique"
-                      : alert.severity === "warning"
-                        ? "Attention"
-                        : "Info"}
-                  </Badge>
-                  {alert.emailCount > 0 && (
-                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                  )}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-sm text-muted-foreground">
-              Aucune alerte active
-            </div>
-          )}
-        </CardContent>
-      </Card>
+          </CardHeader>
+          <CardContent>
+            {alertsLoading ? (
+              <div className="space-y-3">
+                {[...Array(3)].map((_, i) => (
+                  <Skeleton key={i} className="h-24" />
+                ))}
+              </div>
+            ) : alerts && alerts.length > 0 ? (
+              <div className="space-y-3">
+                {alerts.slice(0, 5).map((alert: any) => {
+                  const SeverityIcon = getSeverityIcon(alert.severity);
+                  return (
+                    <Card
+                      key={alert.id}
+                      className={`hover-elevate cursor-pointer transition-all border-l-4 ${getSeverityBgColor(alert.severity)}`}
+                      onClick={() => {
+                        if (alert.emailCount > 0) {
+                          setLocation(`/emails?alertId=${alert.id}`);
+                        }
+                      }}
+                      data-testid={`alert-${alert.id}`}
+                    >
+                      <div className="p-4">
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 rounded-lg bg-background/80 mt-0.5">
+                            <SeverityIcon className={`h-5 w-5 ${getSeverityColor(alert.severity)}`} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2 mb-2">
+                              <h3 className="text-sm font-bold">{alert.title}</h3>
+                              {getSeverityBadge(alert.severity)}
+                            </div>
+                            <p className="text-sm text-muted-foreground">{alert.message}</p>
+                          </div>
+                          {alert.emailCount > 0 && (
+                            <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                          )}
+                        </div>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <div className="text-4xl mb-2">📭</div>
+                <p className="text-sm text-muted-foreground">
+                  Aucune alerte active
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
