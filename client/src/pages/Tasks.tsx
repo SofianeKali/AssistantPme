@@ -29,6 +29,7 @@ import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import {
   CheckCircle2,
+  CheckSquare,
   Circle,
   Clock,
   MoreVertical,
