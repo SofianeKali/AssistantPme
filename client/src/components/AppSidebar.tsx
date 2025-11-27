@@ -217,7 +217,7 @@ export function AppSidebar() {
                     case "/":
                       return "text-cyan-600";
                     case "/emails":
-                      return "text-blue-600";
+                      return "text-purple-600";
                     case "/alerts":
                       return "text-red-600";
                     case "/tasks":
