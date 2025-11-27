@@ -983,101 +983,111 @@ export default function Emails() {
       {/* Email Detail View or Email List */}
       {selectedEmail ? (
         <div className="space-y-6">
-          {/* Header with Back Button and Quick Actions */}
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setSelectedEmail(null);
-                setShowResponseDialog(false);
-              }}
-              className="flex items-center gap-2"
-              data-testid="button-back-to-list"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Retour
-            </Button>
-
-            {/* Quick Action Buttons - Icon only */}
-            <div className="flex items-center gap-2 border-l pl-2 ml-2">
-              {/* Reply Button */}
+          {/* Modern Sticky Header with Actions */}
+          <div className="sticky top-0 -mx-4 md:-mx-6 px-4 md:px-6 py-3 z-40 bg-background/80 backdrop-blur-sm border-b border-border/50 shadow-sm">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+              {/* Left: Back Button */}
               <Button
-                size="icon"
+                variant="ghost"
                 onClick={() => {
-                  if (!selectedEmail?.suggestedResponse) {
-                    setSelectedEmail({
-                      ...selectedEmail,
-                      suggestedResponse: "",
-                    });
-                    setIsAiResponse(false);
-                  }
-                  setShowResponseDialog(true);
+                  setSelectedEmail(null);
+                  setShowResponseDialog(false);
                 }}
-                variant={
-                  selectedEmail?.suggestedResponse ? "outline" : "default"
-                }
-                data-testid="button-manual-reply-quick"
-                title={
-                  selectedEmail?.suggestedResponse
-                    ? "Modifier la réponse"
-                    : "Répondre"
-                }
+                className="flex items-center gap-2 text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                data-testid="button-back-to-list"
               >
-                <Reply className="h-4 w-4" />
+                <ArrowLeft className="h-4 w-4" />
+                <span className="font-medium">Retour aux emails</span>
               </Button>
 
-              {/* Generate AI Response Button */}
-              {!selectedEmail?.suggestedResponse && (
-                <Button
-                  size="icon"
-                  onClick={() =>
-                    generateResponseMutation.mutate({
-                      emailId: selectedEmail?.id,
-                      customPrompt: customPrompt || undefined,
-                    })
-                  }
-                  disabled={generateResponseMutation.isPending}
-                  data-testid="button-generate-response-quick"
-                  variant="outline"
-                  title="Générer une réponse avec l'IA"
-                >
-                  <Sparkles className="h-4 w-4" />
-                </Button>
-              )}
-
-              {/* Customize Button */}
-              {!selectedEmail?.suggestedResponse && (
+              {/* Right: Quick Action Group */}
+              <div className="flex items-center gap-1 sm:gap-2 flex-wrap">
+                {/* Reply Button - Primary Action */}
                 <Button
                   size="icon"
                   onClick={() => {
-                    setShowPromptInput(!showPromptInput);
-                    if (showPromptInput) {
-                      setCustomPrompt("");
+                    if (!selectedEmail?.suggestedResponse) {
+                      setSelectedEmail({
+                        ...selectedEmail,
+                        suggestedResponse: "",
+                      });
+                      setIsAiResponse(false);
                     }
+                    setShowResponseDialog(true);
                   }}
-                  data-testid="button-toggle-custom-prompt-quick"
-                  variant="outline"
-                  title={showPromptInput ? "Masquer les instructions" : "Personnaliser avec instructions"}
-                >
-                  <Sliders className="h-4 w-4" />
-                </Button>
-              )}
-
-              {/* Mark as Processed Button */}
-              {selectedEmail?.status !== "traite" && (
-                <Button
-                  size="icon"
-                  onClick={() =>
-                    markProcessedMutation.mutate(selectedEmail?.id)
+                  variant={
+                    selectedEmail?.suggestedResponse ? "outline" : "default"
                   }
-                  disabled={markProcessedMutation.isPending}
-                  data-testid="button-mark-processed-quick"
-                  variant="outline"
-                  title="Marquer comme traité"
+                  data-testid="button-manual-reply-quick"
+                  title={
+                    selectedEmail?.suggestedResponse
+                      ? "Modifier la réponse"
+                      : "Répondre"
+                  }
+                  className="hover-elevate active-elevate-2"
                 >
-                  <Check className="h-4 w-4" />
+                  <Reply className="h-4 w-4" />
                 </Button>
-              )}
+
+                {/* Divider */}
+                <div className="h-6 w-px bg-border/50 mx-1" />
+
+                {/* Generate AI Response Button */}
+                {!selectedEmail?.suggestedResponse && (
+                  <Button
+                    size="icon"
+                    onClick={() =>
+                      generateResponseMutation.mutate({
+                        emailId: selectedEmail?.id,
+                        customPrompt: customPrompt || undefined,
+                      })
+                    }
+                    disabled={generateResponseMutation.isPending}
+                    data-testid="button-generate-response-quick"
+                    variant="outline"
+                    title="Générer une réponse avec l'IA"
+                    className="hover-elevate active-elevate-2"
+                  >
+                    <Sparkles className="h-4 w-4" />
+                  </Button>
+                )}
+
+                {/* Customize Button */}
+                {!selectedEmail?.suggestedResponse && (
+                  <Button
+                    size="icon"
+                    onClick={() => {
+                      setShowPromptInput(!showPromptInput);
+                      if (showPromptInput) {
+                        setCustomPrompt("");
+                      }
+                    }}
+                    data-testid="button-toggle-custom-prompt-quick"
+                    variant={showPromptInput ? "default" : "outline"}
+                    title={showPromptInput ? "Masquer les instructions" : "Personnaliser avec instructions"}
+                    className="hover-elevate active-elevate-2"
+                  >
+                    <Sliders className="h-4 w-4" />
+                  </Button>
+                )}
+
+                {/* Mark as Processed Button */}
+                {selectedEmail?.status !== "traite" && (
+                  <Button
+                    size="icon"
+                    onClick={() =>
+                      markProcessedMutation.mutate(selectedEmail?.id)
+                    }
+                    disabled={markProcessedMutation.isPending}
+                    data-testid="button-mark-processed-quick"
+                    variant="outline"
+                    title="Marquer comme traité"
+                    className="hover-elevate active-elevate-2 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800"
+                  >
+                    <Check className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
 
