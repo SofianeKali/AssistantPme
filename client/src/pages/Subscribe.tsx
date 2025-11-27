@@ -94,22 +94,32 @@ function CheckoutForm({ plan, onBack }: { plan: string; onBack: () => void }) {
     setIsProcessing(true);
 
     try {
-      const { error } = await stripe.confirmPayment({
+      console.log("[Stripe] Confirming payment...");
+      const result = await stripe.confirmPayment({
         elements,
         confirmParams: {
           return_url: `${window.location.origin}/payment-success`,
         },
       });
 
-      if (error) {
+      console.log("[Stripe] Payment result:", result);
+      
+      if (result.error) {
+        console.error("[Stripe] Payment error details:", {
+          type: result.error.type,
+          code: result.error.code,
+          message: result.error.message,
+          decline_code: result.error.decline_code,
+        });
         toast({
           title: "Erreur de paiement",
-          description: error.message,
+          description: result.error.message || "Le paiement a échoué",
           variant: "destructive",
         });
       }
     } catch (err: any) {
-      console.error("[Stripe] Payment error:", err);
+      console.error("[Stripe] Payment exception:", err);
+      console.error("[Stripe] Error details:", JSON.stringify(err, null, 2));
       toast({
         title: "Erreur",
         description: err?.message || "Une erreur est survenue lors du traitement du paiement",
