@@ -21,6 +21,7 @@ import {
   emailCategories,
   tasks,
   userDashboardLayout,
+  invoices,
   type Company,
   type InsertCompany,
   type User,
@@ -55,6 +56,8 @@ import {
   type InsertTask,
   type UserDashboardLayout,
   type InsertUserDashboardLayout,
+  type Invoice,
+  type InsertInvoice,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, gte, lte, like, or, isNull, sql, ne, inArray } from "drizzle-orm";
