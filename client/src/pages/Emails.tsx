@@ -1085,9 +1085,25 @@ export default function Emails() {
                   <Button
                     size="icon"
                     onClick={() => {
-                      setShowPromptInput(!showPromptInput);
-                      if (showPromptInput) {
+                      const isCurrentlyOpen = showPromptInput;
+                      setShowPromptInput(!isCurrentlyOpen);
+                      if (isCurrentlyOpen) {
                         setCustomPrompt("");
+                      } else {
+                        // Scroll to custom prompt when opening
+                        setTimeout(() => {
+                          if (customPromptRef.current) {
+                            customPromptRef.current.scrollIntoView({
+                              behavior: "smooth",
+                              block: "center",
+                            });
+                            // Focus on textarea
+                            const textarea = customPromptRef.current.querySelector('textarea');
+                            if (textarea) {
+                              textarea.focus();
+                            }
+                          }
+                        }, 100);
                       }
                     }}
                     data-testid="button-toggle-custom-prompt-quick"
