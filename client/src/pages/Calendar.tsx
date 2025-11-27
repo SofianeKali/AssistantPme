@@ -612,7 +612,7 @@ export default function Calendar() {
 
       {/* Appointment Details Modal */}
       <Dialog open={showAppointmentModal} onOpenChange={setShowAppointmentModal}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl">{selectedAppointment?.title}</DialogTitle>
             {selectedAppointment && (
