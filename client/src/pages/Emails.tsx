@@ -660,28 +660,88 @@ export default function Emails() {
     return match ? match[1].toUpperCase() : "?";
   };
 
+  // Calculate email stats for cards
+  const emailStats = {
+    nouveau: emails?.filter((e: any) => e.status === "nouveau").length || 0,
+    en_cours: emails?.filter((e: any) => e.status === "en_cours").length || 0,
+    traite: emails?.filter((e: any) => e.status === "traite").length || 0,
+    archive: emails?.filter((e: any) => e.status === "archive").length || 0,
+  };
+
   return (
     <div className="p-4 md:p-6 space-y-4 md:space-y-6 overflow-x-hidden">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl md:text-3xl font-semibold text-foreground mb-2">
-          Emails
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Gestion et analyse intelligente de vos emails
-        </p>
+      {/* Gradient Header */}
+      <div className="bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-blue-600/10 dark:from-blue-500/20 dark:via-purple-500/20 dark:to-blue-500/20 rounded-lg border border-blue-200/30 dark:border-blue-800/30 p-6 mb-2">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">
+              Gestion des Emails
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Gestion centralisée, analyse intelligente et traitement automatisé de vos emails
+            </p>
+          </div>
+          <Mail className="h-12 w-12 text-primary/40 flex-shrink-0" />
+        </div>
+      </div>
+
+      {/* Stat Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {/* Nouveau Card */}
+        <Card className="p-4 border-l-4 border-l-chart-2 hover-elevate">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1">
+              <p className="text-xs text-muted-foreground font-medium mb-1">Nouveau</p>
+              <p className="text-2xl md:text-3xl font-bold text-chart-2">{emailStats.nouveau}</p>
+            </div>
+            <Mail className="h-5 w-5 text-chart-2 flex-shrink-0 opacity-60" />
+          </div>
+        </Card>
+
+        {/* En cours Card */}
+        <Card className="p-4 border-l-4 border-l-chart-3 hover-elevate">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1">
+              <p className="text-xs text-muted-foreground font-medium mb-1">En cours</p>
+              <p className="text-2xl md:text-3xl font-bold text-chart-3">{emailStats.en_cours}</p>
+            </div>
+            <TrendingUp className="h-5 w-5 text-chart-3 flex-shrink-0 opacity-60" />
+          </div>
+        </Card>
+
+        {/* Traité Card */}
+        <Card className="p-4 border-l-4 border-l-emerald-500 hover-elevate">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1">
+              <p className="text-xs text-muted-foreground font-medium mb-1">Traité</p>
+              <p className="text-2xl md:text-3xl font-bold text-emerald-600 dark:text-emerald-400">{emailStats.traite}</p>
+            </div>
+            <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0 opacity-60" />
+          </div>
+        </Card>
+
+        {/* Archivé Card */}
+        <Card className="p-4 border-l-4 border-l-muted hover-elevate">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1">
+              <p className="text-xs text-muted-foreground font-medium mb-1">Archivé</p>
+              <p className="text-2xl md:text-3xl font-bold text-muted-foreground">{emailStats.archive}</p>
+            </div>
+            <Archive className="h-5 w-5 text-muted-foreground flex-shrink-0 opacity-60" />
+          </div>
+        </Card>
       </div>
 
       {/* Alert Banner */}
       {alertId && (
-        <Card className="p-4 bg-primary/5 border-primary/20">
+        <Card className="p-4 bg-destructive/5 border-destructive/20">
           <div className="flex items-center gap-3">
-            <Badge variant="default" className="text-xs">
-              Alerte
-            </Badge>
-            <p className="text-sm text-foreground">
-              Affichage des emails liés à une alerte spécifique
-            </p>
+            <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-foreground">
+                Affichage des emails liés à une alerte spécifique
+              </p>
+            </div>
             <Button
               variant="outline"
               size="sm"
@@ -692,7 +752,7 @@ export default function Emails() {
               }}
               data-testid="button-clear-alert-filter"
             >
-              Voir tous les emails
+              Voir tous
             </Button>
           </div>
         </Card>
