@@ -44,11 +44,12 @@ export class EmailScanner {
     const result: ScanResult = { scanned: 0, created: 0, errors: 0 };
 
     try {
-      // Fetch global settings for document extraction
+      // Fetch global settings for document extraction and appointment scheduling
       const settings = await this.storage.getAllSettings();
       const documentExtractionEnabled = settings.documentExtractionEnabled === true;
       const documentStorageProvider = settings.documentStorageProvider || 'google_drive';
       const isDocumentStorageEnabled = documentStorageProvider !== 'disabled';
+      const autoScheduleAppointments = settings.autoScheduling !== false;
 
       console.log(`[IMAP] Document extraction: ${documentExtractionEnabled ? 'enabled' : 'disabled'}, Storage provider: ${documentStorageProvider}`);
 
@@ -233,6 +234,38 @@ export class EmailScanner {
             } catch (taskError) {
               console.error(`[IMAP] Failed to create task:`, taskError);
               // Continue processing even if task creation fails
+            }
+          }
+
+          // Auto-create appointment if automatic scheduling is enabled and appointment is detected
+          if (autoScheduleAppointments && (emailType === 'rdv' || analysis.extractedData?.appointmentDate)) {
+            console.log(`[IMAP] Auto-scheduling appointment for email category '${emailType}'...`);
+            try {
+              // Extract appointment date from AI analysis
+              const appointmentDate = analysis.extractedData?.appointmentDate 
+                ? new Date(analysis.extractedData.appointmentDate)
+                : null;
+              
+              if (appointmentDate && appointmentDate > new Date()) {
+                const appointmentData: InsertAppointment = {
+                  companyId: account.companyId, // Multi-tenant isolation
+                  emailId: createdEmail.id,
+                  title: mail.subject || 'RDV détecté automatiquement',
+                  description: `Détecté automatiquement depuis l'email de ${getAddressText(mail.from)}\n\nCorps du message:\n${mail.text || mail.html || ''}`,
+                  date: appointmentDate,
+                  status: 'planifié',
+                  location: analysis.extractedData?.contact || '',
+                  participants: getEmailAddresses(mail.from),
+                };
+                
+                await this.storage.createAppointment(appointmentData);
+                console.log(`[IMAP] Appointment created successfully: ${appointmentData.title} on ${appointmentDate.toISOString()}`);
+              } else {
+                console.log(`[IMAP] Appointment date is invalid or in the past, skipping appointment creation`);
+              }
+            } catch (appointmentError) {
+              console.error(`[IMAP] Failed to create appointment:`, appointmentError);
+              // Continue processing even if appointment creation fails
             }
           }
 
