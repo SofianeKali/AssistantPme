@@ -176,6 +176,7 @@ export default function Calendar() {
     endTime: format(addHours(new Date(), 1), "yyyy-MM-dd'T'HH:mm"),
   });
   const { toast } = useToast();
+  const [, navigate] = useLocation();
 
   // Fetch appointments
   const { data: appointments = [], isLoading, refetch } = useQuery<Appointment[]>({
@@ -888,7 +889,7 @@ export default function Calendar() {
                         className="p-0 h-auto text-sm"
                         onClick={() => {
                           setShowAppointmentModal(false);
-                          window.location.href = `/emails?id=${selectedAppointment.emailId}`;
+                          navigate(`/emails?id=${selectedAppointment.emailId}`);
                         }}
                         data-testid="link-source-email"
                       >
