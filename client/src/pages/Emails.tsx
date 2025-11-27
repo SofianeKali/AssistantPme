@@ -28,6 +28,10 @@ import {
   Trash2,
   Reply,
   CheckCircle,
+  Inbox,
+  Archive,
+  TrendingUp,
+  AlertCircle,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
