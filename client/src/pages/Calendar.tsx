@@ -2,7 +2,14 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock } from "lucide-react";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, X, MapPin, Users } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   format,
   startOfMonth,
@@ -36,6 +43,8 @@ interface Appointment {
 export default function Calendar() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<ViewMode>("month");
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [showAppointmentModal, setShowAppointmentModal] = useState(false);
 
   // Fetch appointments
   const { data: appointments = [], isLoading } = useQuery<Appointment[]>({
@@ -194,8 +203,12 @@ export default function Calendar() {
                     {getAppointmentsForDate(selectedDate).map((apt) => (
                       <div
                         key={apt.id}
-                        className="p-4 border rounded-lg hover-elevate"
+                        className="p-4 border rounded-lg hover-elevate cursor-pointer"
                         data-testid={`appointment-${apt.id}`}
+                        onClick={() => {
+                          setSelectedAppointment(apt);
+                          setShowAppointmentModal(true);
+                        }}
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1">
@@ -267,6 +280,10 @@ export default function Calendar() {
                                   className={`text-xs p-1 rounded border mb-1 cursor-pointer hover-elevate truncate ${getStatusColor(apt.status)}`}
                                   title={apt.title}
                                   data-testid={`appointment-${apt.id}`}
+                                  onClick={() => {
+                                    setSelectedAppointment(apt);
+                                    setShowAppointmentModal(true);
+                                  }}
                                 >
                                   <div className="font-medium truncate">{apt.title}</div>
                                   <div className="text-xs">
@@ -323,9 +340,14 @@ export default function Calendar() {
                           {dayAppointments.slice(0, 3).map((apt) => (
                             <div
                               key={apt.id}
-                              className={`p-1 rounded truncate border ${getStatusColor(apt.status)}`}
+                              className={`p-1 rounded truncate border cursor-pointer hover-elevate ${getStatusColor(apt.status)}`}
                               title={apt.title}
                               data-testid={`appointment-${apt.id}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedAppointment(apt);
+                                setShowAppointmentModal(true);
+                              }}
                             >
                               {apt.title}
                             </div>
@@ -392,6 +414,96 @@ export default function Calendar() {
           </Card>
         </>
       )}
+
+      {/* Appointment Details Modal */}
+      <Dialog open={showAppointmentModal} onOpenChange={setShowAppointmentModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-xl">{selectedAppointment?.title}</DialogTitle>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowAppointmentModal(false)}
+                data-testid="button-close-appointment-modal"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            {selectedAppointment && (
+              <span
+                className={`text-xs px-3 py-1 rounded-full font-medium w-fit ${getStatusColor(selectedAppointment.status)}`}
+              >
+                {getStatusLabel(selectedAppointment.status)}
+              </span>
+            )}
+          </DialogHeader>
+
+          {selectedAppointment && (
+            <div className="space-y-4">
+              {/* Date and Time */}
+              <div className="flex items-start gap-3">
+                <Clock className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium">
+                    {format(new Date(selectedAppointment.startTime), "EEEE d MMMM yyyy", {
+                      locale: fr,
+                    })}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {format(new Date(selectedAppointment.startTime), "HH:mm", { locale: fr })} -{" "}
+                    {format(new Date(selectedAppointment.endTime), "HH:mm", { locale: fr })}
+                  </p>
+                </div>
+              </div>
+
+              {/* Location */}
+              {selectedAppointment.location && (
+                <div className="flex items-start gap-3">
+                  <MapPin className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium">Lieu</p>
+                    <p className="text-sm text-muted-foreground">{selectedAppointment.location}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Attendees */}
+              {selectedAppointment.attendees && Array.isArray(selectedAppointment.attendees) && selectedAppointment.attendees.length > 0 && (
+                <div className="flex items-start gap-3">
+                  <Users className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium">Participants</p>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedAppointment.attendees.join(", ")}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Description */}
+              {selectedAppointment.description && (
+                <div className="pt-2 border-t">
+                  <p className="text-sm font-medium mb-2">Description</p>
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                    {selectedAppointment.description}
+                  </p>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 pt-4">
+                <Button variant="outline" className="flex-1" data-testid="button-edit-appointment">
+                  Modifier
+                </Button>
+                <Button variant="destructive" className="flex-1" data-testid="button-delete-appointment">
+                  Supprimer
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
