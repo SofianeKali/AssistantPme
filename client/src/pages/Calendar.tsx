@@ -408,7 +408,7 @@ export default function Calendar() {
         </Button>
         <h2 className="text-lg font-semibold">
           {viewMode === "day" && format(selectedDate, "EEEE d MMMM yyyy", { locale: fr })}
-          {viewMode === "week" && `Semaine du ${format(selectedDate, "d MMMM", { locale: fr })}`}
+          {viewMode === "week" && `Semaine du ${format(selectedDate, "d MMMM yyyy", { locale: fr })}`}
           {viewMode === "month" && format(selectedDate, "MMMM yyyy", { locale: fr })}
         </h2>
         <Button
