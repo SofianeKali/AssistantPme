@@ -797,70 +797,84 @@ export default function Dashboard() {
 
   function renderCategoriesSection() {
     return (
-      <div key="categories">
-        <h2 className="text-xl font-semibold mb-4">
-          Emails non traités par catégorie
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {categoryStatsLoading || categoriesLoading
-            ? [...Array(4)].map((_, i) => <Skeleton key={i} className="h-32" />)
-            : categories &&
-              (() => {
-                const uniqueCategories = categories.reduce(
-                  (acc: any[], category: any) => {
-                    const existing = acc.find((c) => c.key === category.key);
-                    if (!existing) {
-                      acc.push(category);
-                    } else if (category.isSystem && !existing.isSystem) {
-                      const index = acc.indexOf(existing);
-                      acc[index] = category;
-                    }
-                    return acc;
-                  },
-                  [],
-                );
-
-                return uniqueCategories.map((category: any) => {
-                  const IconComponent = getIconComponent(category.icon);
-                  return (
-                    <Card
-                      key={category.key}
-                      className="hover-elevate cursor-pointer"
-                      onClick={() =>
-                        setLocation(
-                          `/emails?category=${category.key}&status=nouveau`,
-                        )
+      <Card key="categories" className="lg:col-span-2">
+        <CardHeader className="bg-gradient-to-r from-indigo-600/10 to-blue-600/10 dark:from-indigo-500/20 dark:to-blue-500/20 rounded-t-lg pb-4">
+          <CardTitle className="flex items-center gap-2 text-xl">
+            <Inbox className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+            Emails par Catégorie
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {categoryStatsLoading || categoriesLoading
+              ? [...Array(4)].map((_, i) => <Skeleton key={i} className="h-32" />)
+              : categories &&
+                (() => {
+                  const uniqueCategories = categories.reduce(
+                    (acc: any[], category: any) => {
+                      const existing = acc.find((c) => c.key === category.key);
+                      if (!existing) {
+                        acc.push(category);
+                      } else if (category.isSystem && !existing.isSystem) {
+                        const index = acc.indexOf(existing);
+                        acc[index] = category;
                       }
-                      data-testid={`category-block-${category.key}`}
-                    >
-                      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                          {category.label}
-                        </CardTitle>
-                        <div
-                          className="w-8 h-8 rounded-md flex items-center justify-center"
-                          style={{
-                            backgroundColor: category.color + "20",
-                            color: category.color,
-                          }}
-                        >
-                          <IconComponent className="h-4 w-4" />
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-semibold">
-                          {categoryStats?.[category.key] || 0}
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Non traités
-                        </p>
-                      </CardContent>
-                    </Card>
+                      return acc;
+                    },
+                    [],
                   );
-                });
-              })()}
-        </div>
-      </div>
+
+                  return uniqueCategories.map((category: any) => {
+                    const IconComponent = getIconComponent(category.icon);
+                    return (
+                      <Card
+                        key={category.key}
+                        className="hover-elevate cursor-pointer border-l-4 transition-all"
+                        style={{
+                          borderLeftColor: category.color,
+                        }}
+                        onClick={() =>
+                          setLocation(
+                            `/emails?category=${category.key}&status=nouveau`,
+                          )
+                        }
+                        data-testid={`category-block-${category.key}`}
+                      >
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                          <CardTitle className="text-sm font-medium">
+                            {category.label}
+                          </CardTitle>
+                          <div
+                            className="w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0"
+                            style={{
+                              backgroundColor: category.color + "20",
+                              color: category.color,
+                            }}
+                          >
+                            <IconComponent className="h-4 w-4" />
+                          </div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl md:text-3xl font-bold" style={{ color: category.color }}>
+                            {categoryStats?.[category.key] || 0}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            Non traités
+                          </p>
+                        </CardContent>
+                      </Card>
+                    );
+                  });
+                })()}
+          </div>
+          {!categoryStatsLoading && !categoriesLoading && (!categories || categories.length === 0) && (
+            <div className="text-center py-8">
+              <Inbox className="h-12 w-12 mx-auto text-muted-foreground mb-3 opacity-50" />
+              <p className="text-sm text-muted-foreground">Aucune catégorie disponible</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     );
   }
 
