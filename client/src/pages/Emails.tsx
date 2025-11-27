@@ -1340,6 +1340,97 @@ export default function Emails() {
                   </p>
                 </div>
               )}
+
+              {/* Bottom Sticky Action Footer */}
+              <div className="sticky bottom-0 -mx-6 -mb-8 px-6 py-3 bg-background/80 backdrop-blur-sm border-t border-border/50 shadow-lg">
+                <div className="flex items-center justify-center sm:justify-end gap-1 sm:gap-2 flex-wrap">
+                  {/* Reply Button - Primary Action */}
+                  <Button
+                    size="icon"
+                    onClick={() => {
+                      if (!selectedEmail?.suggestedResponse) {
+                        setSelectedEmail({
+                          ...selectedEmail,
+                          suggestedResponse: "",
+                        });
+                        setIsAiResponse(false);
+                      }
+                      setShowResponseDialog(true);
+                    }}
+                    variant={
+                      selectedEmail?.suggestedResponse ? "outline" : "default"
+                    }
+                    data-testid="button-manual-reply-bottom"
+                    title={
+                      selectedEmail?.suggestedResponse
+                        ? "Modifier la réponse"
+                        : "Répondre"
+                    }
+                    className="hover-elevate active-elevate-2"
+                  >
+                    <Reply className="h-4 w-4" />
+                  </Button>
+
+                  {/* Divider */}
+                  <div className="h-6 w-px bg-border/50 mx-1" />
+
+                  {/* Generate AI Response Button */}
+                  {!selectedEmail?.suggestedResponse && (
+                    <Button
+                      size="icon"
+                      onClick={() =>
+                        generateResponseMutation.mutate({
+                          emailId: selectedEmail?.id,
+                          customPrompt: customPrompt || undefined,
+                        })
+                      }
+                      disabled={generateResponseMutation.isPending}
+                      data-testid="button-generate-response-bottom"
+                      variant="outline"
+                      title="Générer une réponse avec l'IA"
+                      className="hover-elevate active-elevate-2"
+                    >
+                      <Sparkles className="h-4 w-4" />
+                    </Button>
+                  )}
+
+                  {/* Customize Button */}
+                  {!selectedEmail?.suggestedResponse && (
+                    <Button
+                      size="icon"
+                      onClick={() => {
+                        setShowPromptInput(!showPromptInput);
+                        if (showPromptInput) {
+                          setCustomPrompt("");
+                        }
+                      }}
+                      data-testid="button-toggle-custom-prompt-bottom"
+                      variant={showPromptInput ? "default" : "outline"}
+                      title={showPromptInput ? "Masquer les instructions" : "Personnaliser avec instructions"}
+                      className="hover-elevate active-elevate-2"
+                    >
+                      <Sliders className="h-4 w-4" />
+                    </Button>
+                  )}
+
+                  {/* Mark as Processed Button */}
+                  {selectedEmail?.status !== "traite" && (
+                    <Button
+                      size="icon"
+                      onClick={() =>
+                        markProcessedMutation.mutate(selectedEmail?.id)
+                      }
+                      disabled={markProcessedMutation.isPending}
+                      data-testid="button-mark-processed-bottom"
+                      variant="outline"
+                      title="Marquer comme traité"
+                      className="hover-elevate active-elevate-2 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800"
+                    >
+                      <Check className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
             </div>
           </Card>
         </div>
