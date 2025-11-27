@@ -532,6 +532,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get single email by ID
+  app.get("/api/emails/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const email = await storage.getEmailById(id);
+
+      if (!email) {
+        return res.status(404).json({ message: "Email not found" });
+      }
+
+      // SECURITY: Verify email belongs to user's company
+      const companyId = (req.user as any).companyId;
+      const emailAccounts = await storage.getEmailAccounts();
+      const emailAccount = emailAccounts.find(
+        (acc) => acc.id === email.emailAccountId
+      );
+
+      if (!emailAccount || emailAccount.companyId !== companyId) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      res.json(email);
+    } catch (error) {
+      console.error("Error fetching email:", error);
+      res.status(500).json({ message: "Failed to fetch email" });
+    }
+  });
+
   app.get(
     "/api/emails/stats/by-category",
     isAuthenticated,
