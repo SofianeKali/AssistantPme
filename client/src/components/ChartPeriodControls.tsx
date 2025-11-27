@@ -19,6 +19,27 @@ interface ChartPeriodControlsProps {
   testIdPrefix: string;
 }
 
+const formatCompactPeriodLabel = (label: string): string => {
+  // Format: "Semaine du 24 au 30 nov. 2025" -> "24 -> 30/11/2025"
+  // Format: "Mois de novembre 2025" -> "11/2025"
+  
+  const weekMatch = label.match(/du (\d+) au (\d+) (\w+)\. (\d+)/);
+  if (weekMatch) {
+    const [, startDay, endDay, month, year] = weekMatch;
+    const monthNum = new Date(`${month} 1, ${year}`).getMonth() + 1;
+    return `${startDay} → ${endDay}/${String(monthNum).padStart(2, '0')}/${year}`;
+  }
+  
+  const monthMatch = label.match(/de (\w+) (\d+)/);
+  if (monthMatch) {
+    const [, month, year] = monthMatch;
+    const monthNum = new Date(`${month} 1, ${year}`).getMonth() + 1;
+    return `${String(monthNum).padStart(2, '0')}/${year}`;
+  }
+  
+  return label;
+};
+
 export function ChartPeriodControls({
   periodType,
   onPeriodTypeChange,
@@ -27,6 +48,8 @@ export function ChartPeriodControls({
   periodLabel,
   testIdPrefix,
 }: ChartPeriodControlsProps) {
+  const compactLabel = formatCompactPeriodLabel(periodLabel);
+
   return (
     <div className="flex flex-col gap-2 w-full sm:w-auto sm:flex-row sm:items-center sm:gap-3">
       {/* Period Type Pills */}
@@ -37,14 +60,14 @@ export function ChartPeriodControls({
             size="sm"
             variant={periodType === type ? "default" : "ghost"}
             onClick={() => onPeriodTypeChange(type)}
-            className={`flex-1 sm:flex-none rounded-md transition-all text-xs sm:text-sm ${
+            className={`flex-1 sm:flex-none rounded-md transition-all ${
               periodType === type 
                 ? "bg-primary text-primary-foreground" 
                 : "hover-elevate"
             }`}
             data-testid={`button-period-${type}-${testIdPrefix}`}
           >
-            {type === 'week' ? 'S.' : 'M.'}
+            {type === 'week' ? 'Semaine' : 'Mois'}
           </Button>
         ))}
       </div>
@@ -61,7 +84,7 @@ export function ChartPeriodControls({
           <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
         </Button>
         <span className="text-[10px] sm:text-xs font-medium text-muted-foreground px-0.5 sm:px-2 truncate flex-1 text-center line-clamp-1">
-          {periodLabel}
+          {compactLabel}
         </span>
         <Button
           size="icon"
