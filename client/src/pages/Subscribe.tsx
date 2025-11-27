@@ -97,9 +97,7 @@ function CheckoutForm({ plan, onBack }: { plan: string; onBack: () => void }) {
       console.log("[Stripe] Confirming payment...");
       const result = await stripe.confirmPayment({
         elements,
-        confirmParams: {
-          return_url: `${window.location.origin}/payment-success`,
-        },
+        redirect: "if_required",
       });
 
       console.log("[Stripe] Payment result:", result);
@@ -116,16 +114,19 @@ function CheckoutForm({ plan, onBack }: { plan: string; onBack: () => void }) {
           description: result.error.message || "Le paiement a échoué",
           variant: "destructive",
         });
+        setIsProcessing(false);
+      } else if (result.paymentIntent) {
+        console.log("[Stripe] Payment intent status:", result.paymentIntent.status);
+        // Payment succeeded, navigate to success page
+        navigate(`/payment-success?payment_intent=${result.paymentIntent.id}&payment_intent_client_secret=${result.paymentIntent.client_secret}`);
       }
     } catch (err: any) {
       console.error("[Stripe] Payment exception:", err);
-      console.error("[Stripe] Error details:", JSON.stringify(err, null, 2));
       toast({
         title: "Erreur",
         description: err?.message || "Une erreur est survenue lors du traitement du paiement",
         variant: "destructive",
       });
-    } finally {
       setIsProcessing(false);
     }
   };
