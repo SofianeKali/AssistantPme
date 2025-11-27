@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, MapPin, Users, Plus, Mail } from "lucide-react";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, MapPin, Users, Plus, Mail, X } from "lucide-react";
 import { useLocation } from "wouter";
 import {
   Dialog,
@@ -167,6 +167,9 @@ export default function Calendar() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editData, setEditData] = useState<Partial<Appointment>>({});
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEmailContent, setShowEmailContent] = useState(false);
+  const [selectedEmailContent, setSelectedEmailContent] = useState<any>(null);
+  const [emailContentLoading, setEmailContentLoading] = useState(false);
   const [createFormData, setCreateFormData] = useState<Partial<Appointment>>({
     title: "",
     description: "",
@@ -887,19 +890,73 @@ export default function Calendar() {
                       <Button
                         variant="link"
                         className="p-0 h-auto text-sm"
-                        onClick={() => {
-                          setShowAppointmentModal(false);
-                          navigate(`/emails?id=${selectedAppointment.emailId}`);
+                        onClick={async () => {
+                          setEmailContentLoading(true);
+                          try {
+                            const response = await fetch(`/api/emails/${selectedAppointment.emailId}`);
+                            if (!response.ok) throw new Error("Failed to fetch email");
+                            const email = await response.json();
+                            setSelectedEmailContent(email);
+                            setShowEmailContent(true);
+                          } catch (error) {
+                            toast({
+                              title: "Erreur",
+                              description: "Impossible de charger l'email",
+                              variant: "destructive",
+                            });
+                          } finally {
+                            setEmailContentLoading(false);
+                          }
                         }}
+                        disabled={emailContentLoading}
                         data-testid="link-source-email"
                       >
-                        Afficher l'email source
+                        {emailContentLoading ? "Chargement..." : "Afficher l'email source"}
                       </Button>
                     </div>
                   )}
 
+                  {/* Email Content Display */}
+                  {showEmailContent && selectedEmailContent && (
+                    <div className="pt-2 border-t">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-sm font-medium">Contenu de l'email</p>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setShowEmailContent(false)}
+                          data-testid="button-close-email-content"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="bg-muted/50 rounded p-3 space-y-2 max-h-48 overflow-y-auto">
+                        {selectedEmailContent.subject && (
+                          <div>
+                            <p className="text-xs font-medium text-muted-foreground">Objet</p>
+                            <p className="text-sm">{selectedEmailContent.subject}</p>
+                          </div>
+                        )}
+                        {selectedEmailContent.senderName && (
+                          <div>
+                            <p className="text-xs font-medium text-muted-foreground">De</p>
+                            <p className="text-sm">{selectedEmailContent.senderName} &lt;{selectedEmailContent.senderEmail}&gt;</p>
+                          </div>
+                        )}
+                        {selectedEmailContent.body && (
+                          <div>
+                            <p className="text-xs font-medium text-muted-foreground">Message</p>
+                            <p className="text-sm text-muted-foreground whitespace-pre-wrap line-clamp-6">
+                              {selectedEmailContent.body.substring(0, 300)}...
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Description */}
-                  {selectedAppointment.description && (
+                  {selectedAppointment.description && !showEmailContent && (
                     <div className="pt-2 border-t">
                       <p className="text-sm font-medium mb-2">Description</p>
                       <p className="text-sm text-muted-foreground whitespace-pre-wrap">
