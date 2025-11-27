@@ -81,24 +81,25 @@ export default function Documents() {
             </p>
           </div>
           <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setViewMode("list")}
-            data-testid="button-view-list"
-            className={viewMode === "list" ? "bg-muted" : ""}
-          >
-            <List className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setViewMode("grid")}
-            data-testid="button-view-grid"
-            className={viewMode === "grid" ? "bg-muted" : ""}
-          >
-            <Grid className="h-4 w-4" />
-          </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setViewMode("list")}
+              data-testid="button-view-list"
+              className={viewMode === "list" ? "bg-muted" : ""}
+            >
+              <List className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setViewMode("grid")}
+              data-testid="button-view-grid"
+              className={viewMode === "grid" ? "bg-muted" : ""}
+            >
+              <Grid className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
