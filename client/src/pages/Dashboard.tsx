@@ -723,7 +723,7 @@ export default function Dashboard() {
               </div>
             ) : (
               <div className="text-center py-12">
-                <div className="text-4xl mb-2">✓</div>
+                <div className="text-4xl mb-2">📭</div>
                 <p className="text-sm text-muted-foreground">
                   Aucune tâche
                 </p>
