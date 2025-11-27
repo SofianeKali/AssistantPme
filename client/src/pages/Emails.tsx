@@ -144,20 +144,27 @@ export default function Emails() {
 
     // Auto-load and select email if id parameter is present
     if (emailId) {
-      fetch(`/api/emails/${emailId}`, { credentials: "include" })
-        .then(res => res.ok ? res.json() : null)
-        .then(email => {
+      (async () => {
+        try {
+          const res = await fetch(`/api/emails/${emailId}`, { credentials: "include" });
+          if (!res.ok) {
+            throw new Error(`Failed to load email: ${res.status}`);
+          }
+          const email = await res.json();
           if (email) {
             setSelectedEmail(email);
+          } else {
+            throw new Error("No email data received");
           }
-        })
-        .catch(() => {
+        } catch (error) {
+          console.error("Error loading email:", error);
           toast({
             title: "Erreur",
             description: "Impossible de charger l'email",
             variant: "destructive",
           });
-        });
+        }
+      })();
     }
   }, [location, toast]);
 
