@@ -211,6 +211,26 @@ export function AppSidebar() {
                   ? tasksBadgeText !== null
                   : badgeCount !== null && badgeCount > 0;
 
+                // Get icon color based on menu item
+                const getIconColor = (url: string): string => {
+                  switch (url) {
+                    case "/":
+                      return "text-cyan-600";
+                    case "/emails":
+                      return "text-blue-600";
+                    case "/alerts":
+                      return "text-red-600";
+                    case "/tasks":
+                      return "text-blue-600";
+                    case "/calendar":
+                      return "text-green-600";
+                    case "/documents":
+                      return "text-orange-600";
+                    default:
+                      return "text-muted-foreground";
+                  }
+                };
+
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
@@ -223,7 +243,7 @@ export function AppSidebar() {
                         className="flex items-center justify-between w-full"
                       >
                         <div className="flex items-center gap-2">
-                          <item.icon className="h-4 w-4" />
+                          <item.icon className={`h-4 w-4 ${getIconColor(item.url)}`} />
                           <span>{item.title}</span>
                         </div>
                         {showBadge && (
@@ -248,20 +268,36 @@ export function AppSidebar() {
           <SidebarGroupLabel>Gestion</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {filteredConfigMenuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={location === item.url}
-                    data-testid={item.testId}
-                  >
-                    <Link href={item.url}>
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {filteredConfigMenuItems.map((item) => {
+                // Get icon color based on config item
+                const getConfigIconColor = (url: string): string => {
+                  switch (url) {
+                    case "/tags":
+                      return "text-orange-600";
+                    case "/users":
+                      return "text-muted-foreground";
+                    case "/settings":
+                      return "text-muted-foreground";
+                    default:
+                      return "text-muted-foreground";
+                  }
+                };
+
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={location === item.url}
+                      data-testid={item.testId}
+                    >
+                      <Link href={item.url}>
+                        <item.icon className={`h-4 w-4 ${getConfigIconColor(item.url)}`} />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
