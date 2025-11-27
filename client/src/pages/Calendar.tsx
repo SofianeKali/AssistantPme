@@ -42,6 +42,12 @@ interface Appointment {
   endTime: string;
   location?: string;
   status: string;
+  attendees?: string[];
+  aiSuggestions?: {
+    prepTasks: string[];
+    documents: string[];
+    notes: string[];
+  };
 }
 
 export default function Calendar() {
@@ -580,6 +586,51 @@ export default function Calendar() {
                       <p className="text-sm text-muted-foreground whitespace-pre-wrap">
                         {selectedAppointment.description}
                       </p>
+                    </div>
+                  )}
+
+                  {/* AI Suggestions - Preparation Tasks */}
+                  {selectedAppointment.aiSuggestions?.prepTasks && selectedAppointment.aiSuggestions.prepTasks.length > 0 && (
+                    <div className="pt-2 border-t">
+                      <p className="text-sm font-medium mb-2">Tâches de préparation suggérées</p>
+                      <ul className="space-y-1">
+                        {selectedAppointment.aiSuggestions.prepTasks.map((task, i) => (
+                          <li key={i} className="text-sm text-muted-foreground flex gap-2">
+                            <span className="text-primary">•</span>
+                            <span>{task}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* AI Suggestions - Required Documents */}
+                  {selectedAppointment.aiSuggestions?.documents && selectedAppointment.aiSuggestions.documents.length > 0 && (
+                    <div className="pt-2 border-t">
+                      <p className="text-sm font-medium mb-2">Documents requis</p>
+                      <ul className="space-y-1">
+                        {selectedAppointment.aiSuggestions.documents.map((doc, i) => (
+                          <li key={i} className="text-sm text-muted-foreground flex gap-2">
+                            <span className="text-primary">•</span>
+                            <span>{doc}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* AI Suggestions - Notes */}
+                  {selectedAppointment.aiSuggestions?.notes && selectedAppointment.aiSuggestions.notes.length > 0 && (
+                    <div className="pt-2 border-t">
+                      <p className="text-sm font-medium mb-2">Notes importantes</p>
+                      <ul className="space-y-1">
+                        {selectedAppointment.aiSuggestions.notes.map((note, i) => (
+                          <li key={i} className="text-sm text-muted-foreground flex gap-2">
+                            <span className="text-primary">•</span>
+                            <span>{note}</span>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                   )}
 

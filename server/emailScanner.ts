@@ -263,8 +263,27 @@ export class EmailScanner {
                   createdById: account.userId,
                 };
                 
-                await this.storage.createAppointment(appointmentData);
+                const createdAppointment = await this.storage.createAppointment(appointmentData);
                 console.log(`[IMAP] Appointment created successfully: ${appointmentData.title} on ${appointmentDate.toISOString()}`);
+                
+                // Generate AI suggestions for appointment preparation
+                try {
+                  console.log(`[IMAP] Generating AI suggestions for appointment preparation...`);
+                  const aiSuggestions = await generateAppointmentSuggestions({
+                    title: appointmentData.title,
+                    description: appointmentData.description,
+                    attendees: appointmentData.attendees as string[] | undefined,
+                  });
+                  
+                  // Update appointment with AI suggestions
+                  await this.storage.updateAppointment(createdAppointment.id, {
+                    aiSuggestions,
+                  });
+                  console.log(`[IMAP] AI suggestions added to appointment successfully`);
+                } catch (suggestionsError) {
+                  console.error(`[IMAP] Failed to generate AI suggestions:`, suggestionsError);
+                  // Continue processing even if suggestions generation fails
+                }
               } else {
                 console.log(`[IMAP] Appointment date is invalid or in the past, skipping appointment creation`);
               }
