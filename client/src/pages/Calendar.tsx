@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, MapPin, Users, Plus } from "lucide-react";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, MapPin, Users, Plus, Mail } from "lucide-react";
+import { useLocation } from "wouter";
 import {
   Dialog,
   DialogContent,
@@ -51,6 +52,7 @@ interface Appointment {
   location?: string;
   status: string;
   attendees?: string[];
+  emailId?: string;
   aiSuggestions?: {
     prepTasks: string[];
     documents: string[];
@@ -874,6 +876,24 @@ export default function Calendar() {
                           {selectedAppointment.attendees.join(", ")}
                         </p>
                       </div>
+                    </div>
+                  )}
+
+                  {/* Source Email Link */}
+                  {selectedAppointment.emailId && (
+                    <div className="flex items-start gap-3 pt-2 border-t">
+                      <Mail className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                      <Button
+                        variant="link"
+                        className="p-0 h-auto text-sm"
+                        onClick={() => {
+                          setShowAppointmentModal(false);
+                          window.location.href = `/emails?id=${selectedAppointment.emailId}`;
+                        }}
+                        data-testid="link-source-email"
+                      >
+                        Afficher l'email source
+                      </Button>
                     </div>
                   )}
 
