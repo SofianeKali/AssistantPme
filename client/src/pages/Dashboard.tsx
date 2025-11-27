@@ -1038,8 +1038,8 @@ export default function Dashboard() {
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <Mail className="h-6 w-6 text-blue-600" />
-              <h3 className="text-lg font-bold text-blue-600">
+              <Mail className="h-6 w-6 text-purple-600" />
+              <h3 className="text-lg font-bold text-purple-600">
                 Évolution des emails traités
               </h3>
             </div>
@@ -1048,7 +1048,7 @@ export default function Dashboard() {
             </p>
           </div>
         </div>
-        <Card className="shadow-sm hover:shadow-md transition-shadow bg-gradient-to-br from-blue-50/40 to-slate-50/10 dark:from-blue-950/20 dark:to-slate-900/10">
+        <Card className="shadow-sm hover:shadow-md transition-shadow bg-gradient-to-br from-purple-50/40 to-slate-50/10 dark:from-purple-950/20 dark:to-slate-900/10">
           <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4">
             <ChartPeriodControls
               periodType={emailEvolutionPeriod}
@@ -1113,11 +1113,11 @@ export default function Dashboard() {
                 </div>
                 <div className="grid grid-cols-3 gap-3 mt-6 pt-4 border-t">
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-blue-600">{total}</p>
+                    <p className="text-2xl font-bold text-purple-600">{total}</p>
                     <p className="text-xs text-muted-foreground">Total</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-blue-600">
+                    <p className="text-2xl font-bold text-purple-600">
                       {average}
                     </p>
                     <p className="text-xs text-muted-foreground">
