@@ -138,6 +138,31 @@ export default function Tasks() {
     termine: tasks.filter((t) => t.status === "termine"),
   };
 
+  // Apply status filter if selected
+  const getFilteredTasksByStatus = () => {
+    if (!selectedTaskStatus) {
+      return tasksByStatus;
+    }
+    
+    if (selectedTaskStatus === 'urgent') {
+      // Filter by priority = urgent, grouped by status
+      return {
+        nouveau: tasks.filter(t => t.status === 'nouveau' && t.priority === 'urgent'),
+        en_cours: tasks.filter(t => t.status === 'en_cours' && t.priority === 'urgent'),
+        termine: tasks.filter(t => t.status === 'termine' && t.priority === 'urgent'),
+      };
+    }
+    
+    // Filter by status
+    return {
+      nouveau: selectedTaskStatus === 'nouveau' ? tasksByStatus.nouveau : [],
+      en_cours: selectedTaskStatus === 'en_cours' ? tasksByStatus.en_cours : [],
+      termine: selectedTaskStatus === 'termine' ? tasksByStatus.termine : [],
+    };
+  };
+
+  const filteredByStatus = getFilteredTasksByStatus();
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "urgent":
@@ -509,27 +534,27 @@ export default function Tasks() {
 
         {/* Kanban Columns */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {(!selectedTaskStatus || selectedTaskStatus === 'nouveau') && (
+          {(!selectedTaskStatus || selectedTaskStatus === 'nouveau' || selectedTaskStatus === 'urgent') && (
             <StatusColumn
               title="Nouveau"
               icon={Circle}
-              tasks={selectedTaskStatus === 'urgent' ? [] : tasksByStatus.nouveau}
+              tasks={filteredByStatus.nouveau}
               status="nouveau"
             />
           )}
-          {(!selectedTaskStatus || selectedTaskStatus === 'en_cours') && (
+          {(!selectedTaskStatus || selectedTaskStatus === 'en_cours' || selectedTaskStatus === 'urgent') && (
             <StatusColumn
               title="En cours"
               icon={Clock}
-              tasks={selectedTaskStatus === 'urgent' ? [] : tasksByStatus.en_cours}
+              tasks={filteredByStatus.en_cours}
               status="en_cours"
             />
           )}
-          {(!selectedTaskStatus || selectedTaskStatus === 'termine') && (
+          {(!selectedTaskStatus || selectedTaskStatus === 'termine' || selectedTaskStatus === 'urgent') && (
             <StatusColumn
               title="Terminé"
               icon={CheckCircle2}
-              tasks={selectedTaskStatus === 'urgent' ? [] : tasksByStatus.termine}
+              tasks={filteredByStatus.termine}
               status="termine"
             />
           )}
