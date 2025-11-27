@@ -1698,10 +1698,13 @@ export default function Dashboard() {
       <div className="flex flex-col gap-4 mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-semibold text-foreground mb-2">
-              Mon cockpit
-            </h1>
-            <p className="text-sm text-muted-foreground">
+            <div className="flex items-center gap-3 mb-2">
+              <Gauge className="h-8 w-8 text-cyan-600" />
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
+                Mon cockpit
+              </h1>
+            </div>
+            <p className="text-muted-foreground text-lg">
               Vue d'ensemble de votre activité administrative
             </p>
           </div>
