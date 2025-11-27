@@ -1,70 +1,90 @@
-import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  AlertCircle,
-  Zap,
-  Info,
-  RefreshCw,
-  CheckCircle2,
-  Trash2,
-} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { AlertTriangle, CheckCircle, CheckCheck, AlertCircle, Zap, Info, TrendingDown } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useLocation } from "wouter";
+import { useState, useEffect } from "react";
 
 export default function Alerts() {
   const { toast } = useToast();
-  const [severityFilter, setSeverityFilter] = useState<string>("all");
+  const [, setLocation] = useLocation();
+  const [selectedAlerts, setSelectedAlerts] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState<string>("active");
+  const [selectedSeverity, setSelectedSeverity] = useState<string | null>(null);
+  
+  // Reset selection when changing tabs
+  useEffect(() => {
+    setSelectedAlerts([]);
+    setSelectedSeverity(null);
+  }, [activeTab]);
 
-  const { data: alerts, isLoading } = useQuery({
-    queryKey: ["/api/alerts"],
+  const { data: activeAlerts, isLoading: activeLoading } = useQuery<any[]>({
+    queryKey: ["/api/alerts", { resolved: false }],
   });
 
-  const { data: user } = useQuery({
-    queryKey: ["/api/auth/user"],
+  const { data: resolvedAlerts, isLoading: resolvedLoading } = useQuery<any[]>({
+    queryKey: ["/api/alerts", { resolved: true }],
   });
 
-  const resolveAlertsMutation = useMutation({
+  const resolveAlertMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await apiRequest("POST", `/api/alerts/${id}/resolve`, {});
+    },
+    onSuccess: () => {
+      toast({ title: "Alerte résolue" });
+      queryClient.invalidateQueries({ queryKey: ["/api/alerts"] });
+    },
+  });
+
+  const resolveBulkMutation = useMutation({
     mutationFn: async (alertIds: string[]) => {
-      for (const id of alertIds) {
-        await apiRequest(`/api/alerts/${id}`, {
-          method: "PATCH",
-          body: JSON.stringify({ resolved: true }),
-        });
-      }
+      return await apiRequest("POST", `/api/alerts/bulk-resolve`, { alertIds });
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
+      toast({ 
+        title: "Alertes résolues", 
+        description: data.message 
+      });
+      setSelectedAlerts([]);
       queryClient.invalidateQueries({ queryKey: ["/api/alerts"] });
-      toast({ title: "Alertes résolues" });
+    },
+    onError: () => {
+      toast({ 
+        title: "Erreur", 
+        description: "Impossible de résoudre les alertes",
+        variant: "destructive"
+      });
     },
   });
 
-  const generateAlertsMutation = useMutation({
-    mutationFn: () =>
-      apiRequest("/api/alerts/generate", { method: "POST" }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/alerts"] });
-      toast({ title: "Alertes générées" });
-    },
-  });
+  const handleSelectAlert = (alertId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedAlerts([...selectedAlerts, alertId]);
+    } else {
+      setSelectedAlerts(selectedAlerts.filter(id => id !== alertId));
+    }
+  };
 
-  const deleteAlertMutation = useMutation({
-    mutationFn: (alertId: string) =>
-      apiRequest(`/api/alerts/${alertId}`, { method: "DELETE" }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/alerts"] });
-      toast({ title: "Alerte supprimée" });
-    },
-  });
+  const handleSelectAll = (alerts: any[], checked: boolean) => {
+    if (checked) {
+      setSelectedAlerts(alerts.map((a: any) => a.id));
+    } else {
+      setSelectedAlerts([]);
+    }
+  };
+
+  const handleBulkResolve = () => {
+    if (selectedAlerts.length === 0) return;
+    resolveBulkMutation.mutate(selectedAlerts);
+  };
 
   const getSeverityIcon = (severity: string) => {
     switch (severity) {
@@ -80,11 +100,11 @@ export default function Alerts() {
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case "critical":
-        return "text-red-600";
+        return "text-red-600 dark:text-red-400";
       case "warning":
-        return "text-orange-600";
+        return "text-orange-600 dark:text-orange-400";
       default:
-        return "text-blue-600";
+        return "text-blue-600 dark:text-blue-400";
     }
   };
 
@@ -102,183 +122,270 @@ export default function Alerts() {
   const getSeverityBadge = (severity: string) => {
     switch (severity) {
       case "critical":
-        return (
-          <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100">
-            Critique
-          </Badge>
-        );
+        return <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100">Critique</Badge>;
       case "warning":
-        return (
-          <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-100">
-            Attention
-          </Badge>
-        );
+        return <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-100">Attention</Badge>;
       default:
-        return (
-          <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100">
-            Info
-          </Badge>
-        );
+        return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100">Info</Badge>;
     }
   };
 
-  const filteredAlerts = useMemo(() => {
-    if (!alerts) return [];
-    if (severityFilter === "all") return alerts;
-    return alerts.filter((alert: any) => alert.severity === severityFilter);
-  }, [alerts, severityFilter]);
+  const handleAlertClick = (alertId: string) => {
+    setLocation(`/emails?alertId=${alertId}`);
+  };
 
-  const unresolvedAlerts = useMemo(
-    () => filteredAlerts.filter((alert: any) => !alert.resolved),
-    [filteredAlerts]
-  );
+  const AlertList = ({ alerts, isLoading, showResolveButton = true }: any) => {
+    // Filter alerts by selectedSeverity first
+    const toDisplay = selectedSeverity 
+      ? alerts?.filter((a: any) => a.severity === selectedSeverity) 
+      : alerts;
+    
+    // Group alerts by title and calculate totals
+    const groupedAlerts = toDisplay?.reduce((acc: any, alert: any) => {
+      const existingGroup = acc.find((g: any) => g.title === alert.title);
+      if (existingGroup) {
+        existingGroup.totalEmails += alert.emailCount || 0;
+        existingGroup.alerts.push(alert);
+      } else {
+        acc.push({
+          title: alert.title,
+          message: alert.message,
+          severity: alert.severity,
+          totalEmails: alert.emailCount || 0,
+          alerts: [alert],
+          firstAlert: alert,
+        });
+      }
+      return acc;
+    }, []) || [];
+    
+    const allSelected = groupedAlerts?.length > 0 && groupedAlerts.every((g: any) => g.alerts.every((a: any) => selectedAlerts.includes(a.id)));
+    const someSelected = groupedAlerts?.some((g: any) => g.alerts.some((a: any) => selectedAlerts.includes(a.id)));
 
-  const isAdmin = user?.role === "admin";
+    const handleSelectAllGrouped = (checked: boolean) => {
+      if (checked) {
+        const allIds = groupedAlerts.flatMap((g: any) => g.alerts.map((a: any) => a.id));
+        setSelectedAlerts(allIds);
+      } else {
+        setSelectedAlerts([]);
+      }
+    };
 
-  return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold text-foreground mb-2">
-            Alertes
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Gérez vos alertes système et notifications
-          </p>
-        </div>
-        {isAdmin && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => generateAlertsMutation.mutate()}
-            disabled={generateAlertsMutation.isPending}
-            data-testid="button-generate-alerts"
-          >
-            <RefreshCw
-              className={`h-4 w-4 mr-2 ${
-                generateAlertsMutation.isPending ? "animate-spin" : ""
-              }`}
-            />
-            Générer
-          </Button>
+    const handleSelectGroup = (group: any, checked: boolean) => {
+      const groupIds = group.alerts.map((a: any) => a.id);
+      if (checked) {
+        setSelectedAlerts([...new Set([...selectedAlerts, ...groupIds])]);
+      } else {
+        setSelectedAlerts(selectedAlerts.filter((id: string) => !groupIds.includes(id)));
+      }
+    };
+
+    return (
+      <div className="space-y-4">
+        {/* Bulk actions bar */}
+        {showResolveButton && groupedAlerts && groupedAlerts.length > 0 && (
+          <div className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg border transition-all">
+            <div className="flex items-center gap-3">
+              <Checkbox
+                checked={allSelected ? true : someSelected ? 'indeterminate' : false}
+                onCheckedChange={handleSelectAllGrouped}
+                data-testid="checkbox-select-all"
+              />
+              <span className="text-sm font-medium text-muted-foreground">
+                {selectedAlerts.length > 0 
+                  ? `${selectedAlerts.length} alerte(s) sélectionnée(s)`
+                  : "Tout sélectionner"}
+              </span>
+            </div>
+            {selectedAlerts.length > 0 && (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleBulkResolve}
+                disabled={resolveBulkMutation.isPending}
+                data-testid="button-bulk-resolve"
+              >
+                <CheckCheck className="h-4 w-4 mr-2" />
+                Résoudre la sélection
+              </Button>
+            )}
+          </div>
         )}
-      </div>
 
-      {/* Filters */}
-      <div className="flex items-center gap-4">
-        <label className="text-sm font-medium text-foreground">Filtre:</label>
-        <Select value={severityFilter} onValueChange={setSeverityFilter}>
-          <SelectTrigger className="w-48" data-testid="select-severity">
-            <SelectValue placeholder="Filtrer par sévérité" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Toutes les alertes</SelectItem>
-            <SelectItem value="critical">Critiques</SelectItem>
-            <SelectItem value="warning">Attention</SelectItem>
-            <SelectItem value="info">Info</SelectItem>
-          </SelectContent>
-        </Select>
-
-        {unresolvedAlerts.length > 0 && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              const ids = unresolvedAlerts.map((a: any) => a.id);
-              resolveAlertsMutation.mutate(ids);
-            }}
-            disabled={resolveAlertsMutation.isPending}
-            data-testid="button-resolve-all"
-          >
-            <CheckCircle2 className="h-4 w-4 mr-2" />
-            Tout résoudre
-          </Button>
-        )}
-      </div>
-
-      {/* Alerts List */}
-      <div className="space-y-3">
         {isLoading ? (
-          <Card className="bg-gradient-to-br from-slate-50/30 to-slate-50/10 dark:from-slate-900/20 dark:to-slate-900/5">
-            <CardContent className="pt-6">
-              <p className="text-muted-foreground">Chargement...</p>
-            </CardContent>
-          </Card>
-        ) : filteredAlerts.length === 0 ? (
-          <Card className="bg-gradient-to-br from-slate-50/30 to-slate-50/10 dark:from-slate-900/20 dark:to-slate-900/5">
-            <CardContent className="pt-6 text-center">
-              <p className="text-muted-foreground">Aucune alerte</p>
-            </CardContent>
-          </Card>
-        ) : (
-          filteredAlerts.map((alert: any) => {
-            const SeverityIcon = getSeverityIcon(alert.severity);
+          [...Array(5)].map((_, i) => <Skeleton key={i} className="h-24" />)
+        ) : groupedAlerts && groupedAlerts.length > 0 ? (
+          groupedAlerts.map((group: any) => {
+            const SeverityIcon = getSeverityIcon(group.severity);
+            const groupSelected = group.alerts.every((a: any) => selectedAlerts.includes(a.id));
+            const groupSomeSelected = group.alerts.some((a: any) => selectedAlerts.includes(a.id));
+            const firstAlert = group.firstAlert;
+            
             return (
               <Card
-                key={alert.id}
-                className={`bg-gradient-to-br from-slate-50/30 to-slate-50/10 dark:from-slate-900/20 dark:to-slate-900/5 hover-elevate cursor-pointer transition-all border-l-4 ${getSeverityBgColor(
-                  alert.severity
-                )}`}
-                data-testid={`alert-${alert.id}`}
+                key={group.title}
+                className={`hover-elevate cursor-pointer transition-all border-l-4 ${getSeverityBgColor(group.severity)}`}
+                data-testid={`alert-group-${group.title}`}
               >
                 <div className="p-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-3 flex-1">
+                  <div className="flex items-start gap-4">
+                    {showResolveButton && (
+                      <Checkbox
+                        checked={groupSelected ? true : groupSomeSelected ? 'indeterminate' : false}
+                        onCheckedChange={(checked) => handleSelectGroup(group, checked as boolean)}
+                        onClick={(e) => e.stopPropagation()}
+                        data-testid={`checkbox-alert-group-${group.title}`}
+                        className="mt-1"
+                      />
+                    )}
+                    <div 
+                      className="flex items-start gap-3 flex-1"
+                      onClick={() => handleAlertClick(firstAlert.id)}
+                    >
                       <div className="p-2 rounded-lg bg-background/80 mt-0.5">
-                        <SeverityIcon
-                          className={`h-5 w-5 ${getSeverityColor(
-                            alert.severity
-                          )}`}
-                        />
+                        <SeverityIcon className={`h-5 w-5 ${getSeverityColor(group.severity)}`} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2 mb-1">
-                          <h3 className="font-semibold truncate">
-                            {alert.title}
-                          </h3>
-                          {getSeverityBadge(alert.severity)}
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <h3 className="text-sm font-bold">{group.title}</h3>
+                          {getSeverityBadge(group.severity)}
                         </div>
-                        <p className="text-sm text-muted-foreground mb-2">
-                          {alert.message}
-                        </p>
-                        {alert.emailCount !== undefined && (
-                          <Badge variant="secondary" className="text-xs">
-                            {alert.emailCount} email
-                            {alert.emailCount !== 1 ? "s" : ""}
+                        <p className="text-sm text-muted-foreground mb-2">{group.message}</p>
+                        <div className="flex items-center gap-4">
+                          <div className="text-xs text-muted-foreground">
+                            {format(new Date(firstAlert.createdAt), "dd MMMM yyyy à HH:mm", { locale: fr })}
+                            {firstAlert.resolvedAt && (
+                              <span className="ml-2 font-medium">
+                                • Résolu le {format(new Date(firstAlert.resolvedAt), "dd MMMM yyyy à HH:mm", { locale: fr })}
+                              </span>
+                            )}
+                          </div>
+                          <Badge variant="secondary" className="ml-auto">
+                            {group.totalEmails} email{group.totalEmails > 1 ? 's' : ''}
                           </Badge>
-                        )}
+                        </div>
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      {!alert.resolved && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => resolveAlertsMutation.mutate([alert.id])}
-                          disabled={resolveAlertsMutation.isPending}
-                          data-testid="button-resolve-alert"
-                        >
-                          <CheckCircle2 className="h-4 w-4" />
-                        </Button>
-                      )}
+                    {showResolveButton && (
                       <Button
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
-                        onClick={() => deleteAlertMutation.mutate(alert.id)}
-                        disabled={deleteAlertMutation.isPending}
-                        data-testid="button-delete-alert"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          resolveAlertMutation.mutate(firstAlert.id);
+                        }}
+                        disabled={resolveAlertMutation.isPending}
+                        data-testid={`button-resolve-${firstAlert.id}`}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Résoudre
                       </Button>
-                    </div>
+                    )}
                   </div>
                 </div>
               </Card>
             );
           })
+        ) : (
+          <div className="text-center py-16 bg-muted/20 rounded-lg border border-dashed">
+            <div className="text-4xl mb-3">📭</div>
+            <p className="text-sm text-muted-foreground font-medium">
+              {showResolveButton ? "Aucune alerte active" : "Aucune alerte résolue"}
+            </p>
+            {showResolveButton && (
+              <p className="text-xs text-muted-foreground/60 mt-1">Les alertes s'afficheront ici</p>
+            )}
+          </div>
         )}
       </div>
+    );
+  };
+
+  return (
+    <div className="p-6 space-y-6">
+      {/* Header avec gradient */}
+      <div className="space-y-4">
+        <div>
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
+            Alertes
+          </h1>
+          <p className="text-muted-foreground text-lg mt-1">
+            Suivez les alertes et notifications importantes
+          </p>
+        </div>
+
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+          <Card className="border-l-4 border-l-red-500 hover-elevate cursor-pointer transition-all" onClick={() => setSelectedSeverity(selectedSeverity === "critical" ? null : "critical")} data-testid="card-severity-critical">
+            <div className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Critique</p>
+                  <p className="text-2xl font-bold text-red-600">
+                    {activeAlerts?.filter((a: any) => a.severity === "critical").length || 0}
+                  </p>
+                </div>
+                <AlertCircle className="h-8 w-8 text-red-500/30" />
+              </div>
+            </div>
+          </Card>
+          <Card className="border-l-4 border-l-orange-500 hover-elevate cursor-pointer transition-all" onClick={() => setSelectedSeverity(selectedSeverity === "warning" ? null : "warning")} data-testid="card-severity-warning">
+            <div className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Attention</p>
+                  <p className="text-2xl font-bold text-orange-600">
+                    {activeAlerts?.filter((a: any) => a.severity === "warning").length || 0}
+                  </p>
+                </div>
+                <Zap className="h-8 w-8 text-orange-500/30" />
+              </div>
+            </div>
+          </Card>
+          <Card className="border-l-4 border-l-blue-500 hover-elevate cursor-pointer transition-all" onClick={() => setSelectedSeverity(selectedSeverity === "info" ? null : "info")} data-testid="card-severity-info">
+            <div className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Info</p>
+                  <p className="text-2xl font-bold text-blue-600">
+                    {activeAlerts?.filter((a: any) => a.severity === "info").length || 0}
+                  </p>
+                </div>
+                <Info className="h-8 w-8 text-blue-500/30" />
+              </div>
+            </div>
+          </Card>
+        </div>
+      </div>
+
+      <Tabs defaultValue="active" className="space-y-6" onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="active" data-testid="tab-active-alerts">
+            Actives
+            {activeAlerts && activeAlerts.length > 0 && (
+              <Badge className="ml-2 h-5 min-w-5 px-1.5 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100">
+                {activeAlerts.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="resolved" data-testid="tab-resolved-alerts">
+            Résolues
+            {resolvedAlerts && resolvedAlerts.length > 0 && (
+              <Badge className="ml-2 h-5 min-w-5 px-1.5 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
+                {resolvedAlerts.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="active">
+          <AlertList alerts={activeAlerts} isLoading={activeLoading} showResolveButton={true} />
+        </TabsContent>
+
+        <TabsContent value="resolved">
+          <AlertList alerts={resolvedAlerts} isLoading={resolvedLoading} showResolveButton={false} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
