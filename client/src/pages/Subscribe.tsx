@@ -294,8 +294,8 @@ export default function Subscribe() {
   return (
     <>
       <LandingNavbar />
-      <div className="min-h-screen bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-pink-500/10 dark:from-blue-900/20 dark:via-purple-900/10 dark:to-pink-900/20 flex items-center justify-center p-6 pt-24 pb-16 relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-400/10 via-transparent to-pink-400/10 dark:from-blue-600/10 dark:to-pink-600/10 pointer-events-none" />
+      <div className="min-h-screen bg-background flex items-center justify-center p-6 pt-24 pb-16 relative">
+        <div className="absolute inset-0 hidden" />
         <div className="w-full max-w-2xl relative z-10">
           <div className="text-center mb-8">
             <h1 className="text-3xl md:text-4xl font-semibold mb-2 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent dark:from-blue-400 dark:via-purple-400 dark:to-pink-400">

@@ -80,8 +80,8 @@ export default function Contact() {
   return (
     <>
       <LandingNavbar />
-      <div className="min-h-screen bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-pink-500/10 dark:from-blue-900/20 dark:via-purple-900/10 dark:to-pink-900/20 pt-16 relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-400/10 via-transparent to-pink-400/10 dark:from-blue-600/10 dark:to-pink-600/10 pointer-events-none" />
+      <div className="min-h-screen bg-background pt-16 relative">
+        <div className="absolute inset-0 hidden" />
         {/* Header */}
         <div className="border-b border-border bg-background/80 backdrop-blur-sm relative z-10">
           <div className="container mx-auto px-6 py-16">
