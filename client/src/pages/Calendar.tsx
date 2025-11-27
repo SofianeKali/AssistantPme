@@ -298,10 +298,10 @@ export default function Calendar() {
                 {/* Sticky Header with Days */}
                 <div className="grid gap-1 sticky top-0 z-50 bg-card mb-2" style={{ gridTemplateColumns: "60px repeat(7, 1fr)" }}>
                   <div className="font-semibold text-xs text-center p-2">Heure</div>
-                  {getWeekDays().map((day) => (
+                  {getWeekDays().map((day, idx) => (
                     <div
                       key={day.toISOString()}
-                      className={`font-semibold text-xs text-center p-2 rounded ${
+                      className={`font-semibold text-xs text-center p-2 rounded border-r border-dashed border-border ${
                         isSameDay(day, selectedDate) ? "bg-primary text-primary-foreground" : "bg-muted"
                       }`}
                     >
@@ -330,7 +330,7 @@ export default function Calendar() {
                             return (
                               <div
                                 key={`${day.toISOString()}-${hour}`}
-                                className="border-t p-1 min-h-16 relative overflow-hidden"
+                                className="border-t border-r border-dashed border-border p-1 min-h-16 relative overflow-hidden"
                               >
                                 {dayAppointments.map((apt) => (
                                   <div
