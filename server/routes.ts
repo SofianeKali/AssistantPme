@@ -16,7 +16,9 @@ import {
   insertEmailSchema,
   insertAlertSchema,
   insertUserSchema,
+  insertInvoiceSchema,
 } from "@shared/schema";
+import { generateInvoiceHTML } from "./invoiceGenerator";
 import { EmailScanner } from "./emailScanner";
 import { processDocument } from "./ocrService";
 import { downloadFileFromDrive } from "./googleDrive";
@@ -2901,7 +2903,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log(`[Stripe] Received event: ${event.type}`);
 
     try {
-      if (event.type === "payment_intent.succeeded") {
+      if (event.type === "charge.succeeded") {
+        const charge = event.data.object as Stripe.Charge;
+        
+        // Find user by Stripe customer ID
+        if (charge.customer) {
+          const users = await storage.getAllUsers();
+          const user = users.find(u => u.stripeCustomerId === charge.customer);
+          
+          if (user && user.subscriptionPlan) {
+            // Create invoice for this payment
+            const invoiceNumber = `INV-${Date.now().toString().slice(-8)}`;
+            const invoice = await storage.createInvoice({
+              companyId: user.companyId!,
+              userId: user.id,
+              stripeInvoiceId: charge.id,
+              amount: charge.amount,
+              currency: charge.currency || "eur",
+              plan: user.subscriptionPlan,
+              invoiceNumber,
+              paidAt: new Date(),
+              dueDate: new Date(),
+            });
+            console.log(`[Stripe] Created invoice ${invoiceNumber} for user ${user.email}`);
+          }
+        }
+      } else if (event.type === "payment_intent.succeeded") {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
 
         // Check if this is a subscription initial payment
@@ -3218,6 +3245,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "Erreur lors de la réactivation de l'abonnement",
         error: String(error),
       });
+    }
+  });
+
+  // Invoices endpoints
+  app.get("/api/invoices", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const invoices = await storage.getInvoicesByUserId(user.id);
+      res.json(invoices);
+    } catch (error) {
+      console.error("[API] Error fetching invoices:", error);
+      res.status(500).json({ message: "Erreur lors de la récupération des factures" });
+    }
+  });
+
+  app.get("/api/invoices/:id/download", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const invoice = await storage.getInvoiceById(req.params.id);
+      
+      if (!invoice) {
+        return res.status(404).json({ message: "Facture non trouvée" });
+      }
+
+      // Verify user owns this invoice
+      if (invoice.userId !== user.id) {
+        return res.status(403).json({ message: "Accès refusé" });
+      }
+
+      // Generate invoice HTML
+      const userData = await storage.getUser(user.id);
+      if (!userData) {
+        return res.status(404).json({ message: "Utilisateur non trouvé" });
+      }
+
+      const invoiceHTML = generateInvoiceHTML({
+        invoiceNumber: invoice.invoiceNumber || "INV-UNKNOWN",
+        amount: parseInt(invoice.amount.toString()),
+        currency: invoice.currency || "eur",
+        plan: invoice.plan,
+        firstName: userData.firstName || "Client",
+        lastName: userData.lastName || "",
+        email: userData.email || "",
+        invoiceDate: invoice.createdAt || new Date(),
+        dueDate: invoice.dueDate || new Date(),
+      });
+
+      // Send as HTML with option to save as PDF
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="facture-${invoice.invoiceNumber}.html"`);
+      res.send(invoiceHTML);
+    } catch (error) {
+      console.error("[API] Error downloading invoice:", error);
+      res.status(500).json({ message: "Erreur lors du téléchargement de la facture" });
     }
   });
 

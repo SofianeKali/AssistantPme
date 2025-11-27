@@ -95,6 +95,15 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Download } from "lucide-react";
 
 // Liste d'icônes Lucide disponibles pour les catégories
 const AVAILABLE_ICONS = [
@@ -1202,6 +1211,14 @@ export default function Settings() {
         description: error.message || "Impossible de réactiver l'abonnement",
         variant: "destructive",
       });
+    },
+  });
+
+  // Fetch invoices
+  const { data: invoices = [], isLoading: invoicesLoading } = useQuery({
+    queryKey: ["/api/invoices"],
+    queryFn: async () => {
+      return await apiRequest("GET", "/api/invoices", {});
     },
   });
 
@@ -3268,6 +3285,70 @@ export default function Settings() {
                         )}
                       </Button>
                     </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Invoices Section */}
+              {user.subscriptionPlan && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Receipt className="h-5 w-5" />
+                      Factures
+                    </CardTitle>
+                    <CardDescription>
+                      Historique de vos factures et paiements
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {invoicesLoading ? (
+                      <div className="space-y-2">
+                        <Skeleton className="h-12 w-full" />
+                        <Skeleton className="h-12 w-full" />
+                      </div>
+                    ) : invoices.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">Aucune facture disponible</p>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Numéro</TableHead>
+                              <TableHead>Montant</TableHead>
+                              <TableHead>Plan</TableHead>
+                              <TableHead>Date</TableHead>
+                              <TableHead>Action</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {invoices.map((invoice: any) => (
+                              <TableRow key={invoice.id}>
+                                <TableCell className="font-medium">{invoice.invoiceNumber}</TableCell>
+                                <TableCell>{(invoice.amount / 100).toFixed(2)} €</TableCell>
+                                <TableCell className="capitalize">{invoice.plan}</TableCell>
+                                <TableCell>
+                                  {new Date(invoice.createdAt).toLocaleDateString('fr-FR')}
+                                </TableCell>
+                                <TableCell>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      window.location.href = `/api/invoices/${invoice.id}/download`;
+                                    }}
+                                    data-testid={`button-download-invoice-${invoice.id}`}
+                                  >
+                                    <Download className="h-4 w-4 mr-2" />
+                                    Télécharger
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               )}
