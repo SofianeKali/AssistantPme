@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, MapPin, Users } from "lucide-react";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, MapPin, Users, Plus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -57,6 +57,15 @@ export default function Calendar() {
   const [showAppointmentModal, setShowAppointmentModal] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editData, setEditData] = useState<Partial<Appointment>>({});
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createFormData, setCreateFormData] = useState<Partial<Appointment>>({
+    title: "",
+    description: "",
+    location: "",
+    status: "planifie",
+    startTime: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+    endTime: format(addHours(new Date(), 1), "yyyy-MM-dd'T'HH:mm"),
+  });
   const { toast } = useToast();
 
   // Fetch appointments
@@ -102,6 +111,43 @@ export default function Calendar() {
     },
     onError: (error) => {
       toast({ title: "Erreur", description: "Impossible de modifier le rendez-vous", variant: "destructive" });
+      console.error(error);
+    },
+  });
+
+  // Create appointment mutation
+  const createAppointmentMutation = useMutation({
+    mutationFn: async (data: Partial<Appointment>) => {
+      const response = await fetch("/api/appointments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: data.title,
+          description: data.description,
+          location: data.location,
+          status: data.status || "planifie",
+          startTime: new Date(data.startTime!),
+          endTime: new Date(data.endTime!),
+        }),
+      });
+      if (!response.ok) throw new Error("Failed to create appointment");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/appointments"] });
+      setShowCreateModal(false);
+      setCreateFormData({
+        title: "",
+        description: "",
+        location: "",
+        status: "planifie",
+        startTime: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+        endTime: format(addHours(new Date(), 1), "yyyy-MM-dd'T'HH:mm"),
+      });
+      toast({ title: "Rendez-vous créé", description: "Le rendez-vous a été créé avec succès." });
+    },
+    onError: (error) => {
+      toast({ title: "Erreur", description: "Impossible de créer le rendez-vous", variant: "destructive" });
       console.error(error);
     },
   });
@@ -189,31 +235,41 @@ export default function Calendar() {
         <p className="text-muted-foreground text-lg">Gestion de vos rendez-vous et événements</p>
       </div>
 
-      {/* View Mode Toggle */}
-      <div className="flex gap-2">
+      {/* View Mode Toggle and Create Button */}
+      <div className="flex gap-2 items-center justify-between">
+        <div className="flex gap-2">
+          <Button
+            variant={viewMode === "day" ? "default" : "outline"}
+            onClick={() => setViewMode("day")}
+            size="sm"
+            data-testid="button-view-day"
+          >
+            Jour
+          </Button>
+          <Button
+            variant={viewMode === "week" ? "default" : "outline"}
+            onClick={() => setViewMode("week")}
+            size="sm"
+            data-testid="button-view-week"
+          >
+            Semaine
+          </Button>
+          <Button
+            variant={viewMode === "month" ? "default" : "outline"}
+            onClick={() => setViewMode("month")}
+            size="sm"
+            data-testid="button-view-month"
+          >
+            Mois
+          </Button>
+        </div>
         <Button
-          variant={viewMode === "day" ? "default" : "outline"}
-          onClick={() => setViewMode("day")}
+          onClick={() => setShowCreateModal(true)}
           size="sm"
-          data-testid="button-view-day"
+          data-testid="button-create-appointment"
         >
-          Jour
-        </Button>
-        <Button
-          variant={viewMode === "week" ? "default" : "outline"}
-          onClick={() => setViewMode("week")}
-          size="sm"
-          data-testid="button-view-week"
-        >
-          Semaine
-        </Button>
-        <Button
-          variant={viewMode === "month" ? "default" : "outline"}
-          onClick={() => setViewMode("month")}
-          size="sm"
-          data-testid="button-view-month"
-        >
-          Mois
+          <Plus className="h-4 w-4 mr-1" />
+          Créer RDV
         </Button>
       </div>
 
@@ -473,6 +529,100 @@ export default function Calendar() {
           </Card>
         </>
       )}
+
+      {/* Create Appointment Modal */}
+      <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Créer un rendez-vous</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Titre *</label>
+              <Input
+                value={createFormData.title || ""}
+                onChange={(e) => setCreateFormData({ ...createFormData, title: e.target.value })}
+                placeholder="Titre du rendez-vous"
+                data-testid="input-create-title"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Date et heure de début *</label>
+              <Input
+                type="datetime-local"
+                value={createFormData.startTime || ""}
+                onChange={(e) => setCreateFormData({ ...createFormData, startTime: e.target.value })}
+                data-testid="input-create-start-time"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Date et heure de fin *</label>
+              <Input
+                type="datetime-local"
+                value={createFormData.endTime || ""}
+                onChange={(e) => setCreateFormData({ ...createFormData, endTime: e.target.value })}
+                data-testid="input-create-end-time"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Lieu</label>
+              <Input
+                value={createFormData.location || ""}
+                onChange={(e) => setCreateFormData({ ...createFormData, location: e.target.value })}
+                placeholder="Lieu du rendez-vous"
+                data-testid="input-create-location"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Description</label>
+              <Textarea
+                value={createFormData.description || ""}
+                onChange={(e) => setCreateFormData({ ...createFormData, description: e.target.value })}
+                placeholder="Description du rendez-vous"
+                data-testid="input-create-description"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Statut</label>
+              <select
+                value={createFormData.status || "planifie"}
+                onChange={(e) => setCreateFormData({ ...createFormData, status: e.target.value })}
+                className="w-full border rounded-md p-2 text-sm"
+                data-testid="input-create-status"
+              >
+                <option value="planifie">Planifié</option>
+                <option value="confirme">Confirmé</option>
+                <option value="annule">Annulé</option>
+                <option value="termine">Terminé</option>
+              </select>
+            </div>
+            <div className="flex gap-2 pt-4">
+              <Button
+                className="flex-1"
+                onClick={() => {
+                  if (!createFormData.title || !createFormData.startTime || !createFormData.endTime) {
+                    toast({ title: "Erreur", description: "Veuillez remplir les champs obligatoires", variant: "destructive" });
+                    return;
+                  }
+                  createAppointmentMutation.mutate(createFormData);
+                }}
+                disabled={createAppointmentMutation.isPending}
+                data-testid="button-save-create"
+              >
+                {createAppointmentMutation.isPending ? "Création..." : "Créer"}
+              </Button>
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setShowCreateModal(false)}
+                data-testid="button-cancel-create"
+              >
+                Annuler
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Appointment Details Modal */}
       <Dialog open={showAppointmentModal} onOpenChange={setShowAppointmentModal}>
