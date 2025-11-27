@@ -2065,31 +2065,24 @@ export default function Settings() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="category-key">Clé (identifiant unique)</Label>
-                  <Input
-                    id="category-key"
-                    placeholder="ex: contrat"
-                    value={newCategory.key}
-                    onChange={(e) =>
-                      setNewCategory({ ...newCategory, key: e.target.value })
-                    }
-                    data-testid="input-category-key"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="category-label">Libellé</Label>
-                  <Input
-                    id="category-label"
-                    placeholder="ex: Contrats"
-                    value={newCategory.label}
-                    onChange={(e) =>
-                      setNewCategory({ ...newCategory, label: e.target.value })
-                    }
-                    data-testid="input-category-label"
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="category-label">Libellé</Label>
+                <Input
+                  id="category-label"
+                  placeholder="ex: Contrats"
+                  value={newCategory.label}
+                  onChange={(e) => {
+                    const label = e.target.value;
+                    const key = label
+                      .toLowerCase()
+                      .normalize('NFD')
+                      .replace(/[\u0300-\u036f]/g, '')
+                      .replace(/[^a-z0-9]+/g, '_')
+                      .replace(/^_+|_+$/g, '');
+                    setNewCategory({ ...newCategory, label, key })
+                  }}
+                  data-testid="input-category-label"
+                />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -2272,7 +2265,6 @@ export default function Settings() {
                 onClick={() => addCategoryMutation.mutate(newCategory)}
                 disabled={
                   addCategoryMutation.isPending ||
-                  !newCategory.key ||
                   !newCategory.label
                 }
                 data-testid="button-add-category"
@@ -2377,31 +2369,17 @@ export default function Settings() {
               </DialogHeader>
               {editingCategory && (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="edit-category-key">Clé (identifiant unique)</Label>
-                      <Input
-                        id="edit-category-key"
-                        value={editingCategory.key}
-                        onChange={(e) =>
-                          setEditingCategory({ ...editingCategory, key: e.target.value })
-                        }
-                        placeholder="ex: devis, facture"
-                        data-testid="input-edit-category-key"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="edit-category-label">Libellé</Label>
-                      <Input
-                        id="edit-category-label"
-                        value={editingCategory.label}
-                        onChange={(e) =>
-                          setEditingCategory({ ...editingCategory, label: e.target.value })
-                        }
-                        placeholder="ex: Devis, Facture"
-                        data-testid="input-edit-category-label"
-                      />
-                    </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-category-label">Libellé</Label>
+                    <Input
+                      id="edit-category-label"
+                      value={editingCategory.label}
+                      onChange={(e) =>
+                        setEditingCategory({ ...editingCategory, label: e.target.value })
+                      }
+                      placeholder="ex: Devis, Facture"
+                      data-testid="input-edit-category-label"
+                    />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
