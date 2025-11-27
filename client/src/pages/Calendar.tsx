@@ -465,19 +465,19 @@ export default function Calendar() {
           {/* Week View - Timeline Style */}
           {viewMode === "week" && (
             <Card>
-              <CardContent className="p-4">
+              <CardContent className="p-2 md:p-4">
                 {/* Sticky Header with Days */}
-                <div className="grid gap-1 sticky top-0 z-50 bg-card mb-2" style={{ gridTemplateColumns: "60px repeat(7, 1fr)" }}>
-                  <div className="font-semibold text-xs text-center p-2">Heure</div>
+                <div className="grid gap-0.5 md:gap-1 sticky top-0 z-50 bg-card mb-1 md:mb-2" style={{ gridTemplateColumns: "40px md:60px repeat(7, 1fr)" }}>
+                  <div className="font-semibold text-xs text-center p-1 md:p-2">Heure</div>
                   {getWeekDays().map((day, idx) => (
                     <div
                       key={day.toISOString()}
-                      className={`font-semibold text-xs text-center p-2 rounded border-r border-dashed border-border ${
+                      className={`font-semibold text-xs text-center p-1 md:p-2 rounded border-r border-dashed border-border ${
                         isSameDay(day, selectedDate) ? "bg-primary text-primary-foreground" : "bg-muted"
                       }`}
                     >
-                      <div>{format(day, "EEE", { locale: fr })}</div>
-                      <div className="text-sm">{format(day, "d")}</div>
+                      <div className="text-xs md:text-sm">{format(day, "EEE", { locale: fr })}</div>
+                      <div className="text-xs md:text-sm">{format(day, "d")}</div>
                     </div>
                   ))}
                 </div>
@@ -485,11 +485,11 @@ export default function Calendar() {
                 {/* Scrollable Content */}
                 <div className="overflow-x-auto">
                   <div className="inline-block min-w-full">
-                    <div className="grid gap-1" style={{ gridTemplateColumns: "60px repeat(7, 1fr)" }}>
+                    <div className="grid gap-0.5 md:gap-1" style={{ gridTemplateColumns: "40px md:60px repeat(7, 1fr)" }}>
                       {/* Hours and appointments */}
                       {getHours().map((hour) => (
                         <div key={`row-${hour}`} className="contents">
-                          <div className="text-xs text-muted-foreground text-center p-2 border-t">
+                          <div className="text-xs text-muted-foreground text-center p-1 md:p-2 border-t">
                             {String(hour).padStart(2, "0")}:00
                           </div>
                           {getWeekDays().map((day) => {
@@ -501,12 +501,12 @@ export default function Calendar() {
                             return (
                               <div
                                 key={`${day.toISOString()}-${hour}`}
-                                className="border-t border-r border-dashed border-border p-1 min-h-16 relative overflow-hidden"
+                                className="border-t border-r border-dashed border-border p-0.5 md:p-1 min-h-12 md:min-h-16 relative overflow-hidden"
                               >
                                 {dayAppointments.map((apt) => (
                                   <div
                                     key={apt.id}
-                                    className={`text-xs p-1 rounded border mb-1 cursor-pointer hover-elevate truncate max-w-full ${getStatusColor(apt.status)}`}
+                                    className={`text-xs p-0.5 md:p-1 rounded border mb-0.5 md:mb-1 cursor-pointer hover-elevate truncate max-w-full ${getStatusColor(apt.status)}`}
                                     title={apt.title}
                                     data-testid={`appointment-${apt.id}`}
                                     onClick={() => {
@@ -514,7 +514,7 @@ export default function Calendar() {
                                       setShowAppointmentModal(true);
                                     }}
                                   >
-                                    <div className="font-medium truncate">{apt.title}</div>
+                                    <div className="font-medium truncate text-xs">{apt.title}</div>
                                     <div className="text-xs">
                                       {format(new Date(apt.startTime), "HH:mm", { locale: fr })}
                                     </div>
