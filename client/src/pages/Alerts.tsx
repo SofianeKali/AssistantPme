@@ -140,18 +140,55 @@ export default function Alerts() {
       ? alerts?.filter((a: any) => a.severity === selectedSeverity) 
       : alerts;
     
-    const allSelected = toDisplay?.length > 0 && toDisplay.every((a: any) => selectedAlerts.includes(a.id));
-    const someSelected = toDisplay?.some((a: any) => selectedAlerts.includes(a.id));
+    // Group alerts by title and calculate totals
+    const groupedAlerts = toDisplay?.reduce((acc: any, alert: any) => {
+      const existingGroup = acc.find((g: any) => g.title === alert.title);
+      if (existingGroup) {
+        existingGroup.totalEmails += alert.emailCount || 0;
+        existingGroup.alerts.push(alert);
+      } else {
+        acc.push({
+          title: alert.title,
+          message: alert.message,
+          severity: alert.severity,
+          totalEmails: alert.emailCount || 0,
+          alerts: [alert],
+          firstAlert: alert,
+        });
+      }
+      return acc;
+    }, []) || [];
+    
+    const allSelected = groupedAlerts?.length > 0 && groupedAlerts.every((g: any) => g.alerts.every((a: any) => selectedAlerts.includes(a.id)));
+    const someSelected = groupedAlerts?.some((g: any) => g.alerts.some((a: any) => selectedAlerts.includes(a.id)));
+
+    const handleSelectAllGrouped = (checked: boolean) => {
+      if (checked) {
+        const allIds = groupedAlerts.flatMap((g: any) => g.alerts.map((a: any) => a.id));
+        setSelectedAlerts(allIds);
+      } else {
+        setSelectedAlerts([]);
+      }
+    };
+
+    const handleSelectGroup = (group: any, checked: boolean) => {
+      const groupIds = group.alerts.map((a: any) => a.id);
+      if (checked) {
+        setSelectedAlerts([...new Set([...selectedAlerts, ...groupIds])]);
+      } else {
+        setSelectedAlerts(selectedAlerts.filter((id: string) => !groupIds.includes(id)));
+      }
+    };
 
     return (
       <div className="space-y-4">
         {/* Bulk actions bar */}
-        {showResolveButton && toDisplay && toDisplay.length > 0 && (
+        {showResolveButton && groupedAlerts && groupedAlerts.length > 0 && (
           <div className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg border transition-all">
             <div className="flex items-center gap-3">
               <Checkbox
                 checked={allSelected ? true : someSelected ? 'indeterminate' : false}
-                onCheckedChange={(checked) => handleSelectAll(toDisplay, checked as boolean)}
+                onCheckedChange={handleSelectAllGrouped}
                 data-testid="checkbox-select-all"
               />
               <span className="text-sm font-medium text-muted-foreground">
@@ -177,46 +214,55 @@ export default function Alerts() {
 
         {isLoading ? (
           [...Array(5)].map((_, i) => <Skeleton key={i} className="h-24" />)
-        ) : toDisplay && toDisplay.length > 0 ? (
-          toDisplay.map((alert: any) => {
-            const SeverityIcon = getSeverityIcon(alert.severity);
+        ) : groupedAlerts && groupedAlerts.length > 0 ? (
+          groupedAlerts.map((group: any) => {
+            const SeverityIcon = getSeverityIcon(group.severity);
+            const groupSelected = group.alerts.every((a: any) => selectedAlerts.includes(a.id));
+            const groupSomeSelected = group.alerts.some((a: any) => selectedAlerts.includes(a.id));
+            const firstAlert = group.firstAlert;
+            
             return (
               <Card
-                key={alert.id}
-                className={`hover-elevate cursor-pointer transition-all border-l-4 ${getSeverityBgColor(alert.severity)}`}
-                data-testid={`alert-${alert.id}`}
+                key={group.title}
+                className={`hover-elevate cursor-pointer transition-all border-l-4 ${getSeverityBgColor(group.severity)}`}
+                data-testid={`alert-group-${group.title}`}
               >
                 <div className="p-4">
                   <div className="flex items-start gap-4">
                     {showResolveButton && (
                       <Checkbox
-                        checked={selectedAlerts.includes(alert.id)}
-                        onCheckedChange={(checked) => handleSelectAlert(alert.id, checked as boolean)}
+                        checked={groupSelected ? true : groupSomeSelected ? 'indeterminate' : false}
+                        onCheckedChange={(checked) => handleSelectGroup(group, checked as boolean)}
                         onClick={(e) => e.stopPropagation()}
-                        data-testid={`checkbox-alert-${alert.id}`}
+                        data-testid={`checkbox-alert-group-${group.title}`}
                         className="mt-1"
                       />
                     )}
                     <div 
                       className="flex items-start gap-3 flex-1"
-                      onClick={() => handleAlertClick(alert.id)}
+                      onClick={() => handleAlertClick(firstAlert.id)}
                     >
                       <div className="p-2 rounded-lg bg-background/80 mt-0.5">
-                        <SeverityIcon className={`h-5 w-5 ${getSeverityColor(alert.severity)}`} />
+                        <SeverityIcon className={`h-5 w-5 ${getSeverityColor(group.severity)}`} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2 mb-2">
-                          <h3 className="text-sm font-bold">{alert.title}</h3>
-                          {getSeverityBadge(alert.severity)}
+                          <h3 className="text-sm font-bold">{group.title}</h3>
+                          {getSeverityBadge(group.severity)}
                         </div>
-                        <p className="text-sm text-muted-foreground mb-2">{alert.message}</p>
-                        <div className="text-xs text-muted-foreground">
-                          {format(new Date(alert.createdAt), "dd MMMM yyyy à HH:mm", { locale: fr })}
-                          {alert.resolvedAt && (
-                            <span className="ml-2 font-medium">
-                              • Résolu le {format(new Date(alert.resolvedAt), "dd MMMM yyyy à HH:mm", { locale: fr })}
-                            </span>
-                          )}
+                        <p className="text-sm text-muted-foreground mb-2">{group.message}</p>
+                        <div className="flex items-center gap-4">
+                          <div className="text-xs text-muted-foreground">
+                            {format(new Date(firstAlert.createdAt), "dd MMMM yyyy à HH:mm", { locale: fr })}
+                            {firstAlert.resolvedAt && (
+                              <span className="ml-2 font-medium">
+                                • Résolu le {format(new Date(firstAlert.resolvedAt), "dd MMMM yyyy à HH:mm", { locale: fr })}
+                              </span>
+                            )}
+                          </div>
+                          <Badge variant="secondary" className="ml-auto">
+                            {group.totalEmails} email{group.totalEmails > 1 ? 's' : ''}
+                          </Badge>
                         </div>
                       </div>
                     </div>
@@ -226,10 +272,10 @@ export default function Alerts() {
                         size="sm"
                         onClick={(e) => {
                           e.stopPropagation();
-                          resolveAlertMutation.mutate(alert.id);
+                          resolveAlertMutation.mutate(firstAlert.id);
                         }}
                         disabled={resolveAlertMutation.isPending}
-                        data-testid={`button-resolve-${alert.id}`}
+                        data-testid={`button-resolve-${firstAlert.id}`}
                       >
                         <CheckCircle className="h-4 w-4 mr-2" />
                         Résoudre
