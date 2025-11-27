@@ -1874,7 +1874,7 @@ export default function Emails() {
 
       {/* Response Dialog */}
       <Dialog open={showResponseDialog} onOpenChange={setShowResponseDialog}>
-        <DialogContent className="max-w-2xl w-full md:w-auto">
+        <DialogContent className="max-w-2xl w-full md:w-auto max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {selectedEmail?.suggestedResponse &&
