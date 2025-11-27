@@ -808,6 +808,7 @@ export default function Settings() {
     username: "",
     password: "",
   });
+  const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
 
   const { data: alertRules, isLoading: alertRulesLoading } = useQuery({
     queryKey: ["/api/alert-rules"],
@@ -3228,11 +3229,7 @@ export default function Settings() {
                     <div className="pt-2">
                       <Button
                         variant="destructive"
-                        onClick={() => {
-                          if (confirm("Êtes-vous sûr de vouloir résilier votre abonnement ?\n\nVous pourrez continuer à utiliser le service jusqu'à la fin de votre période de facturation. Aucun paiement supplémentaire ne sera facturé.")) {
-                            cancelSubscriptionMutation.mutate();
-                          }
-                        }}
+                        onClick={() => setShowCancelConfirmation(true)}
                         disabled={cancelSubscriptionMutation.isPending}
                         data-testid="button-cancel-subscription"
                         className="w-full sm:w-auto"
@@ -3312,6 +3309,43 @@ export default function Settings() {
               )}
             </>
           )}
+
+          {/* Cancel Subscription Confirmation Dialog */}
+          <AlertDialog open={showCancelConfirmation} onOpenChange={setShowCancelConfirmation}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="text-lg">Résilier votre abonnement</AlertDialogTitle>
+                <AlertDialogDescription className="space-y-3 text-base">
+                  <p>Êtes-vous certain de vouloir résilier votre abonnement ?</p>
+                  <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-900 rounded-md p-3 space-y-2">
+                    <p className="font-semibold text-sm text-amber-900 dark:text-amber-100">Voici ce qui se passera :</p>
+                    <ul className="space-y-1 text-sm text-amber-800 dark:text-amber-200">
+                      <li>✓ Accès maintenu jusqu'à la fin de votre période de facturation</li>
+                      <li>✓ Aucun paiement supplémentaire ne sera facturé</li>
+                      <li>✗ Vos données seront supprimées 1 jour après la fin de votre accès</li>
+                    </ul>
+                  </div>
+                  <p className="text-sm">Cette action est définitive.</p>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel data-testid="button-cancel-confirmation">
+                  Annuler
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => {
+                    cancelSubscriptionMutation.mutate();
+                    setShowCancelConfirmation(false);
+                  }}
+                  disabled={cancelSubscriptionMutation.isPending}
+                  className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                  data-testid="button-confirm-cancel-subscription"
+                >
+                  {cancelSubscriptionMutation.isPending ? "Résiliation en cours..." : "Résilier définitivement"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </TabsContent>
 
         {/* General Tab */}
