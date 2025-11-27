@@ -18,6 +18,10 @@ import {
   ChevronRight,
   GripVertical,
   RotateCcw,
+  Zap,
+  AlertCircle,
+  Inbox,
+  Gauge,
 } from "lucide-react";
 import * as LucideIcons from "lucide-react";
 import { Badge } from "@/components/ui/badge";
