@@ -582,20 +582,6 @@ export default function Calendar() {
                 data-testid="input-create-description"
               />
             </div>
-            <div>
-              <label className="text-sm font-medium">Statut</label>
-              <select
-                value={createFormData.status || "planifie"}
-                onChange={(e) => setCreateFormData({ ...createFormData, status: e.target.value })}
-                className="w-full border rounded-md p-2 text-sm"
-                data-testid="input-create-status"
-              >
-                <option value="planifie">Planifié</option>
-                <option value="confirme">Confirmé</option>
-                <option value="annule">Annulé</option>
-                <option value="termine">Terminé</option>
-              </select>
-            </div>
             <div className="flex gap-2 pt-4">
               <Button
                 className="flex-1"
