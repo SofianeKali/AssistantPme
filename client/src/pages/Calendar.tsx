@@ -17,7 +17,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
+import { Calendar as CalendarWidget } from "@/components/ui/calendar";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import {
@@ -113,7 +113,7 @@ function DateTimePickerInput({
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" align="start">
           <div className="p-4 space-y-4">
-            <Calendar
+            <CalendarWidget
               mode="single"
               selected={date}
               onSelect={handleDateSelect}
