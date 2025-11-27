@@ -1006,7 +1006,7 @@ export default function Dashboard() {
             <p className="text-xs text-muted-foreground mt-1">Suivi quotidien des emails traités</p>
           </div>
         </div>
-        <Card className="shadow-sm hover:shadow-md transition-shadow">
+        <Card className="shadow-sm hover:shadow-md transition-shadow bg-gradient-to-br from-blue-50/40 to-slate-50/10 dark:from-blue-950/20 dark:to-slate-900/10">
           <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4">
             <ChartPeriodControls
               periodType={emailEvolutionPeriod}
@@ -1109,7 +1109,7 @@ export default function Dashboard() {
             <p className="text-xs text-muted-foreground mt-1">Distribution par compte de messagerie</p>
           </div>
         </div>
-        <Card className="shadow-sm hover:shadow-md transition-shadow">
+        <Card className="shadow-sm hover:shadow-md transition-shadow bg-gradient-to-br from-purple-50/40 to-slate-50/10 dark:from-purple-950/20 dark:to-slate-900/10">
           <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4">
             <ChartPeriodControls
               periodType={emailDistributionPeriod}
@@ -1194,7 +1194,7 @@ export default function Dashboard() {
             <p className="text-xs text-muted-foreground mt-1">Rendez-vous programmés par jour</p>
           </div>
         </div>
-        <Card className="shadow-sm hover:shadow-md transition-shadow">
+        <Card className="shadow-sm hover:shadow-md transition-shadow bg-gradient-to-br from-green-50/40 to-slate-50/10 dark:from-green-950/20 dark:to-slate-900/10">
           <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4">
             <ChartPeriodControls
               periodType={appointmentsPeriod}
@@ -1286,7 +1286,7 @@ export default function Dashboard() {
             <p className="text-xs text-muted-foreground mt-1">Efficacité du traitement par type</p>
           </div>
         </div>
-        <Card className="shadow-sm hover:shadow-md transition-shadow">
+        <Card className="shadow-sm hover:shadow-md transition-shadow bg-gradient-to-br from-orange-50/40 to-slate-50/10 dark:from-orange-950/20 dark:to-slate-900/10">
           <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4">
             <ChartPeriodControls
               periodType={categoryProcessingPeriod}
@@ -1384,7 +1384,7 @@ export default function Dashboard() {
             <p className="text-xs text-muted-foreground mt-1">Progression des tâches par statut</p>
           </div>
         </div>
-        <Card className="shadow-sm hover:shadow-md transition-shadow">
+        <Card className="shadow-sm hover:shadow-md transition-shadow bg-gradient-to-br from-cyan-50/40 to-slate-50/10 dark:from-cyan-950/20 dark:to-slate-900/10">
           <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4">
             <ChartPeriodControls
               periodType={tasksPeriod}
@@ -1496,7 +1496,7 @@ export default function Dashboard() {
             <p className="text-xs text-muted-foreground mt-1">Alertes actives et résolues</p>
           </div>
         </div>
-        <Card className="shadow-sm hover:shadow-md transition-shadow">
+        <Card className="shadow-sm hover:shadow-md transition-shadow bg-gradient-to-br from-red-50/40 to-slate-50/10 dark:from-red-950/20 dark:to-slate-900/10">
           <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4">
             <ChartPeriodControls
               periodType={alertsPeriod}
