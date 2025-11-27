@@ -33,6 +33,7 @@ import {
   TrendingUp,
   AlertCircle,
   ArrowLeft,
+  Sliders,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -982,19 +983,103 @@ export default function Emails() {
       {/* Email Detail View or Email List */}
       {selectedEmail ? (
         <div className="space-y-6">
-          {/* Back Button */}
-          <Button
-            variant="outline"
-            onClick={() => {
-              setSelectedEmail(null);
-              setShowResponseDialog(false);
-            }}
-            className="flex items-center gap-2"
-            data-testid="button-back-to-list"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Retour à la liste
-          </Button>
+          {/* Header with Back Button and Quick Actions */}
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSelectedEmail(null);
+                setShowResponseDialog(false);
+              }}
+              className="flex items-center gap-2"
+              data-testid="button-back-to-list"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Retour
+            </Button>
+
+            {/* Quick Action Buttons - Icon only */}
+            <div className="flex items-center gap-2 border-l pl-2 ml-2">
+              {/* Reply Button */}
+              <Button
+                size="icon"
+                onClick={() => {
+                  if (!selectedEmail?.suggestedResponse) {
+                    setSelectedEmail({
+                      ...selectedEmail,
+                      suggestedResponse: "",
+                    });
+                    setIsAiResponse(false);
+                  }
+                  setShowResponseDialog(true);
+                }}
+                variant={
+                  selectedEmail?.suggestedResponse ? "outline" : "default"
+                }
+                data-testid="button-manual-reply-quick"
+                title={
+                  selectedEmail?.suggestedResponse
+                    ? "Modifier la réponse"
+                    : "Répondre"
+                }
+              >
+                <Reply className="h-4 w-4" />
+              </Button>
+
+              {/* Generate AI Response Button */}
+              {!selectedEmail?.suggestedResponse && (
+                <Button
+                  size="icon"
+                  onClick={() =>
+                    generateResponseMutation.mutate({
+                      emailId: selectedEmail?.id,
+                      customPrompt: customPrompt || undefined,
+                    })
+                  }
+                  disabled={generateResponseMutation.isPending}
+                  data-testid="button-generate-response-quick"
+                  variant="outline"
+                  title="Générer une réponse avec l'IA"
+                >
+                  <Sparkles className="h-4 w-4" />
+                </Button>
+              )}
+
+              {/* Customize Button */}
+              {!selectedEmail?.suggestedResponse && (
+                <Button
+                  size="icon"
+                  onClick={() => {
+                    setShowPromptInput(!showPromptInput);
+                    if (showPromptInput) {
+                      setCustomPrompt("");
+                    }
+                  }}
+                  data-testid="button-toggle-custom-prompt-quick"
+                  variant="outline"
+                  title={showPromptInput ? "Masquer les instructions" : "Personnaliser avec instructions"}
+                >
+                  <Sliders className="h-4 w-4" />
+                </Button>
+              )}
+
+              {/* Mark as Processed Button */}
+              {selectedEmail?.status !== "traite" && (
+                <Button
+                  size="icon"
+                  onClick={() =>
+                    markProcessedMutation.mutate(selectedEmail?.id)
+                  }
+                  disabled={markProcessedMutation.isPending}
+                  data-testid="button-mark-processed-quick"
+                  variant="outline"
+                  title="Marquer comme traité"
+                >
+                  <Check className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </div>
 
           {/* Email Detail Card */}
           <Card className="p-6 md:p-8">
@@ -1245,89 +1330,6 @@ export default function Emails() {
                   </p>
                 </div>
               )}
-
-              {/* Actions */}
-              <div className="flex flex-col gap-3 pt-4 border-t">
-                <Button
-                  onClick={() => {
-                    if (!selectedEmail?.suggestedResponse) {
-                      setSelectedEmail({
-                        ...selectedEmail,
-                        suggestedResponse: "",
-                      });
-                      setIsAiResponse(false);
-                    }
-                    setShowResponseDialog(true);
-                  }}
-                  variant={
-                    selectedEmail?.suggestedResponse ? "outline" : "default"
-                  }
-                  data-testid="button-manual-reply"
-                  className="w-full"
-                >
-                  <Reply className="h-4 w-4 mr-2" />
-                  {selectedEmail?.suggestedResponse
-                    ? "Modifier la réponse"
-                    : "Répondre"}
-                </Button>
-
-                {!selectedEmail?.suggestedResponse && (
-                  <div className="flex flex-col gap-2">
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <Button
-                        onClick={() =>
-                          generateResponseMutation.mutate({
-                            emailId: selectedEmail?.id,
-                            customPrompt: customPrompt || undefined,
-                          })
-                        }
-                        disabled={generateResponseMutation.isPending}
-                        data-testid="button-generate-response"
-                        variant="outline"
-                        className="flex-1"
-                      >
-                        <Sparkles className="h-4 w-4 mr-2" />
-                        <span className="truncate">
-                          {generateResponseMutation.isPending
-                            ? "Génération..."
-                            : "Générer avec IA"}
-                        </span>
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setShowPromptInput(!showPromptInput);
-                          if (showPromptInput) {
-                            setCustomPrompt("");
-                          }
-                        }}
-                        data-testid="button-toggle-custom-prompt"
-                        className="sm:w-auto"
-                      >
-                        <span className="truncate">
-                          {showPromptInput ? "Masquer" : "Personnaliser"}
-                        </span>
-                      </Button>
-                    </div>
-                  </div>
-                )}
-                {selectedEmail?.status !== "traite" && (
-                  <Button
-                    variant="outline"
-                    onClick={() =>
-                      markProcessedMutation.mutate(selectedEmail?.id)
-                    }
-                    disabled={markProcessedMutation.isPending}
-                    data-testid="button-mark-processed"
-                    className="w-full"
-                  >
-                    <Check className="h-4 w-4 mr-2" />
-                    {markProcessedMutation.isPending
-                      ? "En cours..."
-                      : "Marquer comme traité"}
-                  </Button>
-                )}
-              </div>
             </div>
           </Card>
         </div>
