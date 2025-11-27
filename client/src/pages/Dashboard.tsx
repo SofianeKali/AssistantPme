@@ -610,9 +610,9 @@ export default function Dashboard() {
             <div>
               <div className="flex items-center gap-3">
                 <CheckSquare className="h-8 w-8 text-blue-600" />
-                <h2 className="text-3xl font-bold text-blue-600">
+                <h3 className="text-lg font-bold text-blue-600">
                   Tâches
-                </h2>
+                </h3>
               </div>
               <p className="text-muted-foreground text-sm mt-1">
                 Aperçu de vos tâches avec vue complète disponible ci-dessous
@@ -797,9 +797,9 @@ export default function Dashboard() {
             <div>
               <div className="flex items-center gap-3">
                 <Bell className="h-8 w-8 text-red-600" />
-                <h2 className="text-3xl font-bold text-red-600">
+                <h3 className="text-lg font-bold text-red-600">
                   Alertes
-                </h2>
+                </h3>
               </div>
               <p className="text-muted-foreground text-sm mt-1">
                 Aperçu de vos alertes avec vue complète disponible ci-dessous
