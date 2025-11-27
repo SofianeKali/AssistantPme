@@ -122,12 +122,13 @@ export default function Emails() {
     enabled: !!selectedEmail?.id,
   });
 
-  // Read category, status, and alertId from URL query parameters
+  // Read category, status, alertId, and emailId from URL query parameters
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const category = params.get("category");
     const status = params.get("status");
     const alert = params.get("alertId");
+    const emailId = params.get("id");
 
     if (category) {
       setTypeFilter(category);
@@ -140,7 +141,25 @@ export default function Emails() {
     } else {
       setAlertId(null);
     }
-  }, [location]);
+
+    // Auto-load and select email if id parameter is present
+    if (emailId) {
+      fetch(`/api/emails/${emailId}`, { credentials: "include" })
+        .then(res => res.ok ? res.json() : null)
+        .then(email => {
+          if (email) {
+            setSelectedEmail(email);
+          }
+        })
+        .catch(() => {
+          toast({
+            title: "Erreur",
+            description: "Impossible de charger l'email",
+            variant: "destructive",
+          });
+        });
+    }
+  }, [location, toast]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
