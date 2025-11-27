@@ -546,6 +546,165 @@ Cet email a été envoyé automatiquement, merci de ne pas y répondre.
 }
 
 /**
+ * Send invoice email to user after successful payment
+ */
+interface SendInvoiceEmailParams {
+  to: string;
+  firstName: string;
+  lastName: string;
+  invoiceNumber: string;
+  amount: number;
+  plan: string;
+  adminEmailAccount: EmailAccount;
+  invoiceDate: Date;
+}
+
+export async function sendInvoiceEmail(
+  params: SendInvoiceEmailParams,
+): Promise<void> {
+  try {
+    const { adminEmailAccount } = params;
+    const formattedAmount = (params.amount / 100).toFixed(2);
+    const dateStr = params.invoiceDate.toLocaleDateString('fr-FR');
+
+    const planNames: Record<string, string> = {
+      starter: 'Starter - €19/mois',
+      professional: 'Professional - €39/mois',
+      enterprise: 'Enterprise - €79/mois',
+    };
+
+    const textContent = `
+Facture de votre abonnement IzyInbox
+====================================
+
+Bonjour ${params.firstName} ${params.lastName},
+
+Merci d'avoir souscrit à IzyInbox!
+
+Détails de votre facture:
+- Numéro: ${params.invoiceNumber}
+- Montant: ${formattedAmount} €
+- Plan: ${planNames[params.plan] || params.plan}
+- Date: ${dateStr}
+
+Vous pouvez télécharger votre facture depuis votre tableau de bord IzyInbox.
+
+---
+IzyInbox
+Cet email a été envoyé automatiquement, merci de ne pas y répondre.
+    `.trim();
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              line-height: 1.6;
+              color: #333;
+              max-width: 600px;
+              margin: 0 auto;
+              padding: 20px;
+            }
+            .header {
+              background: linear-gradient(135deg, #1a2744 0%, #00d9ff 100%);
+              color: white;
+              padding: 30px;
+              border-radius: 8px 8px 0 0;
+              text-align: center;
+            }
+            .content {
+              background: #f9fafb;
+              padding: 30px;
+              border-radius: 0 0 8px 8px;
+            }
+            .invoice-box {
+              background: white;
+              border: 1px solid #e5e7eb;
+              border-radius: 8px;
+              padding: 20px;
+              margin: 20px 0;
+            }
+            .invoice-item {
+              display: flex;
+              justify-content: space-between;
+              padding: 10px 0;
+              border-bottom: 1px solid #e5e7eb;
+            }
+            .invoice-item:last-child {
+              border-bottom: none;
+            }
+            .amount {
+              font-weight: bold;
+              color: #1a2744;
+            }
+            .total {
+              display: flex;
+              justify-content: space-between;
+              padding: 15px 0;
+              border-top: 2px solid #00d9ff;
+              font-size: 18px;
+              font-weight: bold;
+              color: #1a2744;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>IzyInbox</h1>
+            <p>Facture de votre abonnement</p>
+          </div>
+          <div class="content">
+            <p>Bonjour ${params.firstName} ${params.lastName},</p>
+            <p>Merci d'avoir souscrit à IzyInbox! Voici le détail de votre facture:</p>
+            <div class="invoice-box">
+              <div class="invoice-item">
+                <span>Numéro de facture:</span>
+                <span class="amount">${params.invoiceNumber}</span>
+              </div>
+              <div class="invoice-item">
+                <span>Date:</span>
+                <span>${dateStr}</span>
+              </div>
+              <div class="invoice-item">
+                <span>Plan:</span>
+                <span>${planNames[params.plan] || params.plan}</span>
+              </div>
+              <div class="total">
+                <span>Total:</span>
+                <span>${formattedAmount} €</span>
+              </div>
+            </div>
+            <p>Vous pouvez télécharger votre facture directement depuis votre tableau de bord IzyInbox dans la section "Abonnement" > "Factures".</p>
+            <p>Merci de votre confiance!</p>
+          </div>
+        </body>
+      </html>
+    `;
+
+    const sendResult = await sendEmailResponse({
+      to: params.to,
+      subject: `Facture IzyInbox - ${params.invoiceNumber}`,
+      html: htmlContent,
+      text: textContent,
+      from: adminEmailAccount,
+    });
+
+    if (!sendResult.success) {
+      console.error("[EmailService] SMTP error sending invoice email:", sendResult.error);
+      throw new Error(`SMTP error: ${sendResult.error}`);
+    }
+
+    console.log(`[EmailService] Invoice email sent successfully to ${params.to}`);
+  } catch (error) {
+    console.error("[EmailService] Error sending invoice email:", error);
+    throw error;
+  }
+}
+
+/**
  * Generate a secure random temporary password
  */
 export function generateTemporaryPassword(): string {

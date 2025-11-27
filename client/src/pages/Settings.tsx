@@ -3301,7 +3301,7 @@ export default function Settings() {
                       Historique de vos factures et paiements
                     </CardDescription>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="space-y-4">
                     {invoicesLoading ? (
                       <div className="space-y-2">
                         <Skeleton className="h-12 w-full" />
@@ -3310,44 +3310,71 @@ export default function Settings() {
                     ) : invoices.length === 0 ? (
                       <p className="text-sm text-muted-foreground">Aucune facture disponible</p>
                     ) : (
-                      <div className="overflow-x-auto">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Numéro</TableHead>
-                              <TableHead>Montant</TableHead>
-                              <TableHead>Plan</TableHead>
-                              <TableHead>Date</TableHead>
-                              <TableHead>Action</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {invoices.map((invoice: any) => (
-                              <TableRow key={invoice.id}>
-                                <TableCell className="font-medium">{invoice.invoiceNumber}</TableCell>
-                                <TableCell>{(invoice.amount / 100).toFixed(2)} €</TableCell>
-                                <TableCell className="capitalize">{invoice.plan}</TableCell>
-                                <TableCell>
-                                  {new Date(invoice.createdAt).toLocaleDateString('fr-FR')}
-                                </TableCell>
-                                <TableCell>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => {
-                                      window.location.href = `/api/invoices/${invoice.id}/download`;
-                                    }}
-                                    data-testid={`button-download-invoice-${invoice.id}`}
-                                  >
-                                    <Download className="h-4 w-4 mr-2" />
-                                    Télécharger
-                                  </Button>
-                                </TableCell>
+                      <>
+                        <div className="flex justify-end">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              window.location.href = `/api/invoices/export/csv`;
+                            }}
+                            data-testid="button-export-invoices-csv"
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Exporter en CSV
+                          </Button>
+                        </div>
+                        <div className="overflow-x-auto">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Numéro</TableHead>
+                                <TableHead>Montant</TableHead>
+                                <TableHead>Plan</TableHead>
+                                <TableHead>Date</TableHead>
+                                <TableHead>Statut</TableHead>
+                                <TableHead>Action</TableHead>
                               </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
+                            </TableHeader>
+                            <TableBody>
+                              {invoices.map((invoice: any) => (
+                                <TableRow key={invoice.id}>
+                                  <TableCell className="font-medium">{invoice.invoiceNumber}</TableCell>
+                                  <TableCell>{(invoice.amount / 100).toFixed(2)} €</TableCell>
+                                  <TableCell className="capitalize">{invoice.plan}</TableCell>
+                                  <TableCell>
+                                    {new Date(invoice.createdAt).toLocaleDateString('fr-FR')}
+                                  </TableCell>
+                                  <TableCell>
+                                    {invoice.paidAt ? (
+                                      <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">
+                                        Payée
+                                      </Badge>
+                                    ) : (
+                                      <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100">
+                                        En attente
+                                      </Badge>
+                                    )}
+                                  </TableCell>
+                                  <TableCell>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => {
+                                        window.location.href = `/api/invoices/${invoice.id}/download`;
+                                      }}
+                                      data-testid={`button-download-invoice-${invoice.id}`}
+                                    >
+                                      <Download className="h-4 w-4 mr-2" />
+                                      Télécharger
+                                    </Button>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </>
                     )}
                   </CardContent>
                 </Card>

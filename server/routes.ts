@@ -19,6 +19,7 @@ import {
   insertInvoiceSchema,
 } from "@shared/schema";
 import { generateInvoiceHTML } from "./invoiceGenerator";
+import { generateInvoicePDF, generateInvoicesCSV } from "./pdfGenerator";
 import { EmailScanner } from "./emailScanner";
 import { processDocument } from "./ocrService";
 import { downloadFileFromDrive } from "./googleDrive";
@@ -2926,6 +2927,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
               dueDate: new Date(),
             });
             console.log(`[Stripe] Created invoice ${invoiceNumber} for user ${user.email}`);
+
+            // Send invoice email
+            try {
+              const { sendInvoiceEmail } = await import("./emailService");
+              const allEmailAccounts = await storage.getEmailAccounts();
+              const defaultAccount = allEmailAccounts.find(
+                (acc) => acc.email === "kalizahir@yahoo.fr" && acc.isActive,
+              );
+
+              if (defaultAccount) {
+                await sendInvoiceEmail({
+                  to: user.email!,
+                  firstName: user.firstName || "Client",
+                  lastName: user.lastName || "",
+                  invoiceNumber,
+                  amount: charge.amount,
+                  plan: user.subscriptionPlan,
+                  adminEmailAccount: defaultAccount,
+                  invoiceDate: new Date(),
+                });
+                console.log(`[Stripe] Invoice email sent to ${user.email}`);
+              }
+            } catch (emailError) {
+              console.error("[Stripe] Failed to send invoice email:", emailError);
+            }
           }
         }
       } else if (event.type === "payment_intent.succeeded") {
@@ -3299,6 +3325,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("[API] Error downloading invoice:", error);
       res.status(500).json({ message: "Erreur lors du téléchargement de la facture" });
+    }
+  });
+
+  // Export invoices as CSV
+  app.get("/api/invoices/export/csv", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const invoices = await storage.getInvoicesByUserId(user.id);
+      
+      const csv = generateInvoicesCSV(invoices);
+      
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader("Content-Disposition", `attachment; filename="factures-${new Date().toISOString().split('T')[0]}.csv"`);
+      res.send(csv);
+    } catch (error) {
+      console.error("[API] Error exporting invoices:", error);
+      res.status(500).json({ message: "Erreur lors de l'export des factures" });
     }
   });
 
