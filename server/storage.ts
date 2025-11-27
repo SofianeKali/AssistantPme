@@ -206,6 +206,12 @@ export interface IStorage {
   // User Dashboard Layout
   getUserDashboardLayout(userId: string): Promise<UserDashboardLayout | undefined>;
   upsertUserDashboardLayout(userId: string, layout: string[]): Promise<UserDashboardLayout>;
+  
+  // Invoices
+  createInvoice(invoice: InsertInvoice): Promise<Invoice>;
+  getInvoicesByUserId(userId: string): Promise<Invoice[]>;
+  getInvoiceById(id: string): Promise<Invoice | undefined>;
+  updateInvoice(id: string, data: Partial<Invoice>): Promise<Invoice>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2819,6 +2825,26 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return created;
     }
+  }
+
+  // Invoices
+  async createInvoice(invoice: InsertInvoice): Promise<Invoice> {
+    const [result] = await db.insert(invoices).values(invoice).returning();
+    return result;
+  }
+
+  async getInvoicesByUserId(userId: string): Promise<Invoice[]> {
+    return await db.select().from(invoices).where(eq(invoices.userId, userId)).orderBy(desc(invoices.createdAt));
+  }
+
+  async getInvoiceById(id: string): Promise<Invoice | undefined> {
+    const [invoice] = await db.select().from(invoices).where(eq(invoices.id, id));
+    return invoice;
+  }
+
+  async updateInvoice(id: string, data: Partial<Invoice>): Promise<Invoice> {
+    const [updated] = await db.update(invoices).set(data).where(eq(invoices.id, id)).returning();
+    return updated;
   }
 }
 
