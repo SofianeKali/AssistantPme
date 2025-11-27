@@ -27,6 +27,7 @@ import {
   PieChart as PieChartIcon,
   TrendingUpIcon,
   Info,
+  Bell,
 } from "lucide-react";
 import * as LucideIcons from "lucide-react";
 import { Badge } from "@/components/ui/badge";
