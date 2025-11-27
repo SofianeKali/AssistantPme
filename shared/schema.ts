@@ -688,3 +688,39 @@ export const userDashboardLayoutRelations = relations(userDashboardLayout, ({ on
     references: [users.id],
   }),
 }));
+
+// Invoices table - Subscription billing history
+export const invoices = pgTable("invoices", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  companyId: varchar("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  stripeInvoiceId: varchar("stripe_invoice_id"),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(), // in cents, e.g., 1900 for €19.00
+  currency: varchar("currency").notNull().default("eur"),
+  plan: varchar("plan").notNull(), // starter, professional, enterprise
+  description: varchar("description"),
+  paidAt: timestamp("paid_at"),
+  dueDate: timestamp("due_date"),
+  invoiceNumber: varchar("invoice_number"), // For human-readable reference
+  pdfUrl: varchar("pdf_url"), // URL to download the PDF
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertInvoiceSchema = createInsertSchema(invoices).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
+export type Invoice = typeof invoices.$inferSelect;
+
+export const invoicesRelations = relations(invoices, ({ one }) => ({
+  company: one(companies, {
+    fields: [invoices.companyId],
+    references: [companies.id],
+  }),
+  user: one(users, {
+    fields: [invoices.userId],
+    references: [users.id],
+  }),
+}));
