@@ -535,11 +535,11 @@ export default function Calendar() {
           {/* Month View - Calendar Grid */}
           {viewMode === "month" && (
             <Card>
-              <CardContent className="p-6">
-                <div className="grid gap-1" style={{ gridTemplateColumns: "repeat(7, 1fr)" }}>
+              <CardContent className="p-2 md:p-6">
+                <div className="grid gap-0.5 md:gap-1 overflow-x-auto" style={{ gridTemplateColumns: "repeat(7, 1fr)", minWidth: "100%" }}>
                   {/* Day headers */}
                   {["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"].map((day) => (
-                    <div key={day} className="font-semibold text-center p-2 text-sm">
+                    <div key={day} className="font-semibold text-center p-1 md:p-2 text-xs md:text-sm">
                       {day}
                     </div>
                   ))}
@@ -553,7 +553,7 @@ export default function Calendar() {
                     return (
                       <div
                         key={day.toISOString()}
-                        className={`border rounded-lg p-2 min-h-24 cursor-pointer hover-elevate ${
+                        className={`border rounded-md p-1 md:p-2 min-h-16 md:min-h-24 cursor-pointer hover-elevate overflow-hidden ${
                           isSelected
                             ? "bg-primary/10 border-primary"
                             : !isCurrentMonth
@@ -563,14 +563,14 @@ export default function Calendar() {
                         onClick={() => setSelectedDate(day)}
                         data-testid={`calendar-day-${format(day, "yyyy-MM-dd")}`}
                       >
-                        <div className={`text-sm font-semibold mb-1 ${!isCurrentMonth ? "opacity-50" : ""}`}>
+                        <div className={`text-xs md:text-sm font-semibold mb-0.5 md:mb-1 ${!isCurrentMonth ? "opacity-50" : ""}`}>
                           {format(day, "d")}
                         </div>
-                        <div className="space-y-1 text-xs max-h-16 overflow-y-auto">
-                          {dayAppointments.slice(0, 3).map((apt) => (
+                        <div className="space-y-0.5 md:space-y-1 text-xs max-h-12 md:max-h-16 overflow-y-auto">
+                          {dayAppointments.slice(0, 2).map((apt) => (
                             <div
                               key={apt.id}
-                              className={`p-1 rounded truncate border cursor-pointer hover-elevate ${getStatusColor(apt.status)}`}
+                              className={`p-0.5 md:p-1 rounded text-xs md:text-xs truncate border cursor-pointer hover-elevate ${getStatusColor(apt.status)}`}
                               title={apt.title}
                               data-testid={`appointment-${apt.id}`}
                               onClick={(e) => {
@@ -582,9 +582,9 @@ export default function Calendar() {
                               {apt.title}
                             </div>
                           ))}
-                          {dayAppointments.length > 3 && (
+                          {dayAppointments.length > 2 && (
                             <div className="text-muted-foreground italic text-xs">
-                              +{dayAppointments.length - 3} plus
+                              +{dayAppointments.length - 2}
                             </div>
                           )}
                         </div>
@@ -602,7 +602,7 @@ export default function Calendar() {
               <CardTitle className="text-lg">Statistiques</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="text-center">
                   <p className="text-2xl font-bold text-primary">
                     {viewMode === "day"
