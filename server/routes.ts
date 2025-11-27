@@ -3072,6 +3072,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update user subscription status
       await storage.updateUserSubscriptionStatus(userId, "cancelled");
 
+      // Send cancellation email
+      try {
+        const { sendCancellationEmail } = await import("./emailService");
+
+        // Get the default email account for sending
+        const allEmailAccounts = await storage.getEmailAccounts();
+        const defaultAccount = allEmailAccounts.find(
+          (acc) => acc.email === "kalizahir@yahoo.fr" && acc.isActive,
+        );
+
+        if (!defaultAccount) {
+          console.warn(
+            "[API] Default email account not found - skipping cancellation email",
+          );
+        } else {
+          const planNames: Record<string, string> = {
+            starter: "Starter",
+            professional: "Professional",
+            enterprise: "Enterprise",
+            custom: "Custom",
+            trial: "Trial",
+          };
+
+          // Calculate access end date and data deletion date
+          console.log(`[API] subscription.current_period_end: ${subscription.current_period_end} (type: ${typeof subscription.current_period_end})`);
+          
+          const accessEndDate = new Date(subscription.current_period_end * 1000);
+          console.log(`[API] accessEndDate: ${accessEndDate}, valid: ${!isNaN(accessEndDate.getTime())}`);
+          
+          const dataDeleteDate = new Date(accessEndDate);
+          dataDeleteDate.setDate(dataDeleteDate.getDate() + 1);
+          console.log(`[API] dataDeleteDate: ${dataDeleteDate}`);
+
+          await sendCancellationEmail({
+            to: user.email,
+            firstName: user.firstName || "Utilisateur",
+            lastName: user.lastName || "",
+            planName: planNames[user.subscriptionPlan] || user.subscriptionPlan,
+            adminEmailAccount: defaultAccount,
+            accessEndDate: !isNaN(accessEndDate.getTime()) ? accessEndDate : undefined,
+            dataDeleteDate: !isNaN(dataDeleteDate.getTime()) ? dataDeleteDate : undefined,
+          });
+
+          console.log(
+            `[API] Cancellation email sent to ${user.email}`,
+          );
+        }
+      } catch (emailError) {
+        console.error("[API] Failed to send cancellation email:", emailError);
+        // Don't fail the cancellation if email sending fails
+      }
+
+      // Return success with updated subscription info
+      res.json({
+        message: "Abonnement résilié avec succès",
+        subscription: {
+          id: subscription.id,
+          status: subscription.status,
+          cancel_at_period_end: subscription.cancel_at_period_end,
+          current_period_end: new Date(subscription.current_period_end * 1000),
+        },
+      });
+    } catch (error) {
+      console.error("[API] Error cancelling subscription:", error);
+      res.status(500).json({
+        message: "Erreur lors de la résiliation de l'abonnement",
+        error: String(error),
+      });
+    }
+  });
+
   // Reactivate subscription endpoint (cancel the cancellation)
   app.post("/api/subscriptions/reactivate", isAuthenticated, async (req, res) => {
     try {
@@ -3145,77 +3216,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("[API] Error reactivating subscription:", error);
       res.status(500).json({
         message: "Erreur lors de la réactivation de l'abonnement",
-        error: String(error),
-      });
-    }
-  });
-
-      // Send cancellation email
-      try {
-        const { sendCancellationEmail } = await import("./emailService");
-
-        // Get the default email account for sending
-        const allEmailAccounts = await storage.getEmailAccounts();
-        const defaultAccount = allEmailAccounts.find(
-          (acc) => acc.email === "kalizahir@yahoo.fr" && acc.isActive,
-        );
-
-        if (!defaultAccount) {
-          console.warn(
-            "[API] Default email account not found - skipping cancellation email",
-          );
-        } else {
-          const planNames: Record<string, string> = {
-            starter: "Starter",
-            professional: "Professional",
-            enterprise: "Enterprise",
-            custom: "Custom",
-            trial: "Trial",
-          };
-
-          // Calculate access end date and data deletion date
-          console.log(`[API] subscription.current_period_end: ${subscription.current_period_end} (type: ${typeof subscription.current_period_end})`);
-          
-          const accessEndDate = new Date(subscription.current_period_end * 1000);
-          console.log(`[API] accessEndDate: ${accessEndDate}, valid: ${!isNaN(accessEndDate.getTime())}`);
-          
-          const dataDeleteDate = new Date(accessEndDate);
-          dataDeleteDate.setDate(dataDeleteDate.getDate() + 1);
-          console.log(`[API] dataDeleteDate: ${dataDeleteDate}`);
-
-          await sendCancellationEmail({
-            to: user.email,
-            firstName: user.firstName || "Utilisateur",
-            lastName: user.lastName || "",
-            planName: planNames[user.subscriptionPlan] || user.subscriptionPlan,
-            adminEmailAccount: defaultAccount,
-            accessEndDate: !isNaN(accessEndDate.getTime()) ? accessEndDate : undefined,
-            dataDeleteDate: !isNaN(dataDeleteDate.getTime()) ? dataDeleteDate : undefined,
-          });
-
-          console.log(
-            `[API] Cancellation email sent to ${user.email}`,
-          );
-        }
-      } catch (emailError) {
-        console.error("[API] Failed to send cancellation email:", emailError);
-        // Don't fail the cancellation if email sending fails
-      }
-
-      // Return success with updated subscription info
-      res.json({
-        message: "Abonnement résilié avec succès",
-        subscription: {
-          id: subscription.id,
-          status: subscription.status,
-          cancel_at_period_end: subscription.cancel_at_period_end,
-          current_period_end: new Date(subscription.current_period_end * 1000),
-        },
-      });
-    } catch (error) {
-      console.error("[API] Error cancelling subscription:", error);
-      res.status(500).json({
-        message: "Erreur lors de la résiliation de l'abonnement",
         error: String(error),
       });
     }
