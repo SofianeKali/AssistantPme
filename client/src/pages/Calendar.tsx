@@ -898,16 +898,6 @@ export default function Calendar() {
                     </div>
                   )}
 
-                  {/* Description */}
-                  {selectedAppointment.description && (
-                    <div className="pt-2 border-t">
-                      <p className="text-sm font-medium mb-2">Description</p>
-                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                        {selectedAppointment.description}
-                      </p>
-                    </div>
-                  )}
-
                   {/* AI Suggestions - Preparation Tasks */}
                   {selectedAppointment.aiSuggestions?.prepTasks && selectedAppointment.aiSuggestions.prepTasks.length > 0 && (
                     <div className="pt-2 border-t">
