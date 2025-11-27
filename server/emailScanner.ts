@@ -247,15 +247,20 @@ export class EmailScanner {
                 : null;
               
               if (appointmentDate && appointmentDate > new Date()) {
+                // Set end time to 1 hour after start time by default
+                const endTime = new Date(appointmentDate.getTime() + 60 * 60 * 1000);
+                
                 const appointmentData: InsertAppointment = {
                   companyId: account.companyId, // Multi-tenant isolation
                   emailId: createdEmail.id,
                   title: mail.subject || 'RDV détecté automatiquement',
                   description: `Détecté automatiquement depuis l'email de ${getAddressText(mail.from)}\n\nCorps du message:\n${mail.text || mail.html || ''}`,
-                  date: appointmentDate,
-                  status: 'planifié',
+                  startTime: appointmentDate,
+                  endTime: endTime,
+                  status: 'planifie',
                   location: analysis.extractedData?.contact || '',
-                  participants: getEmailAddresses(mail.from),
+                  attendees: getEmailAddresses(mail.from),
+                  createdById: account.userId,
                 };
                 
                 await this.storage.createAppointment(appointmentData);
