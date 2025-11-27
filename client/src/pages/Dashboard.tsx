@@ -797,7 +797,7 @@ export default function Dashboard() {
             <div>
               <div className="flex items-center gap-3">
                 <Bell className="h-8 w-8 text-red-600" />
-                <h2 className="text-3xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-red-600 to-orange-600 gradient-text">
                   Alertes
                 </h2>
               </div>
