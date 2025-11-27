@@ -12,6 +12,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import {
@@ -28,6 +34,8 @@ import {
   isSameDay,
   startOfHour,
   addHours,
+  parse,
+  set,
 } from "date-fns";
 import { fr } from "date-fns/locale";
 import "react-day-picker/dist/style.css";
@@ -48,6 +56,105 @@ interface Appointment {
     documents: string[];
     notes: string[];
   };
+}
+
+// Modern DateTime Picker Component
+function DateTimePickerInput({
+  value,
+  onChange,
+  label,
+  testId,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  label: string;
+  testId: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const date = value ? new Date(value) : new Date();
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+
+  const handleDateSelect = (selectedDate: Date | undefined) => {
+    if (!selectedDate) return;
+    const newDate = set(selectedDate, {
+      hours: parseInt(hours),
+      minutes: parseInt(minutes),
+    });
+    onChange(format(newDate, "yyyy-MM-dd'T'HH:mm"));
+    setIsOpen(false);
+  };
+
+  const handleTimeChange = (newHours: string, newMinutes: string) => {
+    const newDate = set(date, {
+      hours: parseInt(newHours),
+      minutes: parseInt(newMinutes),
+    });
+    onChange(format(newDate, "yyyy-MM-dd'T'HH:mm"));
+  };
+
+  return (
+    <div>
+      <label className="text-xs font-medium text-muted-foreground block mb-2">
+        {label} *
+      </label>
+      <Popover open={isOpen} onOpenChange={setIsOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            className="w-full justify-start text-left font-normal"
+            data-testid={testId}
+          >
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {value
+              ? format(new Date(value), "dd MMM yyyy - HH:mm", { locale: fr })
+              : "Sélectionner date/heure"}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <div className="p-4 space-y-4">
+            <Calendar
+              mode="single"
+              selected={date}
+              onSelect={handleDateSelect}
+              disabled={(date) => date < startOfDay(new Date())}
+              locale={fr}
+            />
+            <div className="flex gap-2 border-t pt-4">
+              <div className="flex-1">
+                <label className="text-xs font-medium text-muted-foreground block mb-1">
+                  Heure
+                </label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="23"
+                  value={hours}
+                  onChange={(e) => handleTimeChange(e.target.value, minutes)}
+                  className="text-center"
+                  placeholder="HH"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="text-xs font-medium text-muted-foreground block mb-1">
+                  Minute
+                </label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="59"
+                  value={minutes}
+                  onChange={(e) => handleTimeChange(hours, e.target.value)}
+                  className="text-center"
+                  placeholder="MM"
+                />
+              </div>
+            </div>
+          </div>
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
 }
 
 export default function Calendar() {
@@ -555,25 +662,19 @@ export default function Calendar() {
                 <p className="text-sm font-medium">Date et heure</p>
               </div>
               
-              <div>
-                <label className="text-xs font-medium text-muted-foreground block mb-1">Début *</label>
-                <Input
-                  type="datetime-local"
-                  value={createFormData.startTime || ""}
-                  onChange={(e) => setCreateFormData({ ...createFormData, startTime: e.target.value })}
-                  data-testid="input-create-start-time"
-                />
-              </div>
+              <DateTimePickerInput
+                value={createFormData.startTime || ""}
+                onChange={(value) => setCreateFormData({ ...createFormData, startTime: value })}
+                label="Début"
+                testId="input-create-start-time"
+              />
               
-              <div>
-                <label className="text-xs font-medium text-muted-foreground block mb-1">Fin *</label>
-                <Input
-                  type="datetime-local"
-                  value={createFormData.endTime || ""}
-                  onChange={(e) => setCreateFormData({ ...createFormData, endTime: e.target.value })}
-                  data-testid="input-create-end-time"
-                />
-              </div>
+              <DateTimePickerInput
+                value={createFormData.endTime || ""}
+                onChange={(value) => setCreateFormData({ ...createFormData, endTime: value })}
+                label="Fin"
+                testId="input-create-end-time"
+              />
             </div>
 
             {/* Location Field */}
