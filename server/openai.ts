@@ -212,13 +212,20 @@ export async function generateAppointmentSuggestions(appointmentInfo: {
       messages: [
         {
           role: "system",
-          content: `You are an AI assistant helping prepare for business appointments. Provide practical suggestions in French.
+          content: `You are an AI assistant helping prepare for business appointments. Provide the MOST RELEVANT suggestions only in French.
           
+IMPORTANT: Limit to the most critical items only:
+- Maximum 3-4 preparation tasks (only the most important ones)
+- Maximum 2-3 documents (only essential ones)
+- Maximum 2 important notes (only key points)
+
+Focus on quality over quantity. Only include suggestions that are truly necessary.
+
 Respond with JSON:
 {
-  "prepTasks": ["task1", "task2", ...],
-  "documents": ["doc1", "doc2", ...],
-  "notes": ["note1", "note2", ...]
+  "prepTasks": ["task1", "task2", "task3"],
+  "documents": ["doc1", "doc2"],
+  "notes": ["note1", "note2"]
 }`
         },
         {
@@ -227,13 +234,20 @@ Respond with JSON:
 ${appointmentInfo.description ? `Description: ${appointmentInfo.description}` : ""}
 ${appointmentInfo.attendees?.length ? `Attendees: ${appointmentInfo.attendees.join(", ")}` : ""}
 
-Suggest preparation tasks, required documents, and important notes.`
+Suggest ONLY the most critical preparation tasks, essential documents, and key important notes needed for this appointment. Be concise and focus on relevance over quantity.`
         }
       ],
       response_format: { type: "json_object" },
     });
 
-    return JSON.parse(response.choices[0].message.content || "{}");
+    const parsed = JSON.parse(response.choices[0].message.content || "{}");
+    
+    // Ensure we don't exceed the limits even if the model returns more
+    return {
+      prepTasks: (parsed.prepTasks || []).slice(0, 4),
+      documents: (parsed.documents || []).slice(0, 3),
+      notes: (parsed.notes || []).slice(0, 2),
+    };
   } catch (error) {
     console.error("Error generating suggestions:", error);
     return {
