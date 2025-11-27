@@ -794,9 +794,12 @@ export default function Dashboard() {
         <div>
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-3xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
-                Alertes
-              </h2>
+              <div className="flex items-center gap-3">
+                <AlertCircle className="h-8 w-8 text-red-600" />
+                <h2 className="text-3xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
+                  Alertes
+                </h2>
+              </div>
               <p className="text-muted-foreground text-sm mt-1">
                 Aperçu de vos alertes avec vue complète disponible ci-dessous
               </p>
@@ -993,9 +996,12 @@ export default function Dashboard() {
       <div key="email-evolution" className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">
-              📊 Évolution des emails traités
-            </h3>
+            <div className="flex items-center gap-2">
+              <Mail className="h-6 w-6 text-blue-600" />
+              <h3 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">
+                Évolution des emails traités
+              </h3>
+            </div>
             <p className="text-xs text-muted-foreground mt-1">Suivi quotidien des emails traités</p>
           </div>
         </div>
@@ -1093,9 +1099,12 @@ export default function Dashboard() {
       <div key="email-distribution" className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-bold bg-gradient-to-r from-purple-600 to-purple-400 bg-clip-text text-transparent">
-              🎯 Répartition des emails
-            </h3>
+            <div className="flex items-center gap-2">
+              <BarChart3 className="h-6 w-6 text-purple-600" />
+              <h3 className="text-lg font-bold bg-gradient-to-r from-purple-600 to-purple-400 bg-clip-text text-transparent">
+                Répartition des emails
+              </h3>
+            </div>
             <p className="text-xs text-muted-foreground mt-1">Distribution par compte de messagerie</p>
           </div>
         </div>
@@ -1175,9 +1184,12 @@ export default function Dashboard() {
       <div key="appointments" className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-bold bg-gradient-to-r from-green-600 to-green-400 bg-clip-text text-transparent">
-              📅 Évolution des RDV
-            </h3>
+            <div className="flex items-center gap-2">
+              <Calendar className="h-6 w-6 text-green-600" />
+              <h3 className="text-lg font-bold bg-gradient-to-r from-green-600 to-green-400 bg-clip-text text-transparent">
+                Évolution des RDV
+              </h3>
+            </div>
             <p className="text-xs text-muted-foreground mt-1">Rendez-vous programmés par jour</p>
           </div>
         </div>
@@ -1264,9 +1276,12 @@ export default function Dashboard() {
       <div key="category-processing" className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-bold bg-gradient-to-r from-orange-600 to-orange-400 bg-clip-text text-transparent">
-              📈 Taux de traitement par catégorie
-            </h3>
+            <div className="flex items-center gap-2">
+              <TrendingUpIcon className="h-6 w-6 text-orange-600" />
+              <h3 className="text-lg font-bold bg-gradient-to-r from-orange-600 to-orange-400 bg-clip-text text-transparent">
+                Taux de traitement par catégorie
+              </h3>
+            </div>
             <p className="text-xs text-muted-foreground mt-1">Efficacité du traitement par type</p>
           </div>
         </div>
@@ -1359,9 +1374,12 @@ export default function Dashboard() {
       <div key="tasks-evolution" className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-bold bg-gradient-to-r from-cyan-600 to-cyan-400 bg-clip-text text-transparent">
-              ✓ Évolution des tâches
-            </h3>
+            <div className="flex items-center gap-2">
+              <CheckSquare className="h-6 w-6 text-cyan-600" />
+              <h3 className="text-lg font-bold bg-gradient-to-r from-cyan-600 to-cyan-400 bg-clip-text text-transparent">
+                Évolution des tâches
+              </h3>
+            </div>
             <p className="text-xs text-muted-foreground mt-1">Progression des tâches par statut</p>
           </div>
         </div>
@@ -1468,9 +1486,12 @@ export default function Dashboard() {
       <div key="alerts-evolution" className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-bold bg-gradient-to-r from-red-600 to-red-400 bg-clip-text text-transparent">
-              🔔 Évolution des alertes
-            </h3>
+            <div className="flex items-center gap-2">
+              <Bell className="h-6 w-6 text-red-600" />
+              <h3 className="text-lg font-bold bg-gradient-to-r from-red-600 to-red-400 bg-clip-text text-transparent">
+                Évolution des alertes
+              </h3>
+            </div>
             <p className="text-xs text-muted-foreground mt-1">Alertes actives et résolues</p>
           </div>
         </div>
