@@ -789,10 +789,7 @@ export default function Dashboard() {
 
         {/* Alerts List Card */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-            <CardTitle className="text-base">
-              Alertes actives
-            </CardTitle>
+          <CardHeader className="flex flex-row items-center justify-end space-y-0 pb-4">
             <div className="flex gap-2">
               <Button
                 size="sm"
