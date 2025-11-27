@@ -57,6 +57,7 @@ export default function Tasks() {
   const { toast } = useToast();
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const [selectedTaskStatus, setSelectedTaskStatus] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -457,7 +458,7 @@ export default function Tasks() {
 
           {/* Statistics Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
-            <Card className="border-l-4 border-l-blue-500">
+            <Card className="border-l-4 border-l-blue-500 hover-elevate cursor-pointer transition-all" onClick={() => setSelectedTaskStatus(selectedTaskStatus === 'nouveau' ? null : 'nouveau')} data-testid="card-status-nouveau">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -468,7 +469,7 @@ export default function Tasks() {
                 </div>
               </CardContent>
             </Card>
-            <Card className="border-l-4 border-l-orange-500">
+            <Card className="border-l-4 border-l-orange-500 hover-elevate cursor-pointer transition-all" onClick={() => setSelectedTaskStatus(selectedTaskStatus === 'en_cours' ? null : 'en_cours')} data-testid="card-status-en-cours">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -479,7 +480,7 @@ export default function Tasks() {
                 </div>
               </CardContent>
             </Card>
-            <Card className="border-l-4 border-l-green-500">
+            <Card className="border-l-4 border-l-green-500 hover-elevate cursor-pointer transition-all" onClick={() => setSelectedTaskStatus(selectedTaskStatus === 'termine' ? null : 'termine')} data-testid="card-status-termine">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -490,7 +491,7 @@ export default function Tasks() {
                 </div>
               </CardContent>
             </Card>
-            <Card className="border-l-4 border-l-red-500">
+            <Card className="border-l-4 border-l-red-500 hover-elevate cursor-pointer transition-all" onClick={() => setSelectedTaskStatus(selectedTaskStatus === 'urgent' ? null : 'urgent')} data-testid="card-status-urgent">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -508,24 +509,30 @@ export default function Tasks() {
 
         {/* Kanban Columns */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <StatusColumn
-            title="Nouveau"
-            icon={Circle}
-            tasks={tasksByStatus.nouveau}
-            status="nouveau"
-          />
-          <StatusColumn
-            title="En cours"
-            icon={Clock}
-            tasks={tasksByStatus.en_cours}
-            status="en_cours"
-          />
-          <StatusColumn
-            title="Terminé"
-            icon={CheckCircle2}
-            tasks={tasksByStatus.termine}
-            status="termine"
-          />
+          {(!selectedTaskStatus || selectedTaskStatus === 'nouveau') && (
+            <StatusColumn
+              title="Nouveau"
+              icon={Circle}
+              tasks={selectedTaskStatus === 'urgent' ? [] : tasksByStatus.nouveau}
+              status="nouveau"
+            />
+          )}
+          {(!selectedTaskStatus || selectedTaskStatus === 'en_cours') && (
+            <StatusColumn
+              title="En cours"
+              icon={Clock}
+              tasks={selectedTaskStatus === 'urgent' ? [] : tasksByStatus.en_cours}
+              status="en_cours"
+            />
+          )}
+          {(!selectedTaskStatus || selectedTaskStatus === 'termine') && (
+            <StatusColumn
+              title="Terminé"
+              icon={CheckCircle2}
+              tasks={selectedTaskStatus === 'urgent' ? [] : tasksByStatus.termine}
+              status="termine"
+            />
+          )}
         </div>
 
       {/* Task Detail Dialog */}
