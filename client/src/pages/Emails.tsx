@@ -688,7 +688,7 @@ export default function Emails() {
       {/* Stat Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {/* Nouveau Card */}
-        <Card className="p-4 border-l-4 border-l-chart-2 hover-elevate">
+        <Card className="p-4 border-l-4 border-l-chart-2 hover-elevate cursor-pointer transition-all" onClick={() => setStatusFilter("nouveau")} data-testid="card-status-nouveau">
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1">
               <p className="text-xs text-muted-foreground font-medium mb-1">Nouveau</p>
@@ -699,7 +699,7 @@ export default function Emails() {
         </Card>
 
         {/* En cours Card */}
-        <Card className="p-4 border-l-4 border-l-chart-3 hover-elevate">
+        <Card className="p-4 border-l-4 border-l-chart-3 hover-elevate cursor-pointer transition-all" onClick={() => setStatusFilter("en_cours")} data-testid="card-status-en-cours">
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1">
               <p className="text-xs text-muted-foreground font-medium mb-1">En cours</p>
@@ -710,7 +710,7 @@ export default function Emails() {
         </Card>
 
         {/* Traité Card */}
-        <Card className="p-4 border-l-4 border-l-emerald-500 hover-elevate">
+        <Card className="p-4 border-l-4 border-l-emerald-500 hover-elevate cursor-pointer transition-all" onClick={() => setStatusFilter("traite")} data-testid="card-status-traite">
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1">
               <p className="text-xs text-muted-foreground font-medium mb-1">Traité</p>
@@ -721,7 +721,7 @@ export default function Emails() {
         </Card>
 
         {/* Archivé Card */}
-        <Card className="p-4 border-l-4 border-l-muted hover-elevate">
+        <Card className="p-4 border-l-4 border-l-muted hover-elevate cursor-pointer transition-all" onClick={() => setStatusFilter("archive")} data-testid="card-status-archive">
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1">
               <p className="text-xs text-muted-foreground font-medium mb-1">Archivé</p>
