@@ -777,19 +777,17 @@ export default function Dashboard() {
 
     return (
       <div key="alerts" className="col-span-full space-y-4">
-        {/* Header avec gradient et description */}
+        {/* Header avec gradient, description et boutons */}
         <div>
-          <h2 className="text-3xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
-            Alertes
-          </h2>
-          <p className="text-muted-foreground text-sm mt-1">
-            Aperçu de vos alertes avec vue complète disponible ci-dessous
-          </p>
-        </div>
-
-        {/* Alerts List Card */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-end space-y-0 pb-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
+                Alertes
+              </h2>
+              <p className="text-muted-foreground text-sm mt-1">
+                Aperçu de vos alertes avec vue complète disponible ci-dessous
+              </p>
+            </div>
             <div className="flex gap-2">
               <Button
                 size="sm"
@@ -811,8 +809,12 @@ export default function Dashboard() {
                 Voir tout
               </Button>
             </div>
-          </CardHeader>
-          <CardContent>
+          </div>
+        </div>
+
+        {/* Alerts List Card */}
+        <Card>
+          <CardContent className="pt-6">
             {alertsLoading ? (
               <div className="space-y-3">
                 {[...Array(3)].map((_, i) => (
