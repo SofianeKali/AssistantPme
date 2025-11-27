@@ -1700,7 +1700,7 @@ export default function Dashboard() {
           <div>
             <div className="flex items-center gap-3 mb-2">
               <Gauge className="h-8 w-8 text-cyan-600" />
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent" data-testid="text-title-dashboard" title="Mon cockpit">
+              <h1 className="text-4xl font-bold text-cyan-600" data-testid="text-title-dashboard" title="Mon cockpit">
                 Mon cockpit
               </h1>
             </div>
