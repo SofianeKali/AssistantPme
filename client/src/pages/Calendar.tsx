@@ -296,7 +296,7 @@ export default function Calendar() {
             <Card>
               <CardContent className="p-4">
                 {/* Sticky Header with Days */}
-                <div className="grid gap-1 sticky top-0 z-50 bg-background mb-2" style={{ gridTemplateColumns: "60px repeat(7, 1fr)" }}>
+                <div className="grid gap-1 sticky top-0 z-50 bg-card mb-2" style={{ gridTemplateColumns: "60px repeat(7, 1fr)" }}>
                   <div className="font-semibold text-xs text-center p-2">Heure</div>
                   {getWeekDays().map((day) => (
                     <div
