@@ -175,6 +175,7 @@ export default function Tags() {
             </div>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {/* Tags Grid */}
