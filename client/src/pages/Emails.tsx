@@ -1149,7 +1149,7 @@ export default function Emails() {
                   <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
                     <span className="font-medium text-foreground">De:</span>
                     <span className="break-all">
-                      {formatEmailAddress(selectedEmail?.from || "")}
+                      {selectedEmail?.from || ""}
                     </span>
                   </div>
                   {selectedEmail?.to && (
