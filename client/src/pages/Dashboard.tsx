@@ -598,22 +598,17 @@ export default function Dashboard() {
 
     return (
       <div key="tasks" className="col-span-full space-y-4">
-        {/* Header avec gradient et description */}
+        {/* Header avec gradient, description et boutons */}
         <div>
-          <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            Tâches
-          </h2>
-          <p className="text-muted-foreground text-sm mt-1">
-            Aperçu de vos tâches avec vue complète disponible ci-dessous
-          </p>
-        </div>
-
-        {/* Tasks List Card */}
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-            <CardTitle className="text-base">
-              Tâches en cours
-            </CardTitle>
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                Tâches
+              </h2>
+              <p className="text-muted-foreground text-sm mt-1">
+                Aperçu de vos tâches avec vue complète disponible ci-dessous
+              </p>
+            </div>
             <Button
               size="sm"
               variant="outline"
@@ -622,6 +617,15 @@ export default function Dashboard() {
             >
               Voir tout
             </Button>
+          </div>
+        </div>
+
+        {/* Tasks List Card */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+            <CardTitle className="text-base">
+              Tâches en cours
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {tasksLoading ? (
