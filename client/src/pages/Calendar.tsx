@@ -393,7 +393,15 @@ export default function Calendar() {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => setSelectedDate((d) => new Date(d.getFullYear(), d.getMonth() - 1))}
+          onClick={() => {
+            if (viewMode === "day") {
+              setSelectedDate((d) => addDays(d, -1));
+            } else if (viewMode === "week") {
+              setSelectedDate((d) => addDays(d, -7));
+            } else {
+              setSelectedDate((d) => new Date(d.getFullYear(), d.getMonth() - 1));
+            }
+          }}
           data-testid="button-prev-period"
         >
           <ChevronLeft className="h-4 w-4" />
@@ -406,7 +414,15 @@ export default function Calendar() {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => setSelectedDate((d) => new Date(d.getFullYear(), d.getMonth() + 1))}
+          onClick={() => {
+            if (viewMode === "day") {
+              setSelectedDate((d) => addDays(d, 1));
+            } else if (viewMode === "week") {
+              setSelectedDate((d) => addDays(d, 7));
+            } else {
+              setSelectedDate((d) => new Date(d.getFullYear(), d.getMonth() + 1));
+            }
+          }}
           data-testid="button-next-period"
         >
           <ChevronRight className="h-4 w-4" />
