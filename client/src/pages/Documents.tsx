@@ -67,14 +67,20 @@ export default function Documents() {
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold text-foreground mb-2">Documents</h1>
-          <p className="text-sm text-muted-foreground">
-            Gestion centralisée de tous vos documents
-          </p>
-        </div>
-        <div className="flex gap-2">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <FileText className="h-8 w-8 text-orange-600" />
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-orange-600 to-purple-600 bg-clip-text text-transparent">
+                Documents
+              </h1>
+            </div>
+            <p className="text-muted-foreground text-lg mt-1">
+              Gestion centralisée de tous vos documents
+            </p>
+          </div>
+          <div className="flex gap-2">
           <Button
             variant="outline"
             size="icon"
