@@ -23,6 +23,10 @@ import {
   AlertCircle,
   Inbox,
   Gauge,
+  BarChart3,
+  PieChart as PieChartIcon,
+  TrendingUpIcon,
+  Info,
 } from "lucide-react";
 import * as LucideIcons from "lucide-react";
 import { Badge } from "@/components/ui/badge";
