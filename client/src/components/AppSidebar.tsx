@@ -249,7 +249,7 @@ export function AppSidebar() {
                         {showBadge && (
                           <Badge
                             variant="secondary"
-                            className="ml-auto text-xs"
+                            className={`ml-auto text-xs ${getIconColor(item.url)}`}
                             data-testid={`badge-count-${item.url.slice(1)}`}
                           >
                             {isTasksMenu ? tasksBadgeText : badgeCount}
