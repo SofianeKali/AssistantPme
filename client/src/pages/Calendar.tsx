@@ -330,12 +330,12 @@ export default function Calendar() {
                             return (
                               <div
                                 key={`${day.toISOString()}-${hour}`}
-                                className="border-t p-1 min-h-16 relative"
+                                className="border-t p-1 min-h-16 relative overflow-hidden"
                               >
                                 {dayAppointments.map((apt) => (
                                   <div
                                     key={apt.id}
-                                    className={`text-xs p-1 rounded border mb-1 cursor-pointer hover-elevate truncate ${getStatusColor(apt.status)}`}
+                                    className={`text-xs p-1 rounded border mb-1 cursor-pointer hover-elevate truncate max-w-full ${getStatusColor(apt.status)}`}
                                     title={apt.title}
                                     data-testid={`appointment-${apt.id}`}
                                     onClick={() => {
