@@ -3072,6 +3072,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update user subscription status
       await storage.updateUserSubscriptionStatus(userId, "cancelled");
 
+  // Reactivate subscription endpoint (cancel the cancellation)
+  app.post("/api/subscriptions/reactivate", isAuthenticated, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const userId = user.id;
+
+      // Check if user has a subscription
+      if (!user.stripeSubscriptionId) {
+        return res.status(400).json({
+          message: "L'utilisateur n'a pas d'abonnement à réactiver",
+        });
+      }
+
+      // Reactivate the subscription at Stripe
+      const subscription = await stripe.subscriptions.update(
+        user.stripeSubscriptionId,
+        {
+          cancel_at_period_end: false,
+        },
+      );
+
+      console.log(
+        `[Stripe] Subscription ${user.stripeSubscriptionId} reactivated for user ${userId}`,
+      );
+
+      // Update user subscription status back to active
+      await storage.updateUserSubscriptionStatus(userId, "active");
+
+      // Send reactivation email
+      try {
+        const { sendReactivationEmail } = await import("./emailService");
+
+        const allEmailAccounts = await storage.getEmailAccounts();
+        const defaultAccount = allEmailAccounts.find(
+          (acc) => acc.email === "kalizahir@yahoo.fr" && acc.isActive,
+        );
+
+        if (defaultAccount) {
+          const planNames: Record<string, string> = {
+            starter: "Starter",
+            professional: "Professional",
+            enterprise: "Enterprise",
+            custom: "Custom",
+            trial: "Trial",
+          };
+
+          await sendReactivationEmail({
+            to: user.email,
+            firstName: user.firstName || "Utilisateur",
+            lastName: user.lastName || "",
+            planName: planNames[user.subscriptionPlan] || user.subscriptionPlan,
+            adminEmailAccount: defaultAccount,
+          });
+
+          console.log(`[API] Reactivation email sent to ${user.email}`);
+        }
+      } catch (emailError) {
+        console.error("[API] Failed to send reactivation email:", emailError);
+      }
+
+      res.json({
+        message: "Abonnement réactivé avec succès",
+        subscription: {
+          id: subscription.id,
+          status: subscription.status,
+          cancel_at_period_end: subscription.cancel_at_period_end,
+          current_period_end: new Date(subscription.current_period_end * 1000),
+        },
+      });
+    } catch (error) {
+      console.error("[API] Error reactivating subscription:", error);
+      res.status(500).json({
+        message: "Erreur lors de la réactivation de l'abonnement",
+        error: String(error),
+      });
+    }
+  });
+
       // Send cancellation email
       try {
         const { sendCancellationEmail } = await import("./emailService");
