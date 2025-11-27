@@ -18,10 +18,12 @@ export default function Alerts() {
   const [, setLocation] = useLocation();
   const [selectedAlerts, setSelectedAlerts] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<string>("active");
+  const [selectedSeverity, setSelectedSeverity] = useState<string | null>(null);
   
   // Reset selection when changing tabs
   useEffect(() => {
     setSelectedAlerts([]);
+    setSelectedSeverity(null);
   }, [activeTab]);
 
   const { data: activeAlerts, isLoading: activeLoading } = useQuery<any[]>({
@@ -135,6 +137,11 @@ export default function Alerts() {
   const AlertList = ({ alerts, isLoading, showResolveButton = true }: any) => {
     const allSelected = alerts?.length > 0 && alerts.every((a: any) => selectedAlerts.includes(a.id));
     const someSelected = alerts?.some((a: any) => selectedAlerts.includes(a.id));
+    
+    // Filter alerts by selectedSeverity
+    const filteredAlerts = selectedSeverity 
+      ? alerts?.filter((a: any) => a.severity === selectedSeverity) 
+      : alerts;
 
     return (
       <div className="space-y-4">
@@ -263,7 +270,7 @@ export default function Alerts() {
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-          <Card className="border-l-4 border-l-red-500">
+          <Card className="border-l-4 border-l-red-500 hover-elevate cursor-pointer transition-all" onClick={() => setSelectedSeverity(selectedSeverity === "critical" ? null : "critical")} data-testid="card-severity-critical">
             <div className="p-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -276,7 +283,7 @@ export default function Alerts() {
               </div>
             </div>
           </Card>
-          <Card className="border-l-4 border-l-orange-500">
+          <Card className="border-l-4 border-l-orange-500 hover-elevate cursor-pointer transition-all" onClick={() => setSelectedSeverity(selectedSeverity === "warning" ? null : "warning")} data-testid="card-severity-warning">
             <div className="p-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -289,7 +296,7 @@ export default function Alerts() {
               </div>
             </div>
           </Card>
-          <Card className="border-l-4 border-l-blue-500">
+          <Card className="border-l-4 border-l-blue-500 hover-elevate cursor-pointer transition-all" onClick={() => setSelectedSeverity(selectedSeverity === "info" ? null : "info")} data-testid="card-severity-info">
             <div className="p-4">
               <div className="flex items-center justify-between">
                 <div>
