@@ -135,23 +135,23 @@ export default function Alerts() {
   };
 
   const AlertList = ({ alerts, isLoading, showResolveButton = true }: any) => {
-    const allSelected = alerts?.length > 0 && alerts.every((a: any) => selectedAlerts.includes(a.id));
-    const someSelected = alerts?.some((a: any) => selectedAlerts.includes(a.id));
-    
-    // Filter alerts by selectedSeverity
-    const filteredAlerts = selectedSeverity 
+    // Filter alerts by selectedSeverity first
+    const toDisplay = selectedSeverity 
       ? alerts?.filter((a: any) => a.severity === selectedSeverity) 
       : alerts;
+    
+    const allSelected = toDisplay?.length > 0 && toDisplay.every((a: any) => selectedAlerts.includes(a.id));
+    const someSelected = toDisplay?.some((a: any) => selectedAlerts.includes(a.id));
 
     return (
       <div className="space-y-4">
         {/* Bulk actions bar */}
-        {showResolveButton && alerts && alerts.length > 0 && (
+        {showResolveButton && filteredAlerts && filteredAlerts.length > 0 && (
           <div className="flex items-center justify-between gap-4 p-4 bg-muted/50 rounded-lg border transition-all">
             <div className="flex items-center gap-3">
               <Checkbox
                 checked={allSelected ? true : someSelected ? 'indeterminate' : false}
-                onCheckedChange={(checked) => handleSelectAll(alerts, checked as boolean)}
+                onCheckedChange={(checked) => handleSelectAll(filteredAlerts, checked as boolean)}
                 data-testid="checkbox-select-all"
               />
               <span className="text-sm font-medium text-muted-foreground">
@@ -177,8 +177,8 @@ export default function Alerts() {
 
         {isLoading ? (
           [...Array(5)].map((_, i) => <Skeleton key={i} className="h-24" />)
-        ) : alerts && alerts.length > 0 ? (
-          alerts.map((alert: any) => {
+        ) : filteredAlerts && filteredAlerts.length > 0 ? (
+          filteredAlerts.map((alert: any) => {
             const SeverityIcon = getSeverityIcon(alert.severity);
             return (
               <Card
