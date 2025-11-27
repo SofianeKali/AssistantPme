@@ -1553,7 +1553,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/appointments/:id", isAuthenticated, async (req: any, res) => {
     try {
       const { id } = req.params;
+      const companyId = (req.user as any).companyId;
       const updates = req.body;
+
+      // Verify appointment exists and belongs to company
+      const appointment = await storage.getAppointmentById(id);
+      if (!appointment) {
+        return res.status(404).json({ message: "Rendez-vous introuvable" });
+      }
+      if (appointment.companyId !== companyId) {
+        return res.status(403).json({ message: "Accès non autorisé" });
+      }
 
       // Convert and validate ISO date strings to Date objects
       if (updates.startTime) {
@@ -1571,15 +1581,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Regenerate AI suggestions if title or description changed
       if (updates.title || updates.description) {
-        const appointment = await storage.getAppointmentById(id);
-        if (appointment) {
-          const suggestions = await generateAppointmentSuggestions({
-            title: updates.title || appointment.title,
-            description: updates.description || appointment.description,
-            attendees: updates.attendees || appointment.attendees,
-          });
-          updates.aiSuggestions = suggestions;
-        }
+        const suggestions = await generateAppointmentSuggestions({
+          title: updates.title || appointment.title,
+          description: updates.description || appointment.description,
+          attendees: updates.attendees || appointment.attendees,
+        });
+        updates.aiSuggestions = suggestions;
       }
 
       const updatedAppointment = await storage.updateAppointment(id, updates);
@@ -1601,6 +1608,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req: any, res) => {
       try {
         const { id } = req.params;
+        const companyId = (req.user as any).companyId;
+
+        // Verify appointment exists and belongs to company
+        const appointment = await storage.getAppointmentById(id);
+        if (!appointment) {
+          return res.status(404).json({ message: "Rendez-vous introuvable" });
+        }
+        if (appointment.companyId !== companyId) {
+          return res.status(403).json({ message: "Accès non autorisé" });
+        }
+
         const deleted = await storage.deleteAppointment(id);
         if (!deleted) {
           return res.status(404).json({ message: "Rendez-vous introuvable" });
