@@ -50,7 +50,7 @@ export function ChartPeriodControls({
       </div>
 
       {/* Navigation */}
-      <div className="flex items-center gap-1 bg-muted/30 rounded-lg p-0.5">
+      <div className="flex items-center gap-1 bg-muted/30 rounded-lg p-0.5 min-w-0">
         <Button
           size="icon"
           variant="ghost"
@@ -60,7 +60,7 @@ export function ChartPeriodControls({
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>
-        <span className="text-xs font-medium text-muted-foreground px-2 whitespace-nowrap min-w-[140px] text-center">
+        <span className="text-xs sm:text-sm font-medium text-muted-foreground px-1 sm:px-2 truncate flex-1 sm:flex-none sm:min-w-[140px] text-center">
           {periodLabel}
         </span>
         <Button
