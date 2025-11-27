@@ -259,13 +259,17 @@ export default function Calendar() {
     },
   });
 
+  // Normalize date to local YYYY-MM-DD for comparison
+  const getDateKey = (date: Date): string => {
+    return format(date, "yyyy-MM-dd");
+  };
+
   // Get appointments for specific date
   const getAppointmentsForDate = (date: Date) => {
-    const start = startOfDay(date);
-    const end = endOfDay(date);
+    const targetDateKey = getDateKey(date);
     return appointments.filter((apt) => {
-      const aptDate = new Date(apt.startTime);
-      return aptDate >= start && aptDate <= end;
+      const aptDateKey = getDateKey(new Date(apt.startTime));
+      return aptDateKey === targetDateKey;
     });
   };
 
@@ -274,8 +278,10 @@ export default function Calendar() {
     const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1 });
     const weekEnd = endOfWeek(selectedDate, { weekStartsOn: 1 });
     return appointments.filter((apt) => {
-      const aptDate = new Date(apt.startTime);
-      return aptDate >= weekStart && aptDate <= weekEnd;
+      const aptDateKey = getDateKey(new Date(apt.startTime));
+      const startKey = getDateKey(weekStart);
+      const endKey = getDateKey(weekEnd);
+      return aptDateKey >= startKey && aptDateKey <= endKey;
     });
   };
 
@@ -284,8 +290,10 @@ export default function Calendar() {
     const monthStart = startOfMonth(selectedDate);
     const monthEnd = endOfMonth(selectedDate);
     return appointments.filter((apt) => {
-      const aptDate = new Date(apt.startTime);
-      return aptDate >= monthStart && aptDate <= monthEnd;
+      const aptDateKey = getDateKey(new Date(apt.startTime));
+      const startKey = getDateKey(monthStart);
+      const endKey = getDateKey(monthEnd);
+      return aptDateKey >= startKey && aptDateKey <= endKey;
     });
   };
 
