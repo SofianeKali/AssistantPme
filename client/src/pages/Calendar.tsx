@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, X, MapPin, Users } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, Clock, MapPin, Users } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -10,6 +12,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import {
   format,
   startOfMonth,
@@ -45,11 +49,55 @@ export default function Calendar() {
   const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [showAppointmentModal, setShowAppointmentModal] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editData, setEditData] = useState<Partial<Appointment>>({});
+  const { toast } = useToast();
 
   // Fetch appointments
-  const { data: appointments = [], isLoading } = useQuery<Appointment[]>({
+  const { data: appointments = [], isLoading, refetch } = useQuery<Appointment[]>({
     queryKey: ["/api/appointments"],
     staleTime: 5 * 60 * 1000,
+  });
+
+  // Delete appointment mutation
+  const deleteAppointmentMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await fetch(`/api/appointments/${id}`, { method: "DELETE" });
+      if (!response.ok) throw new Error("Failed to delete appointment");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/appointments"] });
+      setShowAppointmentModal(false);
+      toast({ title: "Rendez-vous supprimé", description: "Le rendez-vous a été annulé avec succès." });
+    },
+    onError: (error) => {
+      toast({ title: "Erreur", description: "Impossible de supprimer le rendez-vous", variant: "destructive" });
+      console.error(error);
+    },
+  });
+
+  // Update appointment mutation
+  const updateAppointmentMutation = useMutation({
+    mutationFn: async (data: { id: string; updates: Partial<Appointment> }) => {
+      const response = await fetch(`/api/appointments/${data.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data.updates),
+      });
+      if (!response.ok) throw new Error("Failed to update appointment");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/appointments"] });
+      setShowAppointmentModal(false);
+      setIsEditMode(false);
+      toast({ title: "Rendez-vous modifié", description: "Le rendez-vous a été mis à jour avec succès." });
+    },
+    onError: (error) => {
+      toast({ title: "Erreur", description: "Impossible de modifier le rendez-vous", variant: "destructive" });
+      console.error(error);
+    },
   });
 
   // Get appointments for specific date
@@ -431,65 +479,135 @@ export default function Calendar() {
 
           {selectedAppointment && (
             <div className="space-y-4">
-              {/* Date and Time */}
-              <div className="flex items-start gap-3">
-                <Clock className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                <div>
-                  <p className="text-sm font-medium">
-                    {format(new Date(selectedAppointment.startTime), "EEEE d MMMM yyyy", {
-                      locale: fr,
-                    })}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {format(new Date(selectedAppointment.startTime), "HH:mm", { locale: fr })} -{" "}
-                    {format(new Date(selectedAppointment.endTime), "HH:mm", { locale: fr })}
-                  </p>
-                </div>
-              </div>
-
-              {/* Location */}
-              {selectedAppointment.location && (
-                <div className="flex items-start gap-3">
-                  <MapPin className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+              {isEditMode ? (
+                // Edit Form
+                <div className="space-y-3">
                   <div>
-                    <p className="text-sm font-medium">Lieu</p>
-                    <p className="text-sm text-muted-foreground">{selectedAppointment.location}</p>
+                    <label className="text-sm font-medium">Titre</label>
+                    <Input
+                      value={editData.title || selectedAppointment.title}
+                      onChange={(e) => setEditData({ ...editData, title: e.target.value })}
+                      data-testid="input-appointment-title"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Description</label>
+                    <Textarea
+                      value={editData.description || selectedAppointment.description || ""}
+                      onChange={(e) => setEditData({ ...editData, description: e.target.value })}
+                      data-testid="input-appointment-description"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Lieu</label>
+                    <Input
+                      value={editData.location || selectedAppointment.location || ""}
+                      onChange={(e) => setEditData({ ...editData, location: e.target.value })}
+                      data-testid="input-appointment-location"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      className="flex-1"
+                      onClick={() => {
+                        updateAppointmentMutation.mutate({
+                          id: selectedAppointment.id,
+                          updates: editData,
+                        });
+                      }}
+                      disabled={updateAppointmentMutation.isPending}
+                      data-testid="button-save-appointment"
+                    >
+                      {updateAppointmentMutation.isPending ? "Enregistrement..." : "Enregistrer"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => setIsEditMode(false)}
+                      data-testid="button-cancel-edit"
+                    >
+                      Annuler
+                    </Button>
                   </div>
                 </div>
-              )}
-
-              {/* Attendees */}
-              {selectedAppointment.attendees && Array.isArray(selectedAppointment.attendees) && selectedAppointment.attendees.length > 0 && (
-                <div className="flex items-start gap-3">
-                  <Users className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="text-sm font-medium">Participants</p>
-                    <p className="text-sm text-muted-foreground">
-                      {selectedAppointment.attendees.join(", ")}
-                    </p>
+              ) : (
+                // View Mode
+                <>
+                  {/* Date and Time */}
+                  <div className="flex items-start gap-3">
+                    <Clock className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium">
+                        {format(new Date(selectedAppointment.startTime), "EEEE d MMMM yyyy", {
+                          locale: fr,
+                        })}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {format(new Date(selectedAppointment.startTime), "HH:mm", { locale: fr })} -{" "}
+                        {format(new Date(selectedAppointment.endTime), "HH:mm", { locale: fr })}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              )}
 
-              {/* Description */}
-              {selectedAppointment.description && (
-                <div className="pt-2 border-t">
-                  <p className="text-sm font-medium mb-2">Description</p>
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                    {selectedAppointment.description}
-                  </p>
-                </div>
-              )}
+                  {/* Location */}
+                  {selectedAppointment.location && (
+                    <div className="flex items-start gap-3">
+                      <MapPin className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium">Lieu</p>
+                        <p className="text-sm text-muted-foreground">{selectedAppointment.location}</p>
+                      </div>
+                    </div>
+                  )}
 
-              {/* Action Buttons */}
-              <div className="flex gap-2 pt-4">
-                <Button variant="outline" className="flex-1" data-testid="button-edit-appointment">
-                  Modifier
-                </Button>
-                <Button variant="destructive" className="flex-1" data-testid="button-delete-appointment">
-                  Supprimer
-                </Button>
-              </div>
+                  {/* Attendees */}
+                  {selectedAppointment.attendees && Array.isArray(selectedAppointment.attendees) && selectedAppointment.attendees.length > 0 && (
+                    <div className="flex items-start gap-3">
+                      <Users className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium">Participants</p>
+                        <p className="text-sm text-muted-foreground">
+                          {selectedAppointment.attendees.join(", ")}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Description */}
+                  {selectedAppointment.description && (
+                    <div className="pt-2 border-t">
+                      <p className="text-sm font-medium mb-2">Description</p>
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                        {selectedAppointment.description}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-2 pt-4">
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={() => {
+                        setIsEditMode(true);
+                        setEditData({});
+                      }}
+                      data-testid="button-edit-appointment"
+                    >
+                      Modifier
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      className="flex-1"
+                      onClick={() => deleteAppointmentMutation.mutate(selectedAppointment.id)}
+                      disabled={deleteAppointmentMutation.isPending}
+                      data-testid="button-delete-appointment"
+                    >
+                      {deleteAppointmentMutation.isPending ? "Suppression..." : "Supprimer"}
+                    </Button>
+                  </div>
+                </>
+              )}
             </div>
           )}
         </DialogContent>
