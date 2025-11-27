@@ -32,6 +32,7 @@ import {
   Archive,
   TrendingUp,
   AlertCircle,
+  ArrowLeft,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -978,33 +979,387 @@ export default function Emails() {
         </Card>
       )}
 
-      {/* Email List */}
-      <Card className="divide-y divide-border">
-        {/* Select All Header */}
-        {emails && emails.length > 0 && (
-          <div className="p-4 bg-muted/30">
-            <div className="flex items-center gap-3">
-              <Checkbox
-                checked={
-                  emails.length > 0 && selectedEmailIds.length === emails.length
-                }
-                onCheckedChange={handleSelectAll}
-                data-testid="checkbox-select-all"
-              />
-              <span className="text-sm text-muted-foreground">
-                Tout sélectionner
-              </span>
-            </div>
-          </div>
-        )}
+      {/* Email Detail View or Email List */}
+      {selectedEmail ? (
+        <div className="space-y-6">
+          {/* Back Button */}
+          <Button
+            variant="outline"
+            onClick={() => {
+              setSelectedEmail(null);
+              setShowResponseDialog(false);
+            }}
+            className="flex items-center gap-2"
+            data-testid="button-back-to-list"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Retour à la liste
+          </Button>
 
-        {isLoading ? (
-          <div className="p-4 space-y-3">
-            {[...Array(5)].map((_, i) => (
-              <Skeleton key={i} className="h-20" />
-            ))}
-          </div>
-        ) : emails && emails.length > 0 ? (
+          {/* Email Detail Card */}
+          <Card className="p-6 md:p-8">
+            <div className="space-y-6">
+              {/* Header */}
+              <div className="space-y-3 border-b pb-4">
+                <h1 className="text-2xl md:text-3xl font-bold break-words">
+                  {selectedEmail?.subject}
+                </h1>
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                    <span className="font-medium text-foreground">De:</span>
+                    <span className="break-all">
+                      {formatEmailAddress(selectedEmail?.from || "")}
+                    </span>
+                  </div>
+                  {selectedEmail?.to && (
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                      <span className="font-medium text-foreground">À:</span>
+                      <span className="break-all">
+                        {formatEmailAddress(selectedEmail?.to)}
+                      </span>
+                    </div>
+                  )}
+                  {selectedEmail?.receivedAt && (
+                    <div>
+                      {format(
+                        new Date(selectedEmail.receivedAt),
+                        "dd MMMM yyyy à HH:mm",
+                        { locale: fr },
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* AI Analysis */}
+              {selectedEmail?.aiAnalysis && (
+                <div className="p-4 rounded-md bg-primary/5 border border-primary/20">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-medium">Analyse IA</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground break-words">
+                    {selectedEmail.aiAnalysis.summary || "Analyse en cours..."}
+                  </p>
+                </div>
+              )}
+
+              {/* Sent Replies History */}
+              {isLoadingReplies ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-40" />
+                  <Skeleton className="h-20 w-full" />
+                </div>
+              ) : (
+                emailReplies.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <MailCheck className="h-4 w-4" />
+                      <span>Réponses envoyées ({emailReplies.length})</span>
+                    </div>
+                    <div className="space-y-3">
+                      {emailReplies.map((reply: any) => (
+                        <div
+                          key={reply.id}
+                          className="p-4 rounded-md bg-muted/50 border"
+                          data-testid={`reply-${reply.id}`}
+                        >
+                          <div className="flex items-start gap-3 mb-3">
+                            <Avatar className="h-8 w-8">
+                              <AvatarFallback className="text-xs">
+                                {reply.sentByUserId?.charAt(0)?.toUpperCase() ||
+                                  "U"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-sm font-medium">
+                                  Envoyée le{" "}
+                                  {format(
+                                    new Date(reply.sentAt),
+                                    "dd MMM yyyy à HH:mm",
+                                    { locale: fr },
+                                  )}
+                                </span>
+                                {reply.aiGenerated && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    <Sparkles className="h-3 w-3 mr-1" />
+                                    IA
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div
+                            className="prose prose-sm max-w-none text-sm"
+                            dangerouslySetInnerHTML={{
+                              __html: reply.htmlContent,
+                            }}
+                          />
+                          {reply.attachments && reply.attachments.length > 0 && (
+                            <div className="mt-3 pt-3 border-t">
+                              <div className="flex flex-wrap gap-2">
+                                {reply.attachments.map(
+                                  (att: any, idx: number) => (
+                                    <div
+                                      key={idx}
+                                      className="flex items-center gap-2 px-2 py-1 rounded bg-background/50 text-xs"
+                                      data-testid={`reply-attachment-${idx}`}
+                                    >
+                                      <Paperclip className="h-3 w-3" />
+                                      <span className="truncate max-w-[200px]">
+                                        {att.name}
+                                      </span>
+                                      <span className="text-muted-foreground">
+                                        ({(att.size / 1024).toFixed(1)} KB)
+                                      </span>
+                                    </div>
+                                  ),
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              )}
+
+              {/* Suggested Response */}
+              {selectedEmail?.suggestedResponse && isAiResponse && (
+                <div className="p-4 rounded-md bg-chart-2/5 border border-chart-2/20">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Sparkles className="h-4 w-4 text-chart-2" />
+                    <span className="text-sm font-medium">
+                      Réponse suggérée par IA
+                    </span>
+                  </div>
+                  <div
+                    className="prose prose-sm max-w-none text-sm text-muted-foreground"
+                    dangerouslySetInnerHTML={{
+                      __html: selectedEmail.suggestedResponse,
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Email Body */}
+              <div className="prose prose-sm max-w-none">
+                <div
+                  className="text-sm break-words overflow-wrap-anywhere"
+                  dangerouslySetInnerHTML={{
+                    __html:
+                      selectedEmail?.htmlBody ||
+                      selectedEmail?.body?.replace(/\n/g, "<br>") ||
+                      "",
+                  }}
+                />
+              </div>
+
+              {/* Attachments */}
+              {emailDocuments.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <Paperclip className="h-4 w-4" />
+                    <span>Pièces jointes ({emailDocuments.length})</span>
+                  </div>
+                  <div className="grid gap-2">
+                    {emailDocuments.map((doc: any) => (
+                      <button
+                        key={doc.id}
+                        onClick={() => {
+                          if (doc.driveUrl || doc.storagePath) {
+                            if (doc.driveUrl) {
+                              window.open(doc.driveUrl, "_blank");
+                            } else {
+                              toast({
+                                title: "Fichier non disponible",
+                                description:
+                                  "Le fichier n'est pas encore stocké dans le cloud",
+                                variant: "destructive",
+                              });
+                            }
+                          } else {
+                            toast({
+                              title: "Fichier non disponible",
+                              description:
+                                "Le fichier n'est pas encore stocké dans le cloud",
+                              variant: "destructive",
+                            });
+                          }
+                        }}
+                        className="flex items-center gap-3 p-3 rounded-md border hover-elevate active-elevate-2 text-left transition-colors"
+                        data-testid={`attachment-${doc.id}`}
+                      >
+                        <FileIcon className="h-8 w-8 text-primary shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">
+                            {doc.filename}
+                          </p>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <span>{(doc.size / 1024).toFixed(1)} KB</span>
+                            {doc.storageProvider && (
+                              <>
+                                <span>•</span>
+                                <span>
+                                  {doc.storageProvider === "google_drive"
+                                    ? "Google Drive"
+                                    : doc.storageProvider === "onedrive"
+                                      ? "OneDrive"
+                                      : "Local"}
+                                </span>
+                              </>
+                            )}
+                            {doc.driveUrl && (
+                              <>
+                                <span>•</span>
+                                <span className="text-primary">
+                                  Cliquez pour ouvrir
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Custom Prompt Input */}
+              {!selectedEmail?.suggestedResponse && showPromptInput && (
+                <div className="space-y-2 p-4 rounded-md bg-muted/50 border">
+                  <label className="text-sm font-medium">
+                    Instructions personnalisées pour l'IA
+                  </label>
+                  <Textarea
+                    value={customPrompt}
+                    onChange={(e) => setCustomPrompt(e.target.value)}
+                    placeholder="Ex: Répondre de manière formelle en proposant un rendez-vous la semaine prochaine..."
+                    rows={3}
+                    data-testid="textarea-custom-prompt"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    L'IA utilisera ces instructions pour générer la réponse
+                  </p>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex flex-col gap-3 pt-4 border-t">
+                <Button
+                  onClick={() => {
+                    if (!selectedEmail?.suggestedResponse) {
+                      setSelectedEmail({
+                        ...selectedEmail,
+                        suggestedResponse: "",
+                      });
+                      setIsAiResponse(false);
+                    }
+                    setShowResponseDialog(true);
+                  }}
+                  variant={
+                    selectedEmail?.suggestedResponse ? "outline" : "default"
+                  }
+                  data-testid="button-manual-reply"
+                  className="w-full"
+                >
+                  <Reply className="h-4 w-4 mr-2" />
+                  {selectedEmail?.suggestedResponse
+                    ? "Modifier la réponse"
+                    : "Répondre"}
+                </Button>
+
+                {!selectedEmail?.suggestedResponse && (
+                  <div className="flex flex-col gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Button
+                        onClick={() =>
+                          generateResponseMutation.mutate({
+                            emailId: selectedEmail?.id,
+                            customPrompt: customPrompt || undefined,
+                          })
+                        }
+                        disabled={generateResponseMutation.isPending}
+                        data-testid="button-generate-response"
+                        variant="outline"
+                        className="flex-1"
+                      >
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        <span className="truncate">
+                          {generateResponseMutation.isPending
+                            ? "Génération..."
+                            : "Générer avec IA"}
+                        </span>
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setShowPromptInput(!showPromptInput);
+                          if (showPromptInput) {
+                            setCustomPrompt("");
+                          }
+                        }}
+                        data-testid="button-toggle-custom-prompt"
+                        className="sm:w-auto"
+                      >
+                        <span className="truncate">
+                          {showPromptInput ? "Masquer" : "Personnaliser"}
+                        </span>
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                {selectedEmail?.status !== "traite" && (
+                  <Button
+                    variant="outline"
+                    onClick={() =>
+                      markProcessedMutation.mutate(selectedEmail?.id)
+                    }
+                    disabled={markProcessedMutation.isPending}
+                    data-testid="button-mark-processed"
+                    className="w-full"
+                  >
+                    <Check className="h-4 w-4 mr-2" />
+                    {markProcessedMutation.isPending
+                      ? "En cours..."
+                      : "Marquer comme traité"}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </Card>
+        </div>
+      ) : (
+        <>
+          {/* Email List */}
+          <Card className="divide-y divide-border">
+            {/* Select All Header */}
+            {emails && emails.length > 0 && (
+              <div className="p-4 bg-muted/30">
+                <div className="flex items-center gap-3">
+                  <Checkbox
+                    checked={
+                      emails.length > 0 && selectedEmailIds.length === emails.length
+                    }
+                    onCheckedChange={handleSelectAll}
+                    data-testid="checkbox-select-all"
+                  />
+                  <span className="text-sm text-muted-foreground">
+                    Tout sélectionner
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {isLoading ? (
+              <div className="p-4 space-y-3">
+                {[...Array(5)].map((_, i) => (
+                  <Skeleton key={i} className="h-20" />
+                ))}
+              </div>
+            ) : emails && emails.length > 0 ? (
           emails.map((email: any) => (
             <div
               key={email.id}
@@ -1217,11 +1572,13 @@ export default function Emails() {
             <Mail className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <p className="text-sm text-muted-foreground">Aucun email trouvé</p>
           </div>
-        )}
-      </Card>
+            )}
+          </Card>
+        </>
+      )}
 
       {/* Pagination Controls */}
-      {!alertId && emailsData && (totalPages > 1 || page > 1) && (
+      {!selectedEmail && !alertId && emailsData && (totalPages > 1 || page > 1) && (
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 px-2 py-4">
           <div className="text-sm text-muted-foreground">
             {emailsData.total > 0 ? (
@@ -1353,347 +1710,6 @@ export default function Emails() {
         </DialogContent>
       </Dialog>
 
-      {/* Email Detail Dialog */}
-      <Dialog
-        open={!!selectedEmail}
-        onOpenChange={(open) => !open && setSelectedEmail(null)}
-      >
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto overflow-x-hidden w-[95vw] md:w-full">
-          <DialogHeader>
-            <DialogTitle className="text-base sm:text-xl break-words pr-8">
-              {selectedEmail?.subject}
-            </DialogTitle>
-            <div className="space-y-1 text-sm text-muted-foreground">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                <span className="font-medium text-foreground">De:</span>
-                <span className="break-all">
-                  {formatEmailAddress(selectedEmail?.from || "")}
-                </span>
-              </div>
-              {selectedEmail?.to && (
-                <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                  <span className="font-medium text-foreground">À:</span>
-                  <span className="break-all">
-                    {formatEmailAddress(selectedEmail?.to)}
-                  </span>
-                </div>
-              )}
-              {selectedEmail?.receivedAt && (
-                <div>
-                  {format(
-                    new Date(selectedEmail.receivedAt),
-                    "dd MMMM yyyy à HH:mm",
-                    { locale: fr },
-                  )}
-                </div>
-              )}
-            </div>
-          </DialogHeader>
-          <div className="space-y-4 overflow-x-hidden">
-            {/* AI Analysis */}
-            {selectedEmail?.aiAnalysis && (
-              <div className="p-4 rounded-md bg-primary/5 border border-primary/20">
-                <div className="flex items-center gap-2 mb-2">
-                  <Sparkles className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-medium">Analyse IA</span>
-                </div>
-                <p className="text-sm text-muted-foreground break-words">
-                  {selectedEmail.aiAnalysis.summary || "Analyse en cours..."}
-                </p>
-              </div>
-            )}
-
-            {/* Sent Replies History */}
-            {isLoadingReplies ? (
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-40" />
-                <Skeleton className="h-20 w-full" />
-              </div>
-            ) : (
-              emailReplies.length > 0 && (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-sm font-medium">
-                    <MailCheck className="h-4 w-4" />
-                    <span>Réponses envoyées ({emailReplies.length})</span>
-                  </div>
-                  <div className="space-y-3">
-                    {emailReplies.map((reply: any) => (
-                      <div
-                        key={reply.id}
-                        className="p-4 rounded-md bg-muted/50 border"
-                        data-testid={`reply-${reply.id}`}
-                      >
-                        <div className="flex items-start gap-3 mb-3">
-                          <Avatar className="h-8 w-8">
-                            <AvatarFallback className="text-xs">
-                              {reply.sentByUserId?.charAt(0)?.toUpperCase() ||
-                                "U"}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-sm font-medium">
-                                Envoyée le{" "}
-                                {format(
-                                  new Date(reply.sentAt),
-                                  "dd MMM yyyy à HH:mm",
-                                  { locale: fr },
-                                )}
-                              </span>
-                              {reply.aiGenerated && (
-                                <Badge variant="secondary" className="text-xs">
-                                  <Sparkles className="h-3 w-3 mr-1" />
-                                  IA
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        <div
-                          className="prose prose-sm max-w-none text-sm"
-                          dangerouslySetInnerHTML={{
-                            __html: reply.htmlContent,
-                          }}
-                        />
-                        {reply.attachments && reply.attachments.length > 0 && (
-                          <div className="mt-3 pt-3 border-t">
-                            <div className="flex flex-wrap gap-2">
-                              {reply.attachments.map(
-                                (att: any, idx: number) => (
-                                  <div
-                                    key={idx}
-                                    className="flex items-center gap-2 px-2 py-1 rounded bg-background/50 text-xs"
-                                    data-testid={`reply-attachment-${idx}`}
-                                  >
-                                    <Paperclip className="h-3 w-3" />
-                                    <span className="truncate max-w-[200px]">
-                                      {att.name}
-                                    </span>
-                                    <span className="text-muted-foreground">
-                                      ({(att.size / 1024).toFixed(1)} KB)
-                                    </span>
-                                  </div>
-                                ),
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )
-            )}
-
-            {/* Suggested Response - Only show if AI-generated */}
-            {selectedEmail?.suggestedResponse && isAiResponse && (
-              <div className="p-4 rounded-md bg-chart-2/5 border border-chart-2/20">
-                <div className="flex items-center gap-2 mb-2">
-                  <Sparkles className="h-4 w-4 text-chart-2" />
-                  <span className="text-sm font-medium">
-                    Réponse suggérée par IA
-                  </span>
-                </div>
-                <div
-                  className="prose prose-sm max-w-none text-sm text-muted-foreground"
-                  dangerouslySetInnerHTML={{
-                    __html: selectedEmail.suggestedResponse,
-                  }}
-                />
-              </div>
-            )}
-
-            {/* Email Body */}
-            <div className="prose prose-sm max-w-none">
-              <div
-                className="text-sm break-words overflow-wrap-anywhere"
-                dangerouslySetInnerHTML={{
-                  __html:
-                    selectedEmail?.htmlBody ||
-                    selectedEmail?.body?.replace(/\n/g, "<br>") ||
-                    "",
-                }}
-              />
-            </div>
-
-            {/* Attachments */}
-            {emailDocuments.length > 0 && (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm font-medium">
-                  <Paperclip className="h-4 w-4" />
-                  <span>Pièces jointes ({emailDocuments.length})</span>
-                </div>
-                <div className="grid gap-2">
-                  {emailDocuments.map((doc: any) => (
-                    <button
-                      key={doc.id}
-                      onClick={() => {
-                        if (doc.driveUrl || doc.storagePath) {
-                          // Open in cloud storage if available
-                          if (doc.driveUrl) {
-                            window.open(doc.driveUrl, "_blank");
-                          } else {
-                            toast({
-                              title: "Fichier non disponible",
-                              description:
-                                "Le fichier n'est pas encore stocké dans le cloud",
-                              variant: "destructive",
-                            });
-                          }
-                        } else {
-                          toast({
-                            title: "Fichier non disponible",
-                            description:
-                              "Le fichier n'est pas encore stocké dans le cloud",
-                            variant: "destructive",
-                          });
-                        }
-                      }}
-                      className="flex items-center gap-3 p-3 rounded-md border hover-elevate active-elevate-2 text-left transition-colors"
-                      data-testid={`attachment-${doc.id}`}
-                    >
-                      <FileIcon className="h-8 w-8 text-primary shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">
-                          {doc.filename}
-                        </p>
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <span>{(doc.size / 1024).toFixed(1)} KB</span>
-                          {doc.storageProvider && (
-                            <>
-                              <span>•</span>
-                              <span>
-                                {doc.storageProvider === "google_drive"
-                                  ? "Google Drive"
-                                  : doc.storageProvider === "onedrive"
-                                    ? "OneDrive"
-                                    : "Local"}
-                              </span>
-                            </>
-                          )}
-                          {doc.driveUrl && (
-                            <>
-                              <span>•</span>
-                              <span className="text-primary">
-                                Cliquez pour ouvrir
-                              </span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Custom Prompt Input */}
-            {!selectedEmail?.suggestedResponse && showPromptInput && (
-              <div className="space-y-2 p-4 rounded-md bg-muted/50 border">
-                <label className="text-sm font-medium">
-                  Instructions personnalisées pour l'IA
-                </label>
-                <Textarea
-                  value={customPrompt}
-                  onChange={(e) => setCustomPrompt(e.target.value)}
-                  placeholder="Ex: Répondre de manière formelle en proposant un rendez-vous la semaine prochaine..."
-                  rows={3}
-                  data-testid="textarea-custom-prompt"
-                />
-                <p className="text-xs text-muted-foreground">
-                  L'IA utilisera ces instructions pour générer la réponse
-                </p>
-              </div>
-            )}
-
-            {/* Actions */}
-            <div className="flex flex-col gap-3 pt-4 border-t">
-              {/* Manual Reply Button - Always visible */}
-              <Button
-                onClick={() => {
-                  // Open response dialog even without AI-generated response
-                  if (!selectedEmail?.suggestedResponse) {
-                    setSelectedEmail({
-                      ...selectedEmail,
-                      suggestedResponse: "",
-                    });
-                    setIsAiResponse(false); // Mark as manual response
-                  }
-                  setShowResponseDialog(true);
-                }}
-                variant={
-                  selectedEmail?.suggestedResponse ? "outline" : "default"
-                }
-                data-testid="button-manual-reply"
-                className="w-full"
-              >
-                <Reply className="h-4 w-4 mr-2" />
-                {selectedEmail?.suggestedResponse
-                  ? "Modifier la réponse"
-                  : "Répondre"}
-              </Button>
-
-              {/* AI Response Actions */}
-              {!selectedEmail?.suggestedResponse && (
-                <div className="flex flex-col gap-2">
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <Button
-                      onClick={() =>
-                        generateResponseMutation.mutate({
-                          emailId: selectedEmail?.id,
-                          customPrompt: customPrompt || undefined,
-                        })
-                      }
-                      disabled={generateResponseMutation.isPending}
-                      data-testid="button-generate-response"
-                      variant="outline"
-                      className="flex-1"
-                    >
-                      <Sparkles className="h-4 w-4 mr-2" />
-                      <span className="truncate">
-                        {generateResponseMutation.isPending
-                          ? "Génération..."
-                          : "Générer avec IA"}
-                      </span>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setShowPromptInput(!showPromptInput);
-                        if (showPromptInput) {
-                          setCustomPrompt("");
-                        }
-                      }}
-                      data-testid="button-toggle-custom-prompt"
-                      className="sm:w-auto"
-                    >
-                      <span className="truncate">
-                        {showPromptInput ? "Masquer" : "Personnaliser"}
-                      </span>
-                    </Button>
-                  </div>
-                </div>
-              )}
-              {selectedEmail?.status !== "traite" && (
-                <Button
-                  variant="outline"
-                  onClick={() =>
-                    markProcessedMutation.mutate(selectedEmail?.id)
-                  }
-                  disabled={markProcessedMutation.isPending}
-                  data-testid="button-mark-processed"
-                  className="w-full"
-                >
-                  <Check className="h-4 w-4 mr-2" />
-                  {markProcessedMutation.isPending
-                    ? "En cours..."
-                    : "Marquer comme traité"}
-                </Button>
-              )}
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Response Dialog */}
       <Dialog open={showResponseDialog} onOpenChange={setShowResponseDialog}>
