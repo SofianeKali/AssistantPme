@@ -534,30 +534,24 @@ export default function Tasks() {
 
         {/* Kanban Columns */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {(!selectedTaskStatus || selectedTaskStatus === 'nouveau' || selectedTaskStatus === 'urgent') && (
-            <StatusColumn
-              title="Nouveau"
-              icon={Circle}
-              tasks={filteredByStatus.nouveau}
-              status="nouveau"
-            />
-          )}
-          {(!selectedTaskStatus || selectedTaskStatus === 'en_cours' || selectedTaskStatus === 'urgent') && (
-            <StatusColumn
-              title="En cours"
-              icon={Clock}
-              tasks={filteredByStatus.en_cours}
-              status="en_cours"
-            />
-          )}
-          {(!selectedTaskStatus || selectedTaskStatus === 'termine' || selectedTaskStatus === 'urgent') && (
-            <StatusColumn
-              title="Terminé"
-              icon={CheckCircle2}
-              tasks={filteredByStatus.termine}
-              status="termine"
-            />
-          )}
+          <StatusColumn
+            title="Nouveau"
+            icon={Circle}
+            tasks={filteredByStatus.nouveau}
+            status="nouveau"
+          />
+          <StatusColumn
+            title="En cours"
+            icon={Clock}
+            tasks={filteredByStatus.en_cours}
+            status="en_cours"
+          />
+          <StatusColumn
+            title="Terminé"
+            icon={CheckCircle2}
+            tasks={filteredByStatus.termine}
+            status="termine"
+          />
         </div>
 
       {/* Task Detail Dialog */}
