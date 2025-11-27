@@ -969,12 +969,24 @@ export default function Dashboard() {
   }
 
   function renderEmailEvolutionChart() {
+    const data = emailEvolution || [];
+    const total = data.reduce((sum, item) => sum + (item.count || 0), 0);
+    const average = data.length > 0 ? Math.round(total / data.length) : 0;
+    const variation = data.length > 1 
+      ? Math.round(((data[data.length - 1]?.count || 0) - (data[0]?.count || 0)) / (data[0]?.count || 1) * 100)
+      : 0;
+
     return (
       <div key="email-evolution" className="space-y-4">
-        <h3 className="text-lg font-semibold">
-          Évolution des emails traités
-        </h3>
-        <Card>
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent">
+              📊 Évolution des emails traités
+            </h3>
+            <p className="text-xs text-muted-foreground mt-1">Suivi quotidien des emails traités</p>
+          </div>
+        </div>
+        <Card className="shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4">
             <ChartPeriodControls
               periodType={emailEvolutionPeriod}
@@ -989,53 +1001,72 @@ export default function Dashboard() {
             />
           </CardHeader>
           <CardContent>
-          {emailEvolutionLoading ? (
-            <Skeleton className="h-[200px] sm:h-[250px]" />
-          ) : (
-            <div className="h-[200px] sm:h-[250px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart
-                  data={emailEvolution || []}
-                  margin={{ top: 5, right: 5, left: -10, bottom: 5 }}
-                >
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="hsl(var(--border))"
-                  />
-                  <XAxis
-                    dataKey="day"
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
-                    tick={{ fontSize: 12 }}
-                  />
-                  <YAxis
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
-                    tick={{ fontSize: 12 }}
-                    width={40}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "6px",
-                      fontSize: "13px",
-                    }}
-                    cursor={{ fill: "hsl(var(--muted) / 0.2)" }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="count"
-                    stroke={COLORS.primary}
-                    strokeWidth={2}
-                    name="Emails traités"
-                    dot={{ r: 3 }}
-                    activeDot={{ r: 5 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          )}
+            {emailEvolutionLoading ? (
+              <Skeleton className="h-[200px] sm:h-[250px]" />
+            ) : (
+              <>
+                <div className="h-[200px] sm:h-[250px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart
+                      data={data}
+                      margin={{ top: 5, right: 5, left: -10, bottom: 5 }}
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="hsl(var(--border))"
+                        opacity={0.5}
+                      />
+                      <XAxis
+                        dataKey="day"
+                        stroke="hsl(var(--muted-foreground))"
+                        fontSize={12}
+                        tick={{ fontSize: 12 }}
+                      />
+                      <YAxis
+                        stroke="hsl(var(--muted-foreground))"
+                        fontSize={12}
+                        tick={{ fontSize: 12 }}
+                        width={40}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "8px",
+                          fontSize: "13px",
+                        }}
+                        cursor={{ fill: "hsl(var(--muted) / 0.2)" }}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="count"
+                        stroke={COLORS.primary}
+                        strokeWidth={2.5}
+                        name="Emails traités"
+                        dot={{ r: 3, fill: COLORS.primary }}
+                        activeDot={{ r: 5 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="grid grid-cols-3 gap-3 mt-6 pt-4 border-t">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-blue-600">{total}</p>
+                    <p className="text-xs text-muted-foreground">Total</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-blue-600">{average}</p>
+                    <p className="text-xs text-muted-foreground">Moyenne/jour</p>
+                  </div>
+                  <div className="text-center">
+                    <p className={`text-2xl font-bold ${variation >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {variation >= 0 ? '+' : ''}{variation}%
+                    </p>
+                    <p className="text-xs text-muted-foreground">Variation</p>
+                  </div>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -1043,12 +1074,19 @@ export default function Dashboard() {
   }
 
   function renderEmailDistributionChart() {
+    const total = (emailDistribution || []).reduce((sum, item) => sum + (item.value || 0), 0);
+    
     return (
       <div key="email-distribution" className="space-y-4">
-        <h3 className="text-lg font-semibold">
-          Répartition des emails reçus
-        </h3>
-        <Card>
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-bold bg-gradient-to-r from-purple-600 to-purple-400 bg-clip-text text-transparent">
+              🎯 Répartition des emails
+            </h3>
+            <p className="text-xs text-muted-foreground mt-1">Distribution par compte de messagerie</p>
+          </div>
+        </div>
+        <Card className="shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4">
             <ChartPeriodControls
               periodType={emailDistributionPeriod}
@@ -1063,46 +1101,52 @@ export default function Dashboard() {
             />
           </CardHeader>
           <CardContent>
-          {emailDistributionLoading ? (
-            <Skeleton className="h-[200px] sm:h-[250px]" />
-          ) : (
-            <div className="h-[200px] sm:h-[250px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={emailDistribution || []}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, value }) => `${name}: ${value}`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {(emailDistribution || []).map(
-                      (entry: any, index: number) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={
-                            entry.color ||
-                            CHART_COLORS[index % CHART_COLORS.length]
-                          }
-                        />
-                      ),
-                    )}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "6px",
-                      fontSize: "13px",
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          )}
+            {emailDistributionLoading ? (
+              <Skeleton className="h-[200px] sm:h-[250px]" />
+            ) : (
+              <>
+                <div className="h-[200px] sm:h-[250px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={emailDistribution || []}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, value }) => `${name}: ${value}`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {(emailDistribution || []).map(
+                          (entry: any, index: number) => (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={
+                                entry.color ||
+                                CHART_COLORS[index % CHART_COLORS.length]
+                              }
+                            />
+                          ),
+                        )}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "8px",
+                          fontSize: "13px",
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="mt-6 pt-4 border-t">
+                  <p className="text-center text-2xl font-bold text-purple-600">{total}</p>
+                  <p className="text-center text-xs text-muted-foreground">Emails au total</p>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -1110,12 +1154,21 @@ export default function Dashboard() {
   }
 
   function renderAppointmentsChart() {
+    const data = appointmentsWeek || [];
+    const total = data.reduce((sum, item) => sum + (item.count || 0), 0);
+    const maxDay = data.length > 0 ? Math.max(...data.map(item => item.count || 0)) : 0;
+    
     return (
       <div key="appointments" className="space-y-4">
-        <h3 className="text-lg font-semibold">
-          Évolution des RDV
-        </h3>
-        <Card>
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-bold bg-gradient-to-r from-green-600 to-green-400 bg-clip-text text-transparent">
+              📅 Évolution des RDV
+            </h3>
+            <p className="text-xs text-muted-foreground mt-1">Rendez-vous programmés par jour</p>
+          </div>
+        </div>
+        <Card className="shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4">
             <ChartPeriodControls
               periodType={appointmentsPeriod}
@@ -1127,50 +1180,63 @@ export default function Dashboard() {
             />
           </CardHeader>
           <CardContent>
-          {appointmentsWeekLoading ? (
-            <Skeleton className="h-[200px] sm:h-[250px]" />
-          ) : (
-            <div className="h-[200px] sm:h-[250px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={appointmentsWeek || []}
-                  margin={{ top: 5, right: 5, left: -10, bottom: 5 }}
-                >
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="hsl(var(--border))"
-                  />
-                  <XAxis
-                    dataKey="day"
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
-                    tick={{ fontSize: 12 }}
-                  />
-                  <YAxis
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
-                    tick={{ fontSize: 12 }}
-                    width={40}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "6px",
-                      fontSize: "13px",
-                    }}
-                    cursor={{ fill: "hsl(var(--muted) / 0.2)" }}
-                  />
-                  <Bar
-                    dataKey="count"
-                    fill={COLORS.chart3}
-                    radius={[4, 4, 0, 0]}
-                    name="Rendez-vous"
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
+            {appointmentsWeekLoading ? (
+              <Skeleton className="h-[200px] sm:h-[250px]" />
+            ) : (
+              <>
+                <div className="h-[200px] sm:h-[250px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={data}
+                      margin={{ top: 5, right: 5, left: -10, bottom: 5 }}
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="hsl(var(--border))"
+                        opacity={0.5}
+                      />
+                      <XAxis
+                        dataKey="day"
+                        stroke="hsl(var(--muted-foreground))"
+                        fontSize={12}
+                        tick={{ fontSize: 12 }}
+                      />
+                      <YAxis
+                        stroke="hsl(var(--muted-foreground))"
+                        fontSize={12}
+                        tick={{ fontSize: 12 }}
+                        width={40}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "8px",
+                          fontSize: "13px",
+                        }}
+                        cursor={{ fill: "hsl(var(--muted) / 0.2)" }}
+                      />
+                      <Bar
+                        dataKey="count"
+                        fill={COLORS.chart3}
+                        radius={[6, 6, 0, 0]}
+                        name="Rendez-vous"
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="grid grid-cols-2 gap-3 mt-6 pt-4 border-t">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-green-600">{total}</p>
+                    <p className="text-xs text-muted-foreground">Total</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-green-600">{maxDay}</p>
+                    <p className="text-xs text-muted-foreground">Pic du jour</p>
+                  </div>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -1178,12 +1244,20 @@ export default function Dashboard() {
   }
 
   function renderCategoryProcessingChart() {
+    const data = categoryProcessing || [];
+    const avgRate = data.length > 0 ? Math.round(data.reduce((sum, item) => sum + (item.rate || 0), 0) / data.length) : 0;
+    
     return (
       <div key="category-processing" className="space-y-4">
-        <h3 className="text-lg font-semibold">
-          Taux de traitement par catégorie
-        </h3>
-        <Card>
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-bold bg-gradient-to-r from-orange-600 to-orange-400 bg-clip-text text-transparent">
+              📈 Taux de traitement par catégorie
+            </h3>
+            <p className="text-xs text-muted-foreground mt-1">Efficacité du traitement par type</p>
+          </div>
+        </div>
+        <Card className="shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4">
             <ChartPeriodControls
               periodType={categoryProcessingPeriod}
@@ -1198,58 +1272,65 @@ export default function Dashboard() {
             />
           </CardHeader>
           <CardContent>
-          {categoryProcessingLoading ? (
-            <Skeleton className="h-[200px] sm:h-[250px]" />
-          ) : (
-            <div className="h-[200px] sm:h-[250px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={categoryProcessing || []}
-                  margin={{ top: 5, right: 5, left: -10, bottom: 5 }}
-                >
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="hsl(var(--border))"
-                  />
-                  <XAxis
-                    dataKey="category"
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
-                    tick={{ fontSize: 12 }}
-                  />
-                  <YAxis
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
-                    tick={{ fontSize: 12 }}
-                    width={40}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "6px",
-                      fontSize: "13px",
-                    }}
-                    cursor={{ fill: "hsl(var(--muted) / 0.2)" }}
-                  />
-                  <Bar
-                    dataKey="rate"
-                    radius={[4, 4, 0, 0]}
-                    name="Taux de traitement (%)"
-                  >
-                    {(categoryProcessing || []).map(
-                      (entry: any, index: number) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={entry.color || COLORS.chart1}
-                        />
-                      ),
-                    )}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
+            {categoryProcessingLoading ? (
+              <Skeleton className="h-[200px] sm:h-[250px]" />
+            ) : (
+              <>
+                <div className="h-[200px] sm:h-[250px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={data}
+                      margin={{ top: 5, right: 5, left: -10, bottom: 5 }}
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="hsl(var(--border))"
+                        opacity={0.5}
+                      />
+                      <XAxis
+                        dataKey="category"
+                        stroke="hsl(var(--muted-foreground))"
+                        fontSize={12}
+                        tick={{ fontSize: 12 }}
+                      />
+                      <YAxis
+                        stroke="hsl(var(--muted-foreground))"
+                        fontSize={12}
+                        tick={{ fontSize: 12 }}
+                        width={40}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "8px",
+                          fontSize: "13px",
+                        }}
+                        cursor={{ fill: "hsl(var(--muted) / 0.2)" }}
+                      />
+                      <Bar
+                        dataKey="rate"
+                        radius={[6, 6, 0, 0]}
+                        name="Taux de traitement (%)"
+                      >
+                        {data.map(
+                          (entry: any, index: number) => (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={entry.color || COLORS.chart1}
+                            />
+                          ),
+                        )}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="mt-6 pt-4 border-t">
+                  <p className="text-center text-2xl font-bold text-orange-600">{avgRate}%</p>
+                  <p className="text-center text-xs text-muted-foreground">Taux moyen</p>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -1257,12 +1338,21 @@ export default function Dashboard() {
   }
 
   function renderTasksEvolutionChart() {
+    const data = tasksEvolution || [];
+    const totalNew = data.reduce((sum, item) => sum + (item.nouveau || 0), 0);
+    const totalCompleted = data.reduce((sum, item) => sum + (item.termine || 0), 0);
+    
     return (
       <div key="tasks-evolution" className="space-y-4">
-        <h3 className="text-lg font-semibold">
-          Évolution des tâches
-        </h3>
-        <Card>
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-bold bg-gradient-to-r from-cyan-600 to-cyan-400 bg-clip-text text-transparent">
+              ✓ Évolution des tâches
+            </h3>
+            <p className="text-xs text-muted-foreground mt-1">Progression des tâches par statut</p>
+          </div>
+        </div>
+        <Card className="shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4">
             <ChartPeriodControls
               periodType={tasksPeriod}
@@ -1274,69 +1364,82 @@ export default function Dashboard() {
             />
           </CardHeader>
           <CardContent>
-          {tasksEvolutionLoading ? (
-            <Skeleton className="h-[200px] sm:h-[250px]" />
-          ) : (
-            <div className="h-[200px] sm:h-[250px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={tasksEvolution || []}
-                  margin={{ top: 5, right: 5, left: -10, bottom: 5 }}
-                >
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="hsl(var(--border))"
-                  />
-                  <XAxis
-                    dataKey="day"
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
-                    tick={{ fontSize: 12 }}
-                  />
-                  <YAxis
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
-                    tick={{ fontSize: 12 }}
-                    width={40}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "6px",
-                      fontSize: "13px",
-                    }}
-                    cursor={{ fill: "hsl(var(--muted) / 0.2)" }}
-                  />
-                  <Legend
-                    wrapperStyle={{ fontSize: "13px" }}
-                    iconType="circle"
-                  />
-                  <Bar
-                    dataKey="nouveau"
-                    stackId="a"
-                    fill={COLORS.chart3}
-                    radius={[0, 0, 0, 0]}
-                    name="Nouveau"
-                  />
-                  <Bar
-                    dataKey="enCours"
-                    stackId="a"
-                    fill={COLORS.primary}
-                    radius={[0, 0, 0, 0]}
-                    name="En cours"
-                  />
-                  <Bar
-                    dataKey="termine"
-                    stackId="a"
-                    fill={COLORS.chart2}
-                    radius={[4, 4, 0, 0]}
-                    name="Terminé"
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
+            {tasksEvolutionLoading ? (
+              <Skeleton className="h-[200px] sm:h-[250px]" />
+            ) : (
+              <>
+                <div className="h-[200px] sm:h-[250px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={data}
+                      margin={{ top: 5, right: 5, left: -10, bottom: 5 }}
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="hsl(var(--border))"
+                        opacity={0.5}
+                      />
+                      <XAxis
+                        dataKey="day"
+                        stroke="hsl(var(--muted-foreground))"
+                        fontSize={12}
+                        tick={{ fontSize: 12 }}
+                      />
+                      <YAxis
+                        stroke="hsl(var(--muted-foreground))"
+                        fontSize={12}
+                        tick={{ fontSize: 12 }}
+                        width={40}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "8px",
+                          fontSize: "13px",
+                        }}
+                        cursor={{ fill: "hsl(var(--muted) / 0.2)" }}
+                      />
+                      <Legend
+                        wrapperStyle={{ fontSize: "13px" }}
+                        iconType="circle"
+                      />
+                      <Bar
+                        dataKey="nouveau"
+                        stackId="a"
+                        fill={COLORS.chart3}
+                        radius={[0, 0, 0, 0]}
+                        name="Nouveau"
+                      />
+                      <Bar
+                        dataKey="enCours"
+                        stackId="a"
+                        fill={COLORS.primary}
+                        radius={[0, 0, 0, 0]}
+                        name="En cours"
+                      />
+                      <Bar
+                        dataKey="termine"
+                        stackId="a"
+                        fill={COLORS.chart2}
+                        radius={[6, 6, 0, 0]}
+                        name="Terminé"
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="grid grid-cols-2 gap-3 mt-6 pt-4 border-t">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-cyan-600">{totalNew}</p>
+                    <p className="text-xs text-muted-foreground">Créées</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-green-600">{totalCompleted}</p>
+                    <p className="text-xs text-muted-foreground">Complétées</p>
+                  </div>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -1344,12 +1447,21 @@ export default function Dashboard() {
   }
 
   function renderAlertsEvolutionChart() {
+    const data = alertsEvolution || [];
+    const totalActive = data.reduce((sum, item) => sum + (item.active || 0), 0);
+    const totalResolved = data.reduce((sum, item) => sum + (item.resolved || 0), 0);
+    
     return (
       <div key="alerts-evolution" className="space-y-4">
-        <h3 className="text-lg font-semibold">
-          Évolution des alertes
-        </h3>
-        <Card>
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-bold bg-gradient-to-r from-red-600 to-red-400 bg-clip-text text-transparent">
+              🔔 Évolution des alertes
+            </h3>
+            <p className="text-xs text-muted-foreground mt-1">Alertes actives et résolues</p>
+          </div>
+        </div>
+        <Card className="shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4">
             <ChartPeriodControls
               periodType={alertsPeriod}
@@ -1361,62 +1473,75 @@ export default function Dashboard() {
             />
           </CardHeader>
           <CardContent>
-          {alertsEvolutionLoading ? (
-            <Skeleton className="h-[200px] sm:h-[250px]" />
-          ) : (
-            <div className="h-[200px] sm:h-[250px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={alertsEvolution || []}
-                  margin={{ top: 5, right: 5, left: -10, bottom: 5 }}
-                >
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="hsl(var(--border))"
-                  />
-                  <XAxis
-                    dataKey="day"
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
-                    tick={{ fontSize: 12 }}
-                  />
-                  <YAxis
-                    stroke="hsl(var(--muted-foreground))"
-                    fontSize={12}
-                    tick={{ fontSize: 12 }}
-                    width={40}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "6px",
-                      fontSize: "13px",
-                    }}
-                    cursor={{ fill: "hsl(var(--muted) / 0.2)" }}
-                  />
-                  <Legend
-                    wrapperStyle={{ fontSize: "13px" }}
-                    iconType="circle"
-                  />
-                  <Bar
-                    dataKey="active"
-                    stackId="a"
-                    fill={COLORS.chart3}
-                    radius={[0, 0, 0, 0]}
-                    name="Actives"
-                  />
-                  <Bar
-                    dataKey="resolved"
-                    stackId="a"
-                    fill={COLORS.chart1}
-                    radius={[4, 4, 0, 0]}
-                    name="Résolues"
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
+            {alertsEvolutionLoading ? (
+              <Skeleton className="h-[200px] sm:h-[250px]" />
+            ) : (
+              <>
+                <div className="h-[200px] sm:h-[250px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={data}
+                      margin={{ top: 5, right: 5, left: -10, bottom: 5 }}
+                    >
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="hsl(var(--border))"
+                        opacity={0.5}
+                      />
+                      <XAxis
+                        dataKey="day"
+                        stroke="hsl(var(--muted-foreground))"
+                        fontSize={12}
+                        tick={{ fontSize: 12 }}
+                      />
+                      <YAxis
+                        stroke="hsl(var(--muted-foreground))"
+                        fontSize={12}
+                        tick={{ fontSize: 12 }}
+                        width={40}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "8px",
+                          fontSize: "13px",
+                        }}
+                        cursor={{ fill: "hsl(var(--muted) / 0.2)" }}
+                      />
+                      <Legend
+                        wrapperStyle={{ fontSize: "13px" }}
+                        iconType="circle"
+                      />
+                      <Bar
+                        dataKey="active"
+                        stackId="a"
+                        fill={COLORS.chart3}
+                        radius={[0, 0, 0, 0]}
+                        name="Actives"
+                      />
+                      <Bar
+                        dataKey="resolved"
+                        stackId="a"
+                        fill={COLORS.chart1}
+                        radius={[6, 6, 0, 0]}
+                        name="Résolues"
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="grid grid-cols-2 gap-3 mt-6 pt-4 border-t">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-red-600">{totalActive}</p>
+                    <p className="text-xs text-muted-foreground">Actives</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-green-600">{totalResolved}</p>
+                    <p className="text-xs text-muted-foreground">Résolues</p>
+                  </div>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
