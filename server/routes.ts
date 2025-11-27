@@ -1516,7 +1516,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/appointments", isAuthenticated, async (req: any, res) => {
     try {
       const userId = (req.user as any).id;
-      const aptData = { ...req.body, createdById: userId };
+      const companyId = (req.user as any).companyId;
+      const aptData = { ...req.body, createdById: userId, companyId };
 
       // Convert and validate ISO date strings to Date objects
       if (aptData.startTime) {
