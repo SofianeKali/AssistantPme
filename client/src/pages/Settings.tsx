@@ -1184,6 +1184,27 @@ export default function Settings() {
     },
   });
 
+  // Mutation for reactivating subscription
+  const reactivateSubscriptionMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest("POST", "/api/subscriptions/reactivate", {});
+    },
+    onSuccess: () => {
+      toast({
+        title: "Abonnement réactivé",
+        description: "Votre abonnement est maintenant actif. Vous êtes réabonné.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erreur lors de la réactivation",
+        description: error.message || "Impossible de réactiver l'abonnement",
+        variant: "destructive",
+      });
+    },
+  });
+
   return (
     <div className="p-4 md:p-6 space-y-4 md:space-y-6">
       {/* Header */}
@@ -3299,10 +3320,28 @@ export default function Settings() {
                       </div>
                     )}
                     
-                    <div className="pt-2 border-t border-amber-200 dark:border-amber-900">
+                    <div className="pt-2 border-t border-amber-200 dark:border-amber-900 space-y-4">
                       <p className="text-xs text-amber-700 dark:text-amber-300">
-                        Si vous changez d'avis, vous pouvez vous réabonner à tout moment en visitant la page de tarification.
+                        Si vous changez d'avis avant la fin de votre période de facturation, vous pouvez réactiver votre abonnement.
                       </p>
+                      <Button
+                        onClick={() => reactivateSubscriptionMutation.mutate()}
+                        disabled={reactivateSubscriptionMutation.isPending}
+                        data-testid="button-reactivate-subscription"
+                        className="w-full sm:w-auto"
+                      >
+                        {reactivateSubscriptionMutation.isPending ? (
+                          <>
+                            <Clock className="h-4 w-4 mr-2 animate-spin" />
+                            Réactivation en cours...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle2 className="h-4 w-4 mr-2" />
+                            Reprendre l'abonnement
+                          </>
+                        )}
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
