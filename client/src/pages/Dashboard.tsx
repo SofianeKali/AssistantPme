@@ -246,7 +246,10 @@ export default function Dashboard() {
   });
 
   const { data: alerts, isLoading: alertsLoading } = useQuery<any>({
-    queryKey: ["/api/alerts", { limit: 5, resolved: false, selectedEmailAccount }],
+    queryKey: [
+      "/api/alerts",
+      { limit: 5, resolved: false, selectedEmailAccount },
+    ],
     queryFn: async () => {
       const params = new URLSearchParams();
       params.append("limit", "5");
@@ -609,10 +612,8 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center gap-3">
-                <CheckSquare className="h-8 w-8 text-blue-600" />
-                <h3 className="text-lg font-bold text-blue-600">
-                  Tâches
-                </h3>
+                <CheckSquare className="h-6 w-6 text-blue-600" />
+                <h3 className="text-lg font-bold text-blue-600">Tâches</h3>
               </div>
               <p className="text-muted-foreground text-sm mt-1">
                 Aperçu de vos tâches avec vue complète disponible ci-dessous
@@ -641,11 +642,13 @@ export default function Dashboard() {
             ) : tasks && tasks.length > 0 ? (
               <div className="space-y-3">
                 {tasks.slice(0, 5).map((task: any) => {
-                  const borderColor = 
-                    task.status === "nouveau" ? "border-l-blue-500" :
-                    task.status === "en_cours" ? "border-l-orange-500" :
-                    "border-l-green-500";
-                  
+                  const borderColor =
+                    task.status === "nouveau"
+                      ? "border-l-blue-500"
+                      : task.status === "en_cours"
+                        ? "border-l-orange-500"
+                        : "border-l-green-500";
+
                   return (
                     <Card
                       key={task.id}
@@ -665,14 +668,16 @@ export default function Dashboard() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-2 mb-2">
-                              <h3 className="text-sm font-bold">{task.title}</h3>
+                              <h3 className="text-sm font-bold">
+                                {task.title}
+                              </h3>
                               <Badge
                                 className={`text-xs ${
                                   task.status === "nouveau"
                                     ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100"
                                     : task.status === "en_cours"
-                                    ? "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-100"
-                                    : "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100"
+                                      ? "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-100"
+                                      : "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100"
                                 }`}
                                 data-testid={`badge-task-status-${task.id}`}
                               >
@@ -684,11 +689,18 @@ export default function Dashboard() {
                               </Badge>
                             </div>
                             {task.description && (
-                              <p className="text-sm text-muted-foreground mb-2">{task.description}</p>
+                              <p className="text-sm text-muted-foreground mb-2">
+                                {task.description}
+                              </p>
                             )}
                             {task.priority && (
                               <Badge variant="secondary" className="text-xs">
-                                {task.priority === "urgent" ? "🔴" : task.priority === "haute" ? "🟠" : "⚪"} {task.priority}
+                                {task.priority === "urgent"
+                                  ? "🔴"
+                                  : task.priority === "haute"
+                                    ? "🟠"
+                                    : "⚪"}{" "}
+                                {task.priority}
                               </Badge>
                             )}
                           </div>
@@ -733,9 +745,7 @@ export default function Dashboard() {
             ) : (
               <div className="text-center py-12">
                 <div className="text-4xl mb-2">📭</div>
-                <p className="text-sm text-muted-foreground">
-                  Aucune tâche
-                </p>
+                <p className="text-sm text-muted-foreground">Aucune tâche</p>
               </div>
             )}
           </CardContent>
@@ -770,11 +780,23 @@ export default function Dashboard() {
     const getSeverityBadge = (severity: string) => {
       switch (severity) {
         case "critical":
-          return <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100">Critique</Badge>;
+          return (
+            <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100">
+              Critique
+            </Badge>
+          );
         case "warning":
-          return <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-100">Attention</Badge>;
+          return (
+            <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-100">
+              Attention
+            </Badge>
+          );
         default:
-          return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100">Info</Badge>;
+          return (
+            <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100">
+              Info
+            </Badge>
+          );
       }
     };
 
@@ -796,10 +818,8 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center gap-3">
-                <Bell className="h-8 w-8 text-red-600" />
-                <h3 className="text-lg font-bold text-red-600">
-                  Alertes
-                </h3>
+                <Bell className="h-6 w-6 text-red-600" />
+                <h3 className="text-lg font-bold text-red-600">Alertes</h3>
               </div>
               <p className="text-muted-foreground text-sm mt-1">
                 Aperçu de vos alertes avec vue complète disponible ci-dessous
@@ -842,23 +862,28 @@ export default function Dashboard() {
               <div className="space-y-3">
                 {(() => {
                   // Group alerts by title and calculate totals
-                  const groupedAlerts = alerts.reduce((acc: any, alert: any) => {
-                    const existingGroup = acc.find((g: any) => g.title === alert.title);
-                    if (existingGroup) {
-                      existingGroup.totalEmails += alert.emailCount || 0;
-                      existingGroup.alerts.push(alert);
-                    } else {
-                      acc.push({
-                        title: alert.title,
-                        message: alert.message,
-                        severity: alert.severity,
-                        totalEmails: alert.emailCount || 0,
-                        alerts: [alert],
-                        firstAlert: alert,
-                      });
-                    }
-                    return acc;
-                  }, []);
+                  const groupedAlerts = alerts.reduce(
+                    (acc: any, alert: any) => {
+                      const existingGroup = acc.find(
+                        (g: any) => g.title === alert.title,
+                      );
+                      if (existingGroup) {
+                        existingGroup.totalEmails += alert.emailCount || 0;
+                        existingGroup.alerts.push(alert);
+                      } else {
+                        acc.push({
+                          title: alert.title,
+                          message: alert.message,
+                          severity: alert.severity,
+                          totalEmails: alert.emailCount || 0,
+                          alerts: [alert],
+                          firstAlert: alert,
+                        });
+                      }
+                      return acc;
+                    },
+                    [],
+                  );
 
                   // Show first 3 grouped alerts
                   return groupedAlerts.slice(0, 3).map((group: any) => {
@@ -878,16 +903,23 @@ export default function Dashboard() {
                         <div className="p-4">
                           <div className="flex items-start gap-3">
                             <div className="p-2 rounded-lg bg-background/80 mt-0.5">
-                              <SeverityIcon className={`h-5 w-5 ${getSeverityColor(group.severity)}`} />
+                              <SeverityIcon
+                                className={`h-5 w-5 ${getSeverityColor(group.severity)}`}
+                              />
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-start justify-between gap-2 mb-2">
-                                <h3 className="text-sm font-bold">{group.title}</h3>
+                                <h3 className="text-sm font-bold">
+                                  {group.title}
+                                </h3>
                                 {getSeverityBadge(group.severity)}
                               </div>
-                              <p className="text-sm text-muted-foreground mb-2">{group.message}</p>
+                              <p className="text-sm text-muted-foreground mb-2">
+                                {group.message}
+                              </p>
                               <Badge variant="secondary" className="text-xs">
-                                {group.totalEmails} email{group.totalEmails > 1 ? 's' : ''}
+                                {group.totalEmails} email
+                                {group.totalEmails > 1 ? "s" : ""}
                               </Badge>
                             </div>
                             {group.totalEmails > 0 && (
@@ -968,7 +1000,10 @@ export default function Dashboard() {
                           </div>
                         </CardHeader>
                         <CardContent>
-                          <div className="text-2xl font-semibold" style={{ color: category.color }}>
+                          <div
+                            className="text-2xl font-semibold"
+                            style={{ color: category.color }}
+                          >
                             {categoryStats?.[category.key] || 0}
                           </div>
                           <p className="text-xs text-muted-foreground mt-1">
@@ -989,9 +1024,14 @@ export default function Dashboard() {
     const data = emailEvolution || [];
     const total = data.reduce((sum, item) => sum + (item.count || 0), 0);
     const average = data.length > 0 ? Math.round(total / data.length) : 0;
-    const variation = data.length > 1 
-      ? Math.round(((data[data.length - 1]?.count || 0) - (data[0]?.count || 0)) / (data[0]?.count || 1) * 100)
-      : 0;
+    const variation =
+      data.length > 1
+        ? Math.round(
+            (((data[data.length - 1]?.count || 0) - (data[0]?.count || 0)) /
+              (data[0]?.count || 1)) *
+              100,
+          )
+        : 0;
 
     return (
       <div key="email-evolution" className="space-y-4">
@@ -1003,7 +1043,9 @@ export default function Dashboard() {
                 Évolution des emails traités
               </h3>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Suivi quotidien des emails traités</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Suivi quotidien des emails traités
+            </p>
           </div>
         </div>
         <Card className="shadow-sm hover:shadow-md transition-shadow bg-gradient-to-br from-blue-50/40 to-slate-50/10 dark:from-blue-950/20 dark:to-slate-900/10">
@@ -1075,12 +1117,19 @@ export default function Dashboard() {
                     <p className="text-xs text-muted-foreground">Total</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-blue-600">{average}</p>
-                    <p className="text-xs text-muted-foreground">Moyenne/jour</p>
+                    <p className="text-2xl font-bold text-blue-600">
+                      {average}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Moyenne/jour
+                    </p>
                   </div>
                   <div className="text-center">
-                    <p className={`text-2xl font-bold ${variation >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {variation >= 0 ? '+' : ''}{variation}%
+                    <p
+                      className={`text-2xl font-bold ${variation >= 0 ? "text-green-600" : "text-red-600"}`}
+                    >
+                      {variation >= 0 ? "+" : ""}
+                      {variation}%
                     </p>
                     <p className="text-xs text-muted-foreground">Variation</p>
                   </div>
@@ -1094,8 +1143,11 @@ export default function Dashboard() {
   }
 
   function renderEmailDistributionChart() {
-    const total = (emailDistribution || []).reduce((sum, item) => sum + (item.value || 0), 0);
-    
+    const total = (emailDistribution || []).reduce(
+      (sum, item) => sum + (item.value || 0),
+      0,
+    );
+
     return (
       <div key="email-distribution" className="space-y-4">
         <div className="flex items-center justify-between">
@@ -1106,7 +1158,9 @@ export default function Dashboard() {
                 Répartition des emails
               </h3>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Distribution par compte de messagerie</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Distribution par compte de messagerie
+            </p>
           </div>
         </div>
         <Card className="shadow-sm hover:shadow-md transition-shadow bg-gradient-to-br from-purple-50/40 to-slate-50/10 dark:from-purple-950/20 dark:to-slate-900/10">
@@ -1165,8 +1219,12 @@ export default function Dashboard() {
                   </ResponsiveContainer>
                 </div>
                 <div className="mt-6 pt-4 border-t">
-                  <p className="text-center text-2xl font-bold text-purple-600">{total}</p>
-                  <p className="text-center text-xs text-muted-foreground">Emails au total</p>
+                  <p className="text-center text-2xl font-bold text-purple-600">
+                    {total}
+                  </p>
+                  <p className="text-center text-xs text-muted-foreground">
+                    Emails au total
+                  </p>
                 </div>
               </>
             )}
@@ -1179,8 +1237,9 @@ export default function Dashboard() {
   function renderAppointmentsChart() {
     const data = appointmentsWeek || [];
     const total = data.reduce((sum, item) => sum + (item.count || 0), 0);
-    const maxDay = data.length > 0 ? Math.max(...data.map(item => item.count || 0)) : 0;
-    
+    const maxDay =
+      data.length > 0 ? Math.max(...data.map((item) => item.count || 0)) : 0;
+
     return (
       <div key="appointments" className="space-y-4">
         <div className="flex items-center justify-between">
@@ -1191,7 +1250,9 @@ export default function Dashboard() {
                 Évolution des RDV
               </h3>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Rendez-vous programmés par jour</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Rendez-vous programmés par jour
+            </p>
           </div>
         </div>
         <Card className="shadow-sm hover:shadow-md transition-shadow bg-gradient-to-br from-green-50/40 to-slate-50/10 dark:from-green-950/20 dark:to-slate-900/10">
@@ -1201,7 +1262,10 @@ export default function Dashboard() {
               onPeriodTypeChange={(type) => setAppointmentsPeriod(type)}
               offset={appointmentsOffset}
               onOffsetChange={setAppointmentsOffset}
-              periodLabel={getPeriodLabel(appointmentsPeriod, appointmentsOffset)}
+              periodLabel={getPeriodLabel(
+                appointmentsPeriod,
+                appointmentsOffset,
+              )}
               testIdPrefix="appointments"
             />
           </CardHeader>
@@ -1257,7 +1321,9 @@ export default function Dashboard() {
                     <p className="text-xs text-muted-foreground">Total</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-green-600">{maxDay}</p>
+                    <p className="text-2xl font-bold text-green-600">
+                      {maxDay}
+                    </p>
                     <p className="text-xs text-muted-foreground">Pic du jour</p>
                   </div>
                 </div>
@@ -1271,8 +1337,13 @@ export default function Dashboard() {
 
   function renderCategoryProcessingChart() {
     const data = categoryProcessing || [];
-    const avgRate = data.length > 0 ? Math.round(data.reduce((sum, item) => sum + (item.rate || 0), 0) / data.length) : 0;
-    
+    const avgRate =
+      data.length > 0
+        ? Math.round(
+            data.reduce((sum, item) => sum + (item.rate || 0), 0) / data.length,
+          )
+        : 0;
+
     return (
       <div key="category-processing" className="space-y-4">
         <div className="flex items-center justify-between">
@@ -1283,7 +1354,9 @@ export default function Dashboard() {
                 Taux de traitement par catégorie
               </h3>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Efficacité du traitement par type</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Efficacité du traitement par type
+            </p>
           </div>
         </div>
         <Card className="shadow-sm hover:shadow-md transition-shadow bg-gradient-to-br from-orange-50/40 to-slate-50/10 dark:from-orange-950/20 dark:to-slate-900/10">
@@ -1342,21 +1415,23 @@ export default function Dashboard() {
                         radius={[6, 6, 0, 0]}
                         name="Taux de traitement (%)"
                       >
-                        {data.map(
-                          (entry: any, index: number) => (
-                            <Cell
-                              key={`cell-${index}`}
-                              fill={entry.color || COLORS.chart1}
-                            />
-                          ),
-                        )}
+                        {data.map((entry: any, index: number) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={entry.color || COLORS.chart1}
+                          />
+                        ))}
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
                 <div className="mt-6 pt-4 border-t">
-                  <p className="text-center text-2xl font-bold text-orange-600">{avgRate}%</p>
-                  <p className="text-center text-xs text-muted-foreground">Taux moyen</p>
+                  <p className="text-center text-2xl font-bold text-orange-600">
+                    {avgRate}%
+                  </p>
+                  <p className="text-center text-xs text-muted-foreground">
+                    Taux moyen
+                  </p>
                 </div>
               </>
             )}
@@ -1369,8 +1444,11 @@ export default function Dashboard() {
   function renderTasksEvolutionChart() {
     const data = tasksEvolution || [];
     const totalNew = data.reduce((sum, item) => sum + (item.nouveau || 0), 0);
-    const totalCompleted = data.reduce((sum, item) => sum + (item.termine || 0), 0);
-    
+    const totalCompleted = data.reduce(
+      (sum, item) => sum + (item.termine || 0),
+      0,
+    );
+
     return (
       <div key="tasks-evolution" className="space-y-4">
         <div className="flex items-center justify-between">
@@ -1381,7 +1459,9 @@ export default function Dashboard() {
                 Évolution des tâches
               </h3>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Progression des tâches par statut</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Progression des tâches par statut
+            </p>
           </div>
         </div>
         <Card className="shadow-sm hover:shadow-md transition-shadow bg-gradient-to-br from-cyan-50/40 to-slate-50/10 dark:from-cyan-950/20 dark:to-slate-900/10">
@@ -1462,11 +1542,15 @@ export default function Dashboard() {
                 </div>
                 <div className="grid grid-cols-2 gap-3 mt-6 pt-4 border-t">
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-cyan-600">{totalNew}</p>
+                    <p className="text-2xl font-bold text-cyan-600">
+                      {totalNew}
+                    </p>
                     <p className="text-xs text-muted-foreground">Créées</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-green-600">{totalCompleted}</p>
+                    <p className="text-2xl font-bold text-green-600">
+                      {totalCompleted}
+                    </p>
                     <p className="text-xs text-muted-foreground">Complétées</p>
                   </div>
                 </div>
@@ -1481,8 +1565,11 @@ export default function Dashboard() {
   function renderAlertsEvolutionChart() {
     const data = alertsEvolution || [];
     const totalActive = data.reduce((sum, item) => sum + (item.active || 0), 0);
-    const totalResolved = data.reduce((sum, item) => sum + (item.resolved || 0), 0);
-    
+    const totalResolved = data.reduce(
+      (sum, item) => sum + (item.resolved || 0),
+      0,
+    );
+
     return (
       <div key="alerts-evolution" className="space-y-4">
         <div className="flex items-center justify-between">
@@ -1493,7 +1580,9 @@ export default function Dashboard() {
                 Évolution des alertes
               </h3>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Alertes actives et résolues</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Alertes actives et résolues
+            </p>
           </div>
         </div>
         <Card className="shadow-sm hover:shadow-md transition-shadow bg-gradient-to-br from-red-50/40 to-slate-50/10 dark:from-red-950/20 dark:to-slate-900/10">
@@ -1567,11 +1656,15 @@ export default function Dashboard() {
                 </div>
                 <div className="grid grid-cols-2 gap-3 mt-6 pt-4 border-t">
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-red-600">{totalActive}</p>
+                    <p className="text-2xl font-bold text-red-600">
+                      {totalActive}
+                    </p>
                     <p className="text-xs text-muted-foreground">Actives</p>
                   </div>
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-green-600">{totalResolved}</p>
+                    <p className="text-2xl font-bold text-green-600">
+                      {totalResolved}
+                    </p>
                     <p className="text-xs text-muted-foreground">Résolues</p>
                   </div>
                 </div>
