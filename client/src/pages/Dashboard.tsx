@@ -796,7 +796,7 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center gap-3">
-                <AlertCircle className="h-8 w-8 text-red-600" />
+                <Bell className="h-8 w-8 text-red-600" />
                 <h2 className="text-3xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
                   Alertes
                 </h2>
@@ -1488,7 +1488,7 @@ export default function Dashboard() {
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <Bell className="h-6 w-6 text-red-600" />
+              <AlertCircle className="h-6 w-6 text-red-600" />
               <h3 className="text-lg font-bold bg-gradient-to-r from-red-600 to-red-400 bg-clip-text text-transparent">
                 Évolution des alertes
               </h3>
