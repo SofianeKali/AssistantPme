@@ -599,65 +599,13 @@ export default function Dashboard() {
     return (
       <div key="tasks" className="col-span-full space-y-4">
         {/* Header avec gradient et description */}
-        <div className="space-y-3">
-          <div>
-            <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Tâches
-            </h2>
-            <p className="text-muted-foreground text-sm mt-1">
-              Aperçu de vos tâches avec vue complète disponible ci-dessous
-            </p>
-          </div>
-
-          {/* Statistics Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <Card className="border-l-4 border-l-blue-500">
-              <CardContent className="p-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Nouveau</p>
-                    <p className="text-xl font-bold text-blue-600">{tasksByStatus.nouveau.length}</p>
-                  </div>
-                  <Circle className="h-6 w-6 text-blue-500/30" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="border-l-4 border-l-orange-500">
-              <CardContent className="p-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-muted-foreground">En cours</p>
-                    <p className="text-xl font-bold text-orange-600">{tasksByStatus.en_cours.length}</p>
-                  </div>
-                  <Clock className="h-6 w-6 text-orange-500/30" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="border-l-4 border-l-green-500">
-              <CardContent className="p-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Terminé</p>
-                    <p className="text-xl font-bold text-green-600">{tasksByStatus.termine.length}</p>
-                  </div>
-                  <CheckCircle2 className="h-6 w-6 text-green-500/30" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="border-l-4 border-l-red-500">
-              <CardContent className="p-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Urgent</p>
-                    <p className="text-xl font-bold text-red-600">
-                      {(tasks || []).filter(t => t.priority === 'urgent').length}
-                    </p>
-                  </div>
-                  <AlertCircle className="h-6 w-6 text-red-500/30" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+        <div>
+          <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            Tâches
+          </h2>
+          <p className="text-muted-foreground text-sm mt-1">
+            Aperçu de vos tâches avec vue complète disponible ci-dessous
+          </p>
         </div>
 
         {/* Tasks List Card */}
