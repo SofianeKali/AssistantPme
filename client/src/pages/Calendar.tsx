@@ -881,10 +881,9 @@ export default function Calendar() {
                   {selectedAppointment.description && (
                     <div className="pt-2 border-t">
                       <p className="text-sm font-medium mb-2">Description</p>
-                      <div 
-                        className="text-sm text-muted-foreground prose prose-sm dark:prose-invert max-w-none"
-                        dangerouslySetInnerHTML={{ __html: selectedAppointment.description }}
-                      />
+                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                        {selectedAppointment.description}
+                      </p>
                     </div>
                   )}
 
