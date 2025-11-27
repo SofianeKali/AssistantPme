@@ -622,110 +622,111 @@ export default function Dashboard() {
 
         {/* Tasks List Card */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-            <CardTitle className="text-base">
-              Tâches en cours
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="pt-6">
             {tasksLoading ? (
               <div className="space-y-3">
                 {[...Array(3)].map((_, i) => (
-                  <Skeleton key={i} className="h-20" />
+                  <Skeleton key={i} className="h-24" />
                 ))}
               </div>
             ) : tasks && tasks.length > 0 ? (
               <div className="space-y-3">
-                {tasks.slice(0, 5).map((task: any) => (
-                  <div
-                    key={task.id}
-                    className="flex items-start gap-3 p-3 rounded-md border border-border hover-elevate"
-                    data-testid={`task-${task.id}`}
-                  >
-                    {task.status === "nouveau" ? (
-                      <Circle className="h-5 w-5 mt-0.5 text-blue-500" />
-                    ) : task.status === "en_cours" ? (
-                      <Clock className="h-5 w-5 mt-0.5 text-orange-500" />
-                    ) : (
-                      <CheckCircle2 className="h-5 w-5 mt-0.5 text-green-500" />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium">{task.title}</div>
-                      {task.description && (
-                        <div className="text-xs text-muted-foreground mt-1 line-clamp-1">
-                          {task.description}
+                {tasks.slice(0, 5).map((task: any) => {
+                  const borderColor = 
+                    task.status === "nouveau" ? "border-l-blue-500" :
+                    task.status === "en_cours" ? "border-l-orange-500" :
+                    "border-l-green-500";
+                  
+                  return (
+                    <Card
+                      key={task.id}
+                      className={`hover-elevate cursor-pointer transition-all border-l-4 ${borderColor}`}
+                      data-testid={`task-${task.id}`}
+                    >
+                      <div className="p-4">
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 rounded-lg bg-background/80 mt-0.5">
+                            {task.status === "nouveau" ? (
+                              <Circle className="h-5 w-5 text-blue-500" />
+                            ) : task.status === "en_cours" ? (
+                              <Clock className="h-5 w-5 text-orange-500" />
+                            ) : (
+                              <CheckCircle2 className="h-5 w-5 text-green-500" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2 mb-2">
+                              <h3 className="text-sm font-bold">{task.title}</h3>
+                              <Badge
+                                className={`text-xs ${
+                                  task.status === "nouveau"
+                                    ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100"
+                                    : task.status === "en_cours"
+                                    ? "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-100"
+                                    : "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100"
+                                }`}
+                                data-testid={`badge-task-status-${task.id}`}
+                              >
+                                {task.status === "nouveau"
+                                  ? "Nouveau"
+                                  : task.status === "termine"
+                                    ? "Terminé"
+                                    : "En cours"}
+                              </Badge>
+                            </div>
+                            {task.description && (
+                              <p className="text-sm text-muted-foreground mb-2">{task.description}</p>
+                            )}
+                            {task.priority && (
+                              <Badge variant="secondary" className="text-xs">
+                                {task.priority === "urgent" ? "🔴" : task.priority === "haute" ? "🟠" : "⚪"} {task.priority}
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex flex-col gap-1">
+                            {task.status === "nouveau" && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() =>
+                                  updateTaskStatusMutation.mutate({
+                                    taskId: task.id,
+                                    status: "en_cours",
+                                  })
+                                }
+                                data-testid={`button-start-task-${task.id}`}
+                              >
+                                <Clock className="h-3 w-3" />
+                              </Button>
+                            )}
+                            {task.status === "en_cours" && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() =>
+                                  updateTaskStatusMutation.mutate({
+                                    taskId: task.id,
+                                    status: "termine",
+                                  })
+                                }
+                                data-testid={`button-complete-task-${task.id}`}
+                              >
+                                <CheckCircle2 className="h-3 w-3" />
+                              </Button>
+                            )}
+                          </div>
                         </div>
-                      )}
-                      <div className="flex items-center gap-2 mt-2">
-                        <Badge
-                          variant={
-                            task.status === "nouveau"
-                              ? "secondary"
-                              : task.status === "termine"
-                                ? "outline"
-                                : "default"
-                          }
-                          className={`text-xs ${
-                            task.status === "nouveau"
-                              ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100"
-                              : task.status === "en_cours"
-                              ? "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-100"
-                              : "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100"
-                          }`}
-                          data-testid={`badge-task-status-${task.id}`}
-                        >
-                          {task.status === "nouveau"
-                            ? "Nouveau"
-                            : task.status === "termine"
-                              ? "Terminé"
-                              : "En cours"}
-                        </Badge>
-                        {task.priority && (
-                          <Badge variant="outline" className="text-xs">
-                            {task.priority === "urgent" ? "🔴" : task.priority === "haute" ? "🟠" : "⚪"}
-                            {" "}{task.priority}
-                          </Badge>
-                        )}
                       </div>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      {task.status === "nouveau" && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() =>
-                            updateTaskStatusMutation.mutate({
-                              taskId: task.id,
-                              status: "en_cours",
-                            })
-                          }
-                          data-testid={`button-start-task-${task.id}`}
-                        >
-                          <Clock className="h-3 w-3" />
-                        </Button>
-                      )}
-                      {task.status === "en_cours" && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() =>
-                            updateTaskStatusMutation.mutate({
-                              taskId: task.id,
-                              status: "termine",
-                            })
-                          }
-                          data-testid={`button-complete-task-${task.id}`}
-                        >
-                          <CheckCircle2 className="h-3 w-3" />
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                    </Card>
+                  );
+                })}
               </div>
             ) : (
-              <div className="text-center py-8 text-sm text-muted-foreground">
-                Aucune tâche
+              <div className="text-center py-12">
+                <div className="text-4xl mb-2">✓</div>
+                <p className="text-sm text-muted-foreground">
+                  Aucune tâche
+                </p>
               </div>
             )}
           </CardContent>
